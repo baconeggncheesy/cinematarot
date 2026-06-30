@@ -283,7 +283,7 @@
 
         <!-- DIRECT NEURAL LINK (VIBE TRANSLATOR via CLOUDFLARE WORKER) -->
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
-          <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Describe Your Headspace</div>
+          <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Describe How You Want To Feel or What You Want To See</div>
           <div class="flex space-x-2">
             <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A rainy neon city at 3 AM...">
             <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
@@ -448,6 +448,11 @@
         <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
         <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
 
+        <div class="grid grid-cols-2 gap-1.5 mb-4 text-[10px] font-bold tracking-wider">
+          <button onclick="setJournalTab('recommended')" id="journal-tab-recommended" class="script-btn active">RECOMMENDED</button>
+          <button onclick="setJournalTab('seen')" id="journal-tab-seen" class="script-btn">SEEN</button>
+        </div>
+
         <div id="journal-list" class="space-y-3 flex-1 overflow-y-auto pr-1 pb-4"></div>
 
         <div class="mt-4 pt-4 border-t border-neutral-900">
@@ -495,70 +500,70 @@
       journal: [], // persisted history of past projections, loaded from localStorage on boot
       
       tarotDeck: [
-        { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpg', audio: 'freq-tramp', glitch: 'glitch-shake',
+        { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpeg', audio: 'freq-tramp', glitch: 'glitch-shake',
           upright: { shift: { w: -20, t: 25, r: 10, h: 40 }, hook: "The path is narrow, the script unwritten. Step into the void." },
           reversed: { shift: { w: 20, t: -25, r: -10, h: -40 }, hook: "The act is failing. The precipice crumbles beneath your feet." } },
-        { id: 'auteur', name: 'The Auteur (Magician)', num: 'I', image: 'assets/1-auteur.jpg', audio: 'freq-harmonic', glitch: 'glitch-tear',
+        { id: 'auteur', name: 'The Auteur (Magician)', num: 'I', image: 'assets/1-auteur.jpeg', audio: 'freq-harmonic', glitch: 'glitch-tear',
           upright: { shift: { w: 10, t: 10, r: 25, h: 0 }, hook: "Focused manifestation. You demand absolute control of the frame." },
           reversed: { shift: { w: -10, t: -10, r: -25, h: 0 }, hook: "The creator is blocked. The narrative spirals out of control." } },
-        { id: 'oracle', name: 'The Oracle (Priestess)', num: 'II', image: 'assets/2-oracle.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+        { id: 'oracle', name: 'The Oracle (Priestess)', num: 'II', image: 'assets/2-oracle.jpeg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
           upright: { shift: { w: 20, t: -15, r: 40, h: -10 }, hook: "The code unravels. You see the hidden architecture of reality." },
           reversed: { shift: { w: -20, t: 15, r: -40, h: 10 }, hook: "Ignorance is bliss. The subconscious refuses to be read." } },
-        { id: 'matriarch', name: 'The Matriarch (Empress)', num: 'III', image: 'assets/3-matriarch.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+        { id: 'matriarch', name: 'The Matriarch (Empress)', num: 'III', image: 'assets/3-matriarch.jpeg', audio: 'freq-heavy', glitch: 'glitch-shake',
           upright: { shift: { w: -25, t: 25, r: 0, h: -10 }, hook: "The maternal instinct weaponized. The ultimate protector in a hostile void." },
           reversed: { shift: { w: 25, t: -25, r: 0, h: 10 }, hook: "The hive closes in. The instinct to protect has mutated." } },
-        { id: 'don', name: 'The Don (Emperor)', num: 'IV', image: 'assets/4-don.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+        { id: 'don', name: 'The Don (Emperor)', num: 'IV', image: 'assets/4-don.jpeg', audio: 'freq-heavy', glitch: 'glitch-shake',
           upright: { shift: { w: 30, t: -10, r: -20, h: -20 }, hook: "Power cast in shadow. Structure enforced by heavy consequence." },
           reversed: { shift: { w: -30, t: 10, r: 20, h: 20 }, hook: "The empire rots from within. Authority crumbles to chaos." } },
-        { id: 'monolith', name: 'The Monolith (Hierophant)', num: 'V', image: 'assets/5-monolith.jpg', audio: 'freq-bell', glitch: 'glitch-vertigo',
+        { id: 'monolith', name: 'The Monolith (Hierophant)', num: 'V', image: 'assets/5-monolith.jpeg', audio: 'freq-bell', glitch: 'glitch-vertigo',
           upright: { shift: { w: 40, t: -30, r: 40, h: -10 }, hook: "Evolution requires intervention. Touch the slab and ascend." },
           reversed: { shift: { w: -40, t: 30, r: -40, h: 10 }, hook: "The system is rigid. Trapped in the cold vacuum of order." } },
-        { id: 'noir', name: 'The Lovers', num: 'VI', image: 'assets/6-noir.jpg', audio: 'freq-harmonic', glitch: 'glitch-tear',
+        { id: 'noir', name: 'The Lovers', num: 'VI', image: 'assets/6-noir.jpeg', audio: 'freq-harmonic', glitch: 'glitch-tear',
           upright: { shift: { w: -20, t: -10, r: -10, h: -10 }, hook: "A fatal attraction. The script says leave, but the frame pulls you back." },
           reversed: { shift: { w: 20, t: 10, r: 10, h: 10 }, hook: "The fog is too thick. A betrayal masked by the tarmac's shadow." } },
-        { id: 'delorean', name: 'Time Machine (Chariot)', num: 'VII', image: 'assets/7-delorean.jpg', audio: 'freq-static', glitch: 'glitch-shake',
+        { id: 'delorean', name: 'Time Machine (Chariot)', num: 'VII', image: 'assets/7-delorean.jpeg', audio: 'freq-static', glitch: 'glitch-shake',
           upright: { shift: { w: -20, t: 35, r: 20, h: 20 }, hook: "Momentum breaks the continuum. Escape is purely kinetic." },
           reversed: { shift: { w: 20, t: -35, r: -20, h: -20 }, hook: "The timeline collapses. Trapped in an inescapable loop." } },
-        { id: 'finalgirl', name: 'The Final Girl (Strength)', num: 'VIII', image: 'assets/8-finalgirl.jpg', audio: 'freq-static', glitch: 'glitch-tear',
+        { id: 'finalgirl', name: 'The Final Girl (Strength)', num: 'VIII', image: 'assets/8-finalgirl.jpeg', audio: 'freq-static', glitch: 'glitch-tear',
           upright: { shift: { w: 20, t: 25, r: -10, h: -20 }, hook: "Endurance through terror. Outlasting the monster through sheer will." },
           reversed: { shift: { w: -20, t: -25, r: 10, h: 20 }, hook: "The adrenaline fades. The shadow overtakes the survivor." } },
-        { id: 'driver', name: 'The Driver (Hermit)', num: 'IX', image: 'assets/9-driver.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+        { id: 'driver', name: 'The Driver (Hermit)', num: 'IX', image: 'assets/9-driver.jpeg', audio: 'freq-heavy', glitch: 'glitch-shake',
           upright: { shift: { w: 40, t: -10, r: -10, h: -30 }, hook: "Navigating the moral decay alone. The city is a rearview mirror." },
           reversed: { shift: { w: -40, t: 10, r: 10, h: 30 }, hook: "Lost in the grid. Isolation turns to violent obsession." } },
-        { id: 'reel', name: 'The Reel of Fortune', num: 'X', image: 'assets/10-reel.jpg', audio: 'freq-tramp', glitch: 'glitch-tear',
+        { id: 'reel', name: 'The Reel of Fortune', num: 'X', image: 'assets/10-reel.jpeg', audio: 'freq-tramp', glitch: 'glitch-tear',
           upright: { shift: { w: 0, t: 20, r: 15, h: 10 }, hook: "The celluloid spins. A fateful turning point in the narrative." },
           reversed: { shift: { w: 0, t: -20, r: -15, h: -10 }, hook: "The reel jams. Destiny repeats itself in a broken loop." } },
-        { id: 'standoff', name: 'The Man with No Name', num: 'XI', image: 'assets/11-standoff.jpg', audio: 'freq-bell', glitch: 'glitch-shake',
+        { id: 'standoff', name: 'The Man with No Name', num: 'XI', image: 'assets/11-standoff.jpeg', audio: 'freq-bell', glitch: 'glitch-shake',
           upright: { shift: { w: 10, t: -20, r: -20, h: -10 }, hook: "Fate balanced on a single bullet. The high-noon verdict." },
           reversed: { shift: { w: -10, t: 20, r: 20, h: 10 }, hook: "The law is broken. Cause and effect bleed into chaos." } },
-        { id: 'falling', name: 'The Burned Man', num: 'XII', image: 'assets/12-falling.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+        { id: 'falling', name: 'The Burned Man', num: 'XII', image: 'assets/12-falling.jpeg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
           upright: { shift: { w: 15, t: -30, r: 25, h: -15 }, hook: "Surrender to the fall. Gravity distorts the perspective." },
           reversed: { shift: { w: -15, t: 30, r: -25, h: 15 }, hook: "Unable to wake up. The dream collapses inward." } },
-        { id: 'chess', name: 'Death', num: 'XIII', image: 'assets/13-chess.jpg', audio: 'freq-bell', glitch: 'glitch-shake',
+        { id: 'chess', name: 'Death', num: 'XIII', image: 'assets/13-chess.jpeg', audio: 'freq-bell', glitch: 'glitch-shake',
           upright: { shift: { w: 40, t: -10, r: -15, h: -30 }, hook: "Stark existentialism. The inevitable end of the match." },
           reversed: { shift: { w: -40, t: 10, r: 15, h: 30 }, hook: "Refusing to yield. A terrifying stagnation of fate." } },
-        { id: 'reflection', name: 'Reflection', num: 'XIV', image: 'assets/14-reflection.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+        { id: 'reflection', name: 'Reflection', num: 'XIV', image: 'assets/14-reflection.jpeg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
           upright: { shift: { w: 20, t: -20, r: 30, h: -10 }, hook: "The alchemical blending of opposites. Two selves in perfect balance." },
           reversed: { shift: { w: -20, t: 20, r: -30, h: 10 }, hook: "The mirror cracks. The terrifying equilibrium of dual identities fractures." } },
-        { id: 'hotel', name: 'The Hotel (The Devil)', num: 'XV', image: 'assets/15-hotel.jpg', audio: 'freq-static', glitch: 'glitch-tear',
+        { id: 'hotel', name: 'The Hotel (The Devil)', num: 'XV', image: 'assets/15-hotel.jpeg', audio: 'freq-static', glitch: 'glitch-tear',
           upright: { shift: { w: 45, t: 15, r: 10, h: -25 }, hook: "Claustrophobic madness. The shadow self takes the wheel." },
           reversed: { shift: { w: -45, t: -15, r: -10, h: 25 }, hook: "The chains loosen, but the isolation remains absolute." } },
-        { id: 'tower', name: 'The Nakatomi (The Tower)', num: 'XVI', image: 'assets/16-tower.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+        { id: 'tower', name: 'The Nakatomi (The Tower)', num: 'XVI', image: 'assets/16-tower.jpeg', audio: 'freq-heavy', glitch: 'glitch-shake',
           upright: { shift: { w: 20, t: 40, r: -20, h: 5 }, hook: "Explosive chaos. The physical structure burns to the ground." },
           reversed: { shift: { w: -20, t: -40, r: 20, h: -5 }, hook: "The foundation holds, but the pressure is unbearable." } },
-        { id: 'escape', name: 'The Escape (The Star)', num: 'XVII', image: 'assets/17-escape.jpg', audio: 'freq-harmonic', glitch: 'glitch-tear',
+        { id: 'escape', name: 'The Escape (The Star)', num: 'XVII', image: 'assets/17-escape.jpeg', audio: 'freq-harmonic', glitch: 'glitch-tear',
           upright: { shift: { w: -40, t: -10, r: 10, h: 30 }, hook: "Cosmic absolution. Pure hope standing in the pouring rain." },
           reversed: { shift: { w: 40, t: 10, r: -10, h: -30 }, hook: "The tunnel caves in. Faith wavers in the absolute dark." } },
-        { id: 'moon', name: 'Méliès Moon (The Moon)', num: 'XVIII', image: 'assets/18-moon.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+        { id: 'moon', name: 'Méliès Moon (The Moon)', num: 'XVIII', image: 'assets/18-moon.jpeg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
           upright: { shift: { w: 0, t: -15, r: 45, h: 10 }, hook: "Surreal visions and visual trickery. The dream logic takes over." },
           reversed: { shift: { w: 0, t: 15, r: -45, h: -10 }, hook: "The illusion shatters. A nightmare bleeding into reality." } },
-        { id: 'horror', name: 'The Horror (The Sun)', num: 'XIX', image: 'assets/19-horror.jpg', audio: 'freq-static', glitch: 'glitch-vertigo',
+        { id: 'horror', name: 'The Horror (The Sun)', num: 'XIX', image: 'assets/19-horror.jpeg', audio: 'freq-static', glitch: 'glitch-vertigo',
           upright: { shift: { w: 50, t: 20, r: 20, h: -40 }, hook: "The blinding truth of the jungle. Exposure to raw, kinetic madness." },
           reversed: { shift: { w: -50, t: -20, r: -20, h: 40 }, hook: "The sun sets permanently. Wading through the darkest atrocities." } },
-        { id: 'machine', name: 'Judgement', num: 'XX', image: 'assets/20-machine.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+        { id: 'machine', name: 'Judgement', num: 'XX', image: 'assets/20-machine.jpeg', audio: 'freq-heavy', glitch: 'glitch-shake',
           upright: { shift: { w: 30, t: 30, r: -10, h: -20 }, hook: "The final verdict. An unstoppable force brings apocalyptic rebirth." },
           reversed: { shift: { w: -30, t: -30, r: 10, h: 20 }, hook: "The creator judged by the creation. A synthetic search for a soul." } },
-        { id: 'rosebud', name: 'The Rosebud (The World)', num: 'XXI', image: 'assets/21-rosebud.jpg', audio: 'freq-bell', glitch: 'glitch-tear',
+        { id: 'rosebud', name: 'The Rosebud (The World)', num: 'XXI', image: 'assets/21-rosebud.jpeg', audio: 'freq-bell', glitch: 'glitch-tear',
           upright: { shift: { w: -15, t: -10, r: -10, h: 0 }, hook: "The search for absolute truth. A complete narrative arc burns away." },
           reversed: { shift: { w: 15, t: 10, r: 10, h: 0 }, hook: "The legacy is poisoned. A frantic grasp for something already lost." } }
       ]
@@ -674,10 +679,23 @@
       }
     }
 
+    let journalTab = 'recommended'; // 'recommended' | 'seen'
+
     function openJournal() {
       playSynthBeep(500, 0.05, 'square');
+      journalTab = 'recommended';
       renderJournal();
       showScreen('screen-journal');
+    }
+
+    function setJournalTab(tab) {
+      journalTab = tab;
+      playSynthBeep(400, 0.04, 'square');
+      ['recommended', 'seen'].forEach(t => {
+        const btn = document.getElementById(`journal-tab-${t}`);
+        if (btn) btn.classList.toggle('active', t === tab);
+      });
+      renderJournal();
     }
 
     function renderJournal() {
@@ -689,10 +707,28 @@
         return;
       }
 
-      list.innerHTML = AppState.journal.map(entry => {
+      // Membership is computed live against AppState.seenMovies rather than
+      // stored per-entry, so marking a movie seen from EITHER the result
+      // screen or the journal itself instantly moves every matching entry
+      // (including past duplicates from rerolls) into the Seen tab.
+      const filtered = AppState.journal.filter(entry => {
+        const isSeen = entry.id && AppState.seenMovies.includes(entry.id);
+        return journalTab === 'seen' ? isSeen : !isSeen;
+      });
+
+      if (filtered.length === 0) {
+        const emptyMsg = journalTab === 'seen'
+          ? "Nothing marked seen yet."
+          : "Nothing pending — everything recommended has been marked seen.";
+        list.innerHTML = `<div class="text-center text-xs text-neutral-600 mt-12">${emptyMsg}</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(entry => {
         const posterUrl = entry.poster
           ? `https://image.tmdb.org/t/p/w200${entry.poster}`
           : '';
+        const canMarkSeen = entry.id && journalTab === 'recommended';
         return `
           <div class="flex items-center space-x-3 bg-darkGrey p-2 border border-neutral-900">
             <div class="w-[45px] aspect-[2/3] flex-shrink-0 border border-neutral-800 bg-black overflow-hidden">
@@ -703,9 +739,21 @@
               <div class="text-[9px] text-neutral-500 mt-0.5">${entry.date}</div>
               <div class="text-[9px] text-neutral-600 truncate">${entry.spread}</div>
             </div>
+            ${canMarkSeen
+              ? `<button onclick="markJournalEntrySeen(${entry.id})" class="script-btn text-[9px] px-2 py-1.5 flex-shrink-0 text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>`
+              : journalTab === 'seen'
+                ? `<span class="text-[9px] text-green-500 flex-shrink-0 font-bold">✓</span>`
+                : ''
+            }
           </div>
         `;
       }).join('');
+    }
+
+    function markJournalEntrySeen(movieId) {
+      addToSeenList(movieId);
+      playTypewriterDing();
+      renderJournal();
     }
 
     window.onload = function() {
@@ -1081,7 +1129,7 @@
             el.innerHTML = `
                 <div class="tarot-card w-full h-full shadow-lg">
                     <div class="tarot-card-back rounded-sm border border-neutral-700 bg-black overflow-hidden">
-                        <img src="assets/card-back.jpg" class="w-full h-full object-cover" onerror="tryJpegFallback(this, 'TAROT')">
+                        <img src="assets/card-back.jpeg" class="w-full h-full object-cover" onerror="tryJpegFallback(this, 'TAROT')">
                     </div>
                     <div class="tarot-card-front shadow-neon-sm border border-neonRed bg-black overflow-hidden">
                         <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${card.num}')">
@@ -1476,6 +1524,7 @@
       }).join(', ');
 
       addJournalEntry({
+        id: movie.id || null,
         title: movie.title || 'Untitled',
         year: movie.release_date ? movie.release_date.split('-')[0] : '',
         poster: movie.poster_path || null,
@@ -1546,10 +1595,22 @@
       }
     }
 
+    // Shared helper: marks a movie ID as seen and persists it. Used by both
+    // the result screen's "I'VE SEEN THIS" button and the journal's
+    // per-entry "Mark Seen" action, so the two stay perfectly in sync —
+    // a movie marked seen from either place disappears from Recommended
+    // and appears in Seen everywhere in the app.
+    function addToSeenList(movieId) {
+      if (!movieId) return;
+      if (!AppState.seenMovies.includes(movieId)) {
+        AppState.seenMovies.push(movieId);
+        persistSeenRejected();
+      }
+    }
+
     function markMovieAsSeen() {
       if (AppState.currentMovie && AppState.currentMovie.id) {
-        AppState.seenMovies.push(AppState.currentMovie.id);
-        persistSeenRejected();
+        addToSeenList(AppState.currentMovie.id);
         initiateSubconsciousMatching();
       }
     }
@@ -1741,6 +1802,26 @@
       });
     }
 
+    // Same as above, but mirrors the app's existing tryJpegFallback()
+    // behavior: some tarot card assets are saved as .jpeg while the deck
+    // data assumes .jpg. The regular <img> tags elsewhere already retry
+    // with the other extension on error — this does the same for the
+    // canvas-loaded version, since a failed load here was silently
+    // producing a blank gray box instead of the actual card art.
+    async function loadImageWithJpegFallback(url) {
+      try {
+        return await loadImageCrossOrigin(url);
+      } catch (e) {
+        if (/\.jpg$/i.test(url)) {
+          return await loadImageCrossOrigin(url.replace(/\.jpg$/i, '.jpeg'));
+        }
+        if (/\.jpeg$/i.test(url)) {
+          return await loadImageCrossOrigin(url.replace(/\.jpeg$/i, '.jpg'));
+        }
+        throw e;
+      }
+    }
+
     // Builds the canvas and returns a PNG data URL. Pure — does not touch
     // any overlay/DOM state, so both the native share-sheet path and the
     // manual-save fallback path can call this the same way.
@@ -1834,7 +1915,7 @@
         const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
 
         try {
-          const cardImg = await loadImageCrossOrigin(draw.card.image);
+          const cardImg = await loadImageWithJpegFallback(draw.card.image);
           ctx.save();
           if (draw.isReversed) {
             ctx.translate(cardX + cardThumbW/2, cardY + cardThumbH/2);
