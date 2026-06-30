@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>THE BLIND CUT — Cyber-Script Calibrator</title>
+  <title>CINEMA ARCANA — Tarot For Movies</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -178,7 +178,7 @@
     <header class="w-full flex items-center justify-between pb-4 mb-4 border-b border-neutral-900">
       <div class="flex items-center space-x-2">
         <span class="w-2 h-2 rounded-full bg-neonRed animate-pulse shadow-neon-sm"></span>
-        <span class="font-bold text-[10px] tracking-widest text-neutral-500">THE BLIND CUT</span>
+        <span class="font-bold text-[10px] tracking-widest text-neutral-500">CINEMA ARCANA</span>
       </div>
       <div class="flex items-center space-x-4 text-[10px] font-bold text-neutral-500">
         <button onclick="toggleAudio()" id="audio-toggle-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
@@ -192,10 +192,10 @@
       <section id="screen-intro" class="animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="text-center space-y-4 mb-12">
           <h1 class="font-cinzel text-4xl sm:text-5xl font-bold uppercase tracking-widest text-white border-y border-neutral-800 py-6 my-8">
-            The Blind Cut
+            Cinema Arcana
           </h1>
-          <p class="text-xs text-neutral-500">A Subconscious Matchmaking Interface</p>
-          <p class="text-[10px] uppercase mt-8 text-neutral-600">Cyber-Script Edition — <span id="current-date"></span></p>
+          <p class="text-xs text-neutral-500">Tarot For Movies</p>
+          <p class="text-[10px] uppercase mt-8 text-neutral-600"><span id="current-date"></span></p>
         </div>
         <div class="action text-xs leading-relaxed text-center px-4">
           An internet-powered diagnostic scours the entire historic landscape of cinema to map your immediate subconscious vibe.<br><br>
@@ -445,6 +445,7 @@
       era: 'any',
       depth: 'cinephile',
       sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
+      vibeGenreIds: [], // TMDB genre IDs detected by the AI from free-text mood, e.g. "murder mystery"
       seenMovies: [],
       rejectedMovies: [],
       currentMovie: null,
@@ -540,6 +541,12 @@
       10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' }
     };
 
+    // Reverse lookup: genre name (as the AI will say it, e.g. "MYSTERY") -> TMDB genre ID.
+    // Built automatically from GENRE_MAP so the two never drift out of sync.
+    const GENRE_NAME_TO_ID = Object.fromEntries(
+      Object.entries(GENRE_MAP).map(([id, data]) => [data.name, parseInt(id)])
+    );
+
     window.onload = function() {
       fetchHitsTelemetry();
       document.getElementById('current-date').innerText = new Date().toLocaleDateString();
@@ -633,7 +640,24 @@
           }
         });
 
-        statusEl.innerText = "[ MARGINS CALIBRATED BY SYSTEM ]";
+        // Genre detection: only locks a genre when the AI is confident the
+        // text implies one (e.g. "murder mystery"). Each new sync call
+        // overwrites the previous lock — typing something genre-neutral
+        // clears it back out.
+        let detectedGenres = [];
+        if (Array.isArray(coordinates.genres)) {
+          detectedGenres = coordinates.genres
+            .map(name => GENRE_NAME_TO_ID[String(name).toUpperCase()])
+            .filter(id => id !== undefined);
+        }
+        AppState.vibeGenreIds = detectedGenres;
+
+        if (detectedGenres.length > 0) {
+          const names = detectedGenres.map(id => GENRE_MAP[id].name).join(' + ');
+          statusEl.innerText = `[ CALIBRATED — GENRE LOCK: ${names} ]`;
+        } else {
+          statusEl.innerText = "[ MARGINS CALIBRATED BY SYSTEM ]";
+        }
         playSynthBeep(1200, 0.2, 'square');
         triggerGlitchEffect('glitch-tear');
 
@@ -1050,6 +1074,13 @@
         if (obs <= 35) discoverParams.push(`vote_count.gte=1500`, `sort_by=popularity.desc`);
         else if (obs >= 70) discoverParams.push(`vote_count.gte=30`, `vote_count.lte=1200`, `sort_by=vote_average.desc`);
         else discoverParams.push(`vote_count.gte=200`, `vote_count.lte=4000`, `sort_by=popularity.desc`);
+
+        // Hard genre lock from AI-detected mood text (e.g. "rainy day murder
+        // mystery" -> Mystery/Crime). Pipe = OR in TMDB's syntax, so any
+        // matching genre qualifies a candidate rather than requiring all.
+        if (AppState.vibeGenreIds.length > 0) {
+          discoverParams.push(`with_genres=${AppState.vibeGenreIds.join('|')}`);
+        }
         
         const fetchWithTimeout = async (url, ms = 8000) => {
           const controller = new AbortController();
@@ -1371,7 +1402,7 @@
       const mtitleEl = document.getElementById('movie-title');
       const title = mtitleEl ? mtitleEl.innerText : "A Masterpiece";
       
-      let shareText = `THE BLIND CUT : PROJECTION SECURED\n`;
+      let shareText = `CINEMA ARCANA : PROJECTION SECURED\n`;
       shareText += `Match: ${title}\n\n`;
       shareText += `THE SPREAD:\n`;
       AppState.drawnSpread.forEach((draw, i) => {
