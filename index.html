@@ -283,7 +283,7 @@
 
         <!-- DIRECT NEURAL LINK (VIBE TRANSLATOR via CLOUDFLARE WORKER) -->
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
-          <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Describe How You Want To Feel or What You Want To See</div>
+          <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Describe Your Headspace</div>
           <div class="flex space-x-2">
             <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A rainy neon city at 3 AM...">
             <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
@@ -455,8 +455,17 @@
 
         <div id="journal-list" class="space-y-3 flex-1 overflow-y-auto pr-1 pb-4"></div>
 
-        <div class="mt-4 pt-4 border-t border-neutral-900">
+        <div id="clear-history-confirm" class="hidden bg-neonRed/10 border border-neonRed p-3 mb-3 text-center">
+          <div class="text-[10px] text-neutral-300 mb-2">This permanently erases your journal, seen list, and reroll history on this device. This can't be undone.</div>
+          <div class="flex space-x-2">
+            <button onclick="confirmClearHistory()" class="script-btn flex-1 text-[10px] text-neonRed border-neonRed font-bold">YES, CLEAR IT</button>
+            <button onclick="cancelClearHistory()" class="script-btn flex-1 text-[10px] border-neutral-600">CANCEL</button>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-neutral-900 space-y-2">
           <button onclick="showScreen('screen-intro')" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Back</button>
+          <button onclick="requestClearHistory()" class="script-btn uppercase text-xs w-full text-center tracking-widest !text-neonRed hover:!border-neonRed">Clear History</button>
         </div>
       </section>
 
@@ -754,6 +763,33 @@
       addToSeenList(movieId);
       playTypewriterDing();
       renderJournal();
+    }
+
+    function requestClearHistory() {
+      document.getElementById('clear-history-confirm').classList.remove('hidden');
+      playSynthBeep(300, 0.05, 'square');
+    }
+
+    function cancelClearHistory() {
+      document.getElementById('clear-history-confirm').classList.add('hidden');
+    }
+
+    function confirmClearHistory() {
+      AppState.journal = [];
+      AppState.seenMovies = [];
+      AppState.rejectedMovies = [];
+      try {
+        localStorage.removeItem(STORAGE_KEYS.journal);
+        localStorage.removeItem(STORAGE_KEYS.seen);
+        localStorage.removeItem(STORAGE_KEYS.rejected);
+      } catch (e) {
+        console.error("Failed to clear persisted history:", e);
+      }
+      document.getElementById('clear-history-confirm').classList.add('hidden');
+      triggerGlitchEffect('glitch-shake');
+      playTypewriterDing();
+      journalTab = 'recommended';
+      setJournalTab('recommended');
     }
 
     window.onload = function() {
@@ -1060,8 +1096,13 @@
 
     function updateParameterUI(key, val) {
       const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'], depth: ['casual', 'cinephile'] };
+      // ID prefixes don't always match the AppState key name (the language
+      // buttons use "lang-" in the HTML, not "language-"), so this maps
+      // each key to its real prefix instead of assuming they're identical.
+      const idPrefixes = { language: 'lang', era: 'era', depth: 'depth' };
+      const prefix = idPrefixes[key] || key;
       ids[key].forEach(item => {
-        const btn = document.getElementById(`${key}-${item}`);
+        const btn = document.getElementById(`${prefix}-${item}`);
         if (btn) {
           if (item === val) btn.classList.add('active');
           else btn.classList.remove('active');
