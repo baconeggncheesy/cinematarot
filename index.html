@@ -339,6 +339,11 @@
             <!-- Injected via JS -->
         </div>
 
+        <div class="bg-black border border-neutral-800 p-4 font-mono text-xs leading-relaxed text-neutral-300 relative mb-4">
+          <div class="absolute top-2 right-2 font-mono text-[8px] text-neonRed font-bold border border-neonRed px-1 rounded-sm">PSYCHIC READING</div>
+          <div id="psychic-reading-text" class="pt-4 text-justify text-neutral-200">Consulting the cards...</div>
+        </div>
+
         <div class="mt-4 pt-4 border-t border-neutral-900 sticky bottom-0 bg-black pb-2">
             <button onclick="initiateSubconsciousMatching()" class="script-btn-primary uppercase text-xs tracking-widest border-green-500 text-green-400 shadow-[inset_0_0_10px_0_rgba(34,197,94,0.3)] hover:bg-green-500 hover:text-black transition-all">
                 [ ENGAGE ALGORITHM ]
@@ -411,15 +416,14 @@
             </div>
           </div>
           
-          <div class="grid grid-cols-2 gap-3 pt-2 font-mono">
-            <button onclick="generateShareImage()" id="save-image-btn" class="script-btn-primary uppercase text-xs tracking-widest">Save Image</button>
-            <button onclick="shareProjection()" class="script-btn uppercase text-xs text-center tracking-widest border border-neutral-600 hover:border-white">Copy Receipt</button>
+          <div class="pt-2 font-mono">
+            <button onclick="shareReadingImage()" id="share-reading-btn" class="script-btn-primary uppercase text-xs tracking-widest w-full">Share Reading</button>
           </div>
           <button onclick="recalibrate()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600 hover:border-white mt-2">Start Over</button>
         </div>
       </section>
 
-      <!-- VISUAL SHARE CARD OVERLAY -->
+      <!-- VISUAL SHARE CARD OVERLAY (fallback for browsers without native share-sheet file support) -->
       <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
         <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
         <img id="share-image-output" class="hidden max-w-full max-h-[75vh] border border-neonRed shadow-neon" alt="Shareable tarot card">
@@ -470,6 +474,7 @@
 
   <script>
     const TMDB_API_KEY = "c2015ecda624b83d2e3d19ead77c0a8c";
+    const WORKER_BASE_URL = "https://arcana-proxy.cory-gallant.workers.dev"; // single source of truth for the Cloudflare Worker
     
     // --- APP STATE & 22-CARD REGISTRY ---
     const AppState = {
@@ -741,8 +746,8 @@
       btnEl.disabled = true;
       playSynthBeep(600, 0.1, 'sine');
 
-      // The live link to your specific Cloudflare Worker
-      const WORKER_URL = "https://arcana-proxy.cory-gallant.workers.dev";
+      // Uses the single global WORKER_BASE_URL defined near the top of the file
+      const WORKER_URL = WORKER_BASE_URL;
 
       try {
         let response;
@@ -1225,6 +1230,52 @@
         });
 
         showScreen('screen-spread-review');
+        await renderPsychicReading();
+    }
+
+    // --- PSYCHIC READING (genuine tarot reading, no movie content at all) ---
+    // Separate from the movie-matching math entirely — this is pure flavor,
+    // generated live by AI, written the way an actual tarot reader would
+    // speak about the querent's life. No fallback template by design,
+    // consistent with the rest of the app's "WRITER'S BLOCK" philosophy.
+    async function renderPsychicReading() {
+      const el = document.getElementById('psychic-reading-text');
+      if (!el) return;
+      el.innerText = 'Consulting the cards...';
+
+      const spreadDetail = AppState.drawnSpread.map((draw, i) => {
+        const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future';
+        return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
+      }).join(', ');
+
+      try {
+        const res = await fetch(WORKER_BASE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'reading',
+            spread: spreadDetail,
+            fullInversion: AppState.fullInversion
+          })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error('Empty response');
+
+        text = text.trim();
+        if (text.startsWith('```')) text = text.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
+
+        el.classList.add('cursor-blink');
+        await typewriter('psychic-reading-text', text, 16);
+        el.classList.remove('cursor-blink');
+
+      } catch (err) {
+        console.error('Psychic reading failed:', err);
+        el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>';
+      }
     }
 
     let progressInterval = null;
@@ -1447,7 +1498,7 @@
       analysisEl.style.whiteSpace = 'pre-wrap';
       analysisEl.innerHTML = '<span class="text-neutral-500">Transmitting to ghost...</span>';
 
-      const WORKER_URL = "https://arcana-proxy.cory-gallant.workers.dev";
+      const WORKER_URL = WORKER_BASE_URL;
 
       const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "an unnamed auteur";
       const yr = movie.release_date ? movie.release_date.split('-')[0] : "";
@@ -1679,191 +1730,241 @@
       }).join('');
     }
 
-    function shareProjection() {
-      const mtitleEl = document.getElementById('movie-title');
-      const title = mtitleEl ? mtitleEl.innerText : "A Masterpiece";
-      
-      let shareText = `CINEMA ARCANA : PROJECTION SECURED\n`;
-      shareText += `Match: ${title}\n\n`;
-      shareText += `THE SPREAD:\n`;
-      AppState.drawnSpread.forEach((draw, i) => {
-          const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
-          shareText += `[${pos}] ${draw.card.name} ${draw.isReversed ? '(Reversed)' : ''}\n`;
-      });
-      shareText += `\nScript locked.`;
-      
-      const temp = document.createElement('input');
-      temp.value = shareText;
-      document.body.appendChild(temp);
-      temp.select();
-      document.execCommand('copy');
-      document.body.removeChild(temp);
-      
-      const banner = document.getElementById('notification-banner');
-      if (banner) {
-        banner.classList.remove('opacity-0');
-        banner.classList.add('opacity-100');
-        playTypewriterDing();
-        setTimeout(() => {
-          banner.classList.remove('opacity-100');
-          banner.classList.add('opacity-0');
-        }, 2000);
-      }
-    }
-
-    // --- VISUAL SHARE CARD (canvas-rendered, replaces plain-text-only sharing) ---
+    // --- VISUAL SHARE CARD (canvas-rendered) ---
     function loadImageCrossOrigin(url) {
       return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous'; // TMDB's CDN sends CORS headers, so this keeps the canvas untainted
+        img.crossOrigin = 'anonymous'; // needed to keep the canvas untainted for toDataURL/toBlob
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = url;
       });
     }
 
-    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
-      const words = text.split(' ');
-      let line = '';
-      let curY = y;
-      for (const word of words) {
-        const testLine = line + word + ' ';
-        if (ctx.measureText(testLine).width > maxWidth && line !== '') {
-          ctx.fillText(line.trim(), x, curY);
-          line = word + ' ';
-          curY += lineHeight;
-        } else {
-          line = testLine;
+    // Builds the canvas and returns a PNG data URL. Pure — does not touch
+    // any overlay/DOM state, so both the native share-sheet path and the
+    // manual-save fallback path can call this the same way.
+    async function buildReadingCanvasDataUrl() {
+      const movie = AppState.currentMovie || {};
+      const W = 1080, H = 1920;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = '#0A0A0A';
+      ctx.fillRect(0, 0, W, H);
+
+      // Subtle red vignette glow at top
+      const grad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, W);
+      grad.addColorStop(0, 'rgba(255,0,60,0.18)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H * 0.6);
+
+      // Branding
+      ctx.fillStyle = '#FF003C';
+      ctx.font = 'bold 32px Courier New, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('CINEMA ARCANA', W/2, 100);
+      ctx.fillStyle = '#666';
+      ctx.font = '20px Courier New, monospace';
+      ctx.fillText('TAROT FOR MOVIES', W/2, 135);
+
+      // Poster — routed through the Worker's image proxy. TMDB's image
+      // CDN doesn't send CORS headers, so loading it directly with
+      // crossOrigin="anonymous" silently fails and taints/blanks the
+      // canvas. The Worker fetches it server-side (no CORS issue there)
+      // and re-serves it with the right header attached.
+      const posterW = 460, posterH = 690;
+      const posterX = (W - posterW) / 2;
+      const posterY = 170;
+      if (movie.poster_path) {
+        try {
+          const proxiedUrl = `${WORKER_BASE_URL}?img=${encodeURIComponent('/t/p/w500' + movie.poster_path)}`;
+          const posterImg = await loadImageCrossOrigin(proxiedUrl);
+          ctx.save();
+          ctx.shadowColor = 'rgba(255,0,60,0.5)';
+          ctx.shadowBlur = 40;
+          ctx.drawImage(posterImg, posterX, posterY, posterW, posterH);
+          ctx.restore();
+          ctx.strokeStyle = '#FF003C';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(posterX, posterY, posterW, posterH);
+        } catch (e) {
+          console.error("Poster proxy load failed:", e);
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(posterX, posterY, posterW, posterH);
         }
+      } else {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(posterX, posterY, posterW, posterH);
       }
-      ctx.fillText(line.trim(), x, curY);
-      return curY + lineHeight;
+
+      // Title + meta
+      let cursorY = posterY + posterH + 70;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 44px Georgia, serif';
+      ctx.textAlign = 'center';
+      const title = movie.title || 'UNKNOWN';
+      ctx.fillText(title.length > 30 ? title.slice(0, 30) + '…' : title, W/2, cursorY);
+
+      cursorY += 48;
+      const year = movie.release_date ? movie.release_date.split('-')[0] : '';
+      const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || '';
+      ctx.fillStyle = '#FF003C';
+      ctx.font = 'bold 22px Courier New, monospace';
+      ctx.fillText([year, dir].filter(Boolean).join('  •  '), W/2, cursorY);
+
+      // Tarot spread — with actual card art. Same-origin assets, no CORS issue.
+      cursorY += 70;
+      ctx.fillStyle = '#666';
+      ctx.font = '20px Courier New, monospace';
+      ctx.fillText('THE SPREAD', W/2, cursorY);
+
+      cursorY += 40;
+      const cardThumbW = 150, cardThumbH = 225, cardGap = 40;
+      const totalCardsW = (cardThumbW * 3) + (cardGap * 2);
+      let cardX = (W - totalCardsW) / 2;
+      const cardY = cursorY;
+
+      for (let i = 0; i < AppState.drawnSpread.length; i++) {
+        const draw = AppState.drawnSpread[i];
+        const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
+
+        try {
+          const cardImg = await loadImageCrossOrigin(draw.card.image);
+          ctx.save();
+          if (draw.isReversed) {
+            ctx.translate(cardX + cardThumbW/2, cardY + cardThumbH/2);
+            ctx.rotate(Math.PI);
+            ctx.drawImage(cardImg, -cardThumbW/2, -cardThumbH/2, cardThumbW, cardThumbH);
+          } else {
+            ctx.drawImage(cardImg, cardX, cardY, cardThumbW, cardThumbH);
+          }
+          ctx.restore();
+        } catch (e) {
+          console.error("Tarot card image load failed:", draw.card.image, e);
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH);
+        }
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#FF003C';
+        ctx.font = 'bold 16px Courier New, monospace';
+        ctx.fillText(pos, cardX + cardThumbW/2, cardY + cardThumbH + 30);
+
+        cardX += cardThumbW + cardGap;
+      }
+
+      cursorY = cardY + cardThumbH + 60;
+      ctx.textAlign = 'left';
+      AppState.drawnSpread.forEach((draw, i) => {
+        const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
+        ctx.fillStyle = '#FF003C';
+        ctx.font = 'bold 20px Courier New, monospace';
+        ctx.fillText(`[${pos}]`, 120, cursorY);
+        ctx.fillStyle = '#ccc';
+        ctx.font = '20px Courier New, monospace';
+        const cardLabel = `${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
+        ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '…' : cardLabel, 270, cursorY);
+        cursorY += 40;
+      });
+
+      if (AppState.fullInversion) {
+        cursorY += 20;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#FF003C';
+        ctx.font = 'bold 24px Courier New, monospace';
+        ctx.fillText('⚠ FULL INVERSION — RARE OMEN ⚠', W/2, cursorY);
+      }
+
+      // Footer
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#444';
+      ctx.font = '18px Courier New, monospace';
+      ctx.fillText('cinema-arcana · ' + new Date().toLocaleDateString(), W/2, H - 60);
+
+      return canvas.toDataURL('image/png');
     }
 
-    async function generateShareImage() {
+    // Shows the canvas image full-screen for manual press-and-hold saving.
+    // This is the fallback path for browsers that don't support sharing
+    // image files via the native share sheet (mainly desktop browsers).
+    function showShareOverlayFallback(dataUrl, failed) {
       const overlay = document.getElementById('share-image-overlay');
       const loadingEl = document.getElementById('share-image-loading');
       const outputImg = document.getElementById('share-image-output');
       const hintEl = document.getElementById('share-image-hint');
 
       overlay.classList.remove('hidden');
+
+      if (failed) {
+        loadingEl.classList.remove('hidden');
+        loadingEl.innerText = '[ FAILED TO RENDER — TRY AGAIN ]';
+        outputImg.classList.add('hidden');
+        hintEl.classList.add('hidden');
+        return;
+      }
+
+      outputImg.src = dataUrl;
+      outputImg.onload = () => {
+        loadingEl.classList.add('hidden');
+        outputImg.classList.remove('hidden');
+        hintEl.classList.remove('hidden');
+      };
+    }
+
+    // Main entry point: builds the card, then tries the native share sheet
+    // (Messages, AirDrop, Instagram, Save to Photos, etc. all live inside
+    // it) and only falls back to the manual long-press overlay if the
+    // browser can't share image files directly.
+    async function shareReadingImage() {
+      const btn = document.getElementById('share-reading-btn');
+      const originalLabel = btn.innerText;
+      btn.innerText = 'PREPARING...';
+      btn.disabled = true;
+
+      const overlay = document.getElementById('share-image-overlay');
+      const loadingEl = document.getElementById('share-image-loading');
+      overlay.classList.remove('hidden');
       loadingEl.classList.remove('hidden');
-      outputImg.classList.add('hidden');
-      hintEl.classList.add('hidden');
+      loadingEl.innerText = 'Rendering card...';
+      document.getElementById('share-image-output').classList.add('hidden');
+      document.getElementById('share-image-hint').classList.add('hidden');
 
       try {
-        const movie = AppState.currentMovie || {};
-        const W = 1080, H = 1920;
-        const canvas = document.createElement('canvas');
-        canvas.width = W;
-        canvas.height = H;
-        const ctx = canvas.getContext('2d');
+        const dataUrl = await buildReadingCanvasDataUrl();
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], 'cinema-arcana-reading.png', { type: 'image/png' });
 
-        // Background
-        ctx.fillStyle = '#0A0A0A';
-        ctx.fillRect(0, 0, W, H);
-
-        // Subtle red vignette glow at top
-        const grad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, W);
-        grad.addColorStop(0, 'rgba(255,0,60,0.18)');
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, W, H * 0.6);
-
-        // Branding
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 32px Courier New, monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('CINEMA ARCANA', W/2, 100);
-        ctx.fillStyle = '#666';
-        ctx.font = '20px Courier New, monospace';
-        ctx.fillText('TAROT FOR MOVIES', W/2, 135);
-
-        // Poster
-        const posterW = 560, posterH = 840;
-        const posterX = (W - posterW) / 2;
-        const posterY = 180;
-        if (movie.poster_path) {
-          try {
-            const posterImg = await loadImageCrossOrigin(`https://image.tmdb.org/t/p/w500${movie.poster_path}`);
-            ctx.save();
-            ctx.shadowColor = 'rgba(255,0,60,0.5)';
-            ctx.shadowBlur = 40;
-            ctx.drawImage(posterImg, posterX, posterY, posterW, posterH);
-            ctx.restore();
-            ctx.strokeStyle = '#FF003C';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(posterX, posterY, posterW, posterH);
-          } catch (e) {
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(posterX, posterY, posterW, posterH);
-          }
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          overlay.classList.add('hidden'); // let the native share sheet take over
+          playTypewriterDing();
+          await navigator.share({
+            files: [file],
+            title: 'Cinema Arcana',
+            text: 'My tarot-matched film projection.'
+          });
         } else {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(posterX, posterY, posterW, posterH);
+          // Browser can't share files natively — fall back to manual save
+          showShareOverlayFallback(dataUrl, false);
         }
-
-        // Title + meta
-        let cursorY = posterY + posterH + 80;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 46px Georgia, serif';
-        ctx.textAlign = 'center';
-        const title = movie.title || 'UNKNOWN';
-        ctx.fillText(title.length > 30 ? title.slice(0, 30) + '…' : title, W/2, cursorY);
-
-        cursorY += 50;
-        const year = movie.release_date ? movie.release_date.split('-')[0] : '';
-        const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || '';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 24px Courier New, monospace';
-        ctx.fillText([year, dir].filter(Boolean).join('  •  '), W/2, cursorY);
-
-        // Tarot spread
-        cursorY += 90;
-        ctx.fillStyle = '#666';
-        ctx.font = '20px Courier New, monospace';
-        ctx.fillText('THE SPREAD', W/2, cursorY);
-
-        cursorY += 50;
-        ctx.textAlign = 'left';
-        AppState.drawnSpread.forEach((draw, i) => {
-          const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
-          ctx.fillStyle = '#FF003C';
-          ctx.font = 'bold 22px Courier New, monospace';
-          ctx.fillText(`[${pos}]`, 120, cursorY);
-          ctx.fillStyle = '#ccc';
-          ctx.font = '22px Courier New, monospace';
-          const cardLabel = `${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
-          ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '…' : cardLabel, 280, cursorY);
-          cursorY += 45;
-        });
-
-        if (AppState.fullInversion) {
-          cursorY += 20;
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#FF003C';
-          ctx.font = 'bold 24px Courier New, monospace';
-          ctx.fillText('⚠ FULL INVERSION — RARE OMEN ⚠', W/2, cursorY);
-        }
-
-        // Footer
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#444';
-        ctx.font = '18px Courier New, monospace';
-        ctx.fillText('cinema-arcana · ' + new Date().toLocaleDateString(), W/2, H - 60);
-
-        const dataUrl = canvas.toDataURL('image/png');
-        outputImg.src = dataUrl;
-        outputImg.onload = () => {
-          loadingEl.classList.add('hidden');
-          outputImg.classList.remove('hidden');
-          hintEl.classList.remove('hidden');
-        };
-        playTypewriterDing();
-
       } catch (err) {
-        console.error('Share image generation failed:', err);
-        loadingEl.innerText = '[ FAILED TO RENDER — TRY COPY RECEIPT INSTEAD ]';
+        if (err.name === 'AbortError') {
+          // User backed out of the share sheet — not a real failure, just close quietly
+          overlay.classList.add('hidden');
+        } else {
+          console.error('Share reading failed:', err);
+          showShareOverlayFallback(null, true);
+        }
+      } finally {
+        btn.innerText = originalLabel;
+        btn.disabled = false;
       }
     }
 
