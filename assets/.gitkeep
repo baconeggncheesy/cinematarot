@@ -1,0 +1,3 @@
+# Keep the assets directory
+
+This file ensures the `assets/` directory is tracked in git.
