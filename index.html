@@ -313,7 +313,7 @@
         <div class="text-[9px] font-bold text-neonRed text-center mb-6 tracking-widest uppercase">Draw 3 Cards: <span id="draw-count">0/3</span></div>
         
         <!-- Cover Flow Wheel Container -->
-        <div class="relative w-full h-[260px] overflow-visible select-none touch-pan-y" id="coverflow-container">
+        <div class="relative w-full h-[260px] overflow-visible select-none touch-none" id="coverflow-container">
             <!-- Cards injected here via JS -->
         </div>
         
@@ -1136,8 +1136,19 @@
     }
 
     // --- COVER FLOW WHEEL LOGIC (INFINITE LOOP) ---
-    let wheelIndex = 0;
+    let wheelIndex = 0; // fractional during drag/inertia, always settles to an integer when idle
     let wheelCards = [];
+
+    const WHEEL_CARD_SPACING = 65; // must match the translateX(offset*65) math below
+    const WHEEL_FRICTION = 0.0035; // higher = stops sooner, lower = keeps spinning longer after release
+
+    let wheelDragActive = false;
+    let wheelDragStartIndex = 0;
+    let wheelTouchStartX = 0;
+    let wheelPrevMoveX = 0;
+    let wheelPrevMoveTime = 0;
+    let wheelInertiaRAF = null;
+    let wheelInertiaVelocity = 0; // in "card index units" per ms
 
     async function goToTarotGame() {
       playTypewriterDing();
@@ -1161,7 +1172,7 @@
 
         wheelCards.forEach((card, i) => {
             const el = document.createElement('div');
-            el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] transition-all duration-300 tarot-card-container';
+            el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] tarot-card-container';
             el.id = `wheel-card-${i}`;
             
             // Click a card to centre it; click the centred card to draw it.
@@ -1181,13 +1192,53 @@
             container.appendChild(el);
         });
 
-        // Add touch/swipe support
-        let startX = 0;
-        container.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
+        // Real physics-based drag + inertia:
+        // - touchstart cancels any in-progress spin and starts 1:1 finger tracking
+        // - touchmove moves the wheel exactly with the finger, no animation lag
+        // - touchend hands off to an inertia loop using the most recent release
+        //   velocity, which decays naturally over time — a hard flick keeps
+        //   spinning and gradually slows down; a soft drag barely moves at all
+        //   once released, since there's little velocity to carry it further.
+        container.addEventListener('touchstart', e => {
+            cancelWheelInertia();
+            wheelDragActive = true;
+            wheelDragStartIndex = wheelIndex;
+            wheelTouchStartX = e.touches[0].clientX;
+            wheelPrevMoveX = wheelTouchStartX;
+            wheelPrevMoveTime = performance.now();
+            setWheelCardsTransition('none'); // instant tracking while dragging, no CSS animation lag
+        }, {passive: true});
+
+        // Belt-and-suspenders alongside the touch-none CSS class: actively
+        // blocks the page from scrolling during the gesture, since
+        // touch-action isn't 100% consistently honored mid-swipe on every
+        // browser. {passive: false} is required for preventDefault to work.
+        container.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!wheelDragActive) return;
+            const currentX = e.touches[0].clientX;
+            const now = performance.now();
+            const deltaFromStart = currentX - wheelTouchStartX;
+            wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING);
+            updateWheel();
+            wheelPrevMoveX = currentX;
+            wheelPrevMoveTime = now;
+        }, {passive: false});
+
         container.addEventListener('touchend', e => {
-            const diffX = e.changedTouches[0].clientX - startX;
-            if (diffX > 40) spinWheel(-1);
-            if (diffX < -40) spinWheel(1);
+            if (!wheelDragActive) return;
+            wheelDragActive = false;
+
+            const endX = e.changedTouches[0].clientX;
+            const endTime = performance.now();
+            // Velocity is computed from only the last bit of movement (not
+            // the whole gesture's average), since that's what actually
+            // reflects how fast the finger was moving at the moment of release.
+            const dt = Math.max(1, endTime - wheelPrevMoveTime);
+            const pxVelocity = (endX - wheelPrevMoveX) / dt; // px per ms
+            wheelInertiaVelocity = -(pxVelocity / WHEEL_CARD_SPACING); // index-units/ms, sign matches drag direction
+
+            runWheelInertia();
         }, {passive: true});
 
         updateWheel();
@@ -1203,13 +1254,71 @@
         return raw;
     }
 
+    function setWheelCardsTransition(transitionStr) {
+        wheelCards.forEach((card, i) => {
+            const el = document.getElementById(`wheel-card-${i}`);
+            if (el) el.style.transition = transitionStr;
+        });
+    }
+
+    function cancelWheelInertia() {
+        if (wheelInertiaRAF !== null) {
+            cancelAnimationFrame(wheelInertiaRAF);
+            wheelInertiaRAF = null;
+        }
+    }
+
+    // Runs the post-release momentum animation: velocity decays
+    // exponentially each frame (frame-rate independent, using real elapsed
+    // time rather than assuming 60fps) until it's negligible, then the
+    // wheel settles into the nearest card with one short eased snap.
+    function runWheelInertia() {
+        let lastTime = performance.now();
+
+        function frame(now) {
+            const dt = now - lastTime;
+            lastTime = now;
+
+            wheelInertiaVelocity *= Math.exp(-WHEEL_FRICTION * dt);
+            wheelIndex += wheelInertiaVelocity * dt;
+            updateWheel();
+
+            if (Math.abs(wheelInertiaVelocity) > 0.00025) {
+                wheelInertiaRAF = requestAnimationFrame(frame);
+            } else {
+                settleWheelToNearestCard();
+            }
+        }
+
+        wheelInertiaRAF = requestAnimationFrame(frame);
+    }
+
+    function settleWheelToNearestCard() {
+        wheelInertiaRAF = null;
+        const target = Math.round(wheelIndex);
+        setWheelCardsTransition('transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms cubic-bezier(0.16, 1, 0.3, 1)');
+        wheelIndex = target;
+        updateWheel();
+        const tone = ((wheelIndex % 12) + 12) % 12;
+        playSynthBeep(320 + tone * 12, 0.02, 'triangle');
+    }
+
+    // Used by the << / >> buttons and tap-to-center: a single discrete
+    // step or jump, animated with a short eased transition rather than
+    // the instant/physics-driven path used during an actual touch drag.
     function spinTo(index) {
+        cancelWheelInertia();
+        const steps = Math.abs(wheelOffset(index)) || 1;
+        const duration = Math.min(900, Math.max(240, 240 + steps * 45));
+        setWheelCardsTransition(`transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1), opacity ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`);
         wheelIndex += wheelOffset(index);
         updateWheel();
         playSynthBeep(400, 0.02, 'triangle');
     }
 
     function spinWheel(dir) {
+        cancelWheelInertia();
+        setWheelCardsTransition('transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms cubic-bezier(0.16, 1, 0.3, 1)');
         wheelIndex += dir; // unbounded: the wheel loops forever in both directions
         updateWheel();
         const tone = ((wheelIndex % 12) + 12) % 12;
@@ -1222,10 +1331,10 @@
             const offset = wheelOffset(i);
             const absOffset = Math.abs(offset);
 
-            let translateX = offset * 65; 
+            let translateX = offset * WHEEL_CARD_SPACING;
             let scale = Math.max(0.5, 1 - (absOffset * 0.15));
-            let rotateY = offset === 0 ? 0 : (offset > 0 ? -45 : 45);
-            let zIndex = 50 - absOffset;
+            let rotateY = Math.abs(offset) < 0.01 ? 0 : (offset > 0 ? -45 : 45);
+            let zIndex = Math.round(50 - absOffset);
             let opacity = absOffset > 3 ? 0 : 1;
 
             el.style.transform = `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1000px) rotateY(${rotateY}deg)`;
@@ -1237,6 +1346,9 @@
 
     async function drawCenteredCard() {
         if (AppState.drawnSpread.length >= 3) return;
+
+        cancelWheelInertia(); // grabbing a card stops any residual spin
+        wheelIndex = Math.round(wheelIndex); // ensure a clean array index even if grabbed mid-spin
 
         const N = wheelCards.length;
         const realIndex = ((wheelIndex % N) + N) % N;
