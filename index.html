@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-black select-none">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>THE BLIND CUT — Cyber-Script Calibrator</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"Courier Prime"', 'Courier', 'monospace'],
+            cinzel: ['Cinzel', 'serif'],
+          },
+          colors: {
+            neonRed: '#FF003C',
+            darkGrey: '#0A0A0A',
+          },
+          boxShadow: {
+            'neon': '0 0 20px rgba(255, 0, 60, 0.45)',
+            'neon-sm': '0 0 10px rgba(255, 0, 60, 0.3)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #FF003C; border-radius: 0px; }
+    body { font-size: 14px; line-height: 1.4; transition: filter 0.3s ease, transform 0.3s ease; }
+    
+    .crt::after {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 3px, 6px 100%;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+    
+    .scene-heading { font-weight: bold; text-transform: uppercase; margin-bottom: 1rem; color: #fff; border-bottom: 1px dashed #333; padding-bottom: 0.25rem; }
+    .action { margin-bottom: 1.5rem; text-align: left; color: #a3a3a3; }
+    .character { text-align: center; text-transform: uppercase; width: 100%; margin-top: 1rem; margin-bottom: 0.2rem; color: #FF003C; font-weight: bold; }
+    .parenthetical { text-align: center; width: 100%; font-style: italic; margin-bottom: 0.2rem; color: #737373; }
+    .dialogue { width: 90%; margin: 0 auto 1.5rem auto; text-align: left; padding-left: 5%; color: #e5e5e5; }
+    .transition { text-align: right; text-transform: uppercase; font-weight: bold; margin-top: 1.5rem; margin-bottom: 1rem; color: #FF003C; }
+    .cursor-blink::after { content: "█"; animation: blink 0.8s infinite; color: #FF003C; margin-left: 4px; }
+    @keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+    
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      height: 24px;
+      outline: none;
+      position: relative;
+      width: 100%;
+    }
+    input[type="range"]::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #444;
+      transform: translateY(-50%);
+      z-index: -1;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 24px;
+      background: #FF003C;
+      cursor: pointer;
+      border: 1px solid #FF003C;
+      border-radius: 0px;
+      box-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:active {
+      background: #fff;
+      border-color: #fff;
+      transform: scaleX(1.3);
+      box-shadow: 0 0 15px #fff;
+    }
+    
+    .script-btn {
+      display: inline-block;
+      border: 1px solid #333;
+      background: #0A0A0A;
+      color: #a3a3a3;
+      padding: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .script-btn:hover { border-color: #FF003C; color: #fff; }
+    .script-btn.active {
+      border-color: #FF003C;
+      font-weight: bold;
+      background: rgba(255,0,60,0.1);
+      color: #FF003C;
+    }
+    .script-btn-primary {
+      border: 1px solid #FF003C;
+      background: #0A0A0A;
+      color: #fff;
+      padding: 0.75rem 1rem;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+      transition: all 0.2s;
+      box-shadow: inset 0 0 0 0 #FF003C;
+    }
+    .script-btn-primary:hover { box-shadow: inset 0 0 10px 0 rgba(255,0,60,0.4); }
+    .script-btn-primary:active { background: #FF003C; color: #000; }
+    
+    /* Cover Flow Styles */
+    .tarot-card-container { perspective: 1200px; transform-style: preserve-3d; }
+    .tarot-card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+      cursor: pointer;
+    }
+    .tarot-card.flipped { transform: rotateY(180deg); }
+    .tarot-card.flipped.reversed-card { transform: rotateY(180deg) rotateZ(180deg); }
+    .tarot-card-front, .tarot-card-back {
+      position: absolute;
+      backface-visibility: hidden;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0A0A0A;
+    }
+    .tarot-card-front { transform: rotateY(180deg); }
+    .spread-indicator { position: absolute; bottom: -20px; left: 0; width: 100%; text-align: center; font-size: 8px; color: #FF003C; font-weight: bold; opacity: 0; transition: opacity 0.5s; }
+    .flipped .spread-indicator { opacity: 1; transform: rotateZ(0deg) !important; }
+    .flipped.reversed-card .spread-indicator { transform: rotateX(180deg) rotateZ(180deg); bottom: auto; top: -20px; }
+
+    /* CRT Sensory Glitches */
+    .glitch-tear { animation: glitch-tear-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+    .glitch-shake { animation: glitch-shake-anim 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+    .glitch-vertigo { animation: glitch-vertigo-anim 0.5s ease-in-out both; }
+    
+    @keyframes glitch-tear-anim { 0% { transform: skewX(0deg); filter: invert(0); } 20% { transform: skewX(-20deg); filter: invert(1); } 40% { transform: skewX(10deg); filter: invert(0); } 60% { transform: skewX(-5deg); filter: drop-shadow(5px 0 0 red); } 100% { transform: skewX(0deg); filter: none; } }
+    @keyframes glitch-shake-anim { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
+    @keyframes glitch-vertigo-anim { 0% { filter: blur(0) contrast(1); transform: scale(1); } 50% { filter: blur(10px) contrast(2) hue-rotate(90deg); transform: scale(1.05); } 100% { filter: blur(0) contrast(1); transform: scale(1); } }
+    
+    .glitch-text { position: relative; color: #FF003C; }
+    .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; }
+    .glitch-text::before { left: 2px; text-shadow: -1px 0 #fff; clip: rect(44px, 450px, 56px, 0); animation: glitch-anim 5s infinite linear alternate-reverse; }
+    .glitch-text::after { left: -2px; text-shadow: -1px 0 #FF003C; clip: rect(85px, 450px, 140px, 0); animation: glitch-anim2 5s infinite linear alternate-reverse; }
+    @keyframes glitch-anim { 0% { clip: rect(15px, 9999px, 66px, 0); } 100% { clip: rect(34px, 9999px, 55px, 0); } }
+    @keyframes glitch-anim2 { 0% { clip: rect(70px, 9999px, 105px, 0); } 100% { clip: rect(12px, 9999px, 85px, 0); } }
+  </style>
+</head>
+<body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
+  <div class="relative h-full w-full max-w-lg mx-auto bg-black flex flex-col justify-between pt-4 pb-6 px-6 border-x border-neutral-900 overflow-y-auto">
+    
+    <header class="w-full flex items-center justify-between pb-4 mb-4 border-b border-neutral-900">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-neonRed animate-pulse shadow-neon-sm"></span>
+        <span class="font-bold text-[10px] tracking-widest text-neutral-500">THE BLIND CUT</span>
+      </div>
+      <div class="flex items-center space-x-4 text-[10px] font-bold text-neutral-500">
+        <button onclick="toggleAudio()" id="audio-toggle-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
+          [AUDIO: ON]
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 relative pb-6">
+      <!-- SCREEN 0: INTRO -->
+      <section id="screen-intro" class="animate-fade-in flex flex-col justify-center min-h-[60vh]">
+        <div class="text-center space-y-4 mb-12">
+          <h1 class="font-cinzel text-4xl sm:text-5xl font-bold uppercase tracking-widest text-white border-y border-neutral-800 py-6 my-8">
+            The Blind Cut
+          </h1>
+          <p class="text-xs text-neutral-500">A Subconscious Matchmaking Interface</p>
+          <p class="text-[10px] uppercase mt-8 text-neutral-600">Cyber-Script Edition — <span id="current-date"></span></p>
+        </div>
+        <div class="action text-xs leading-relaxed text-center px-4">
+          An internet-powered diagnostic scours the entire historic landscape of cinema to map your immediate subconscious vibe.<br><br>
+          Zero setup required. Fully client-contained vector search.
+        </div>
+        <div class="character text-xs mt-8">THE SYSTEM</div>
+        <div class="dialogue cursor-blink text-xs text-center mx-auto" id="intro-dialogue"></div>
+        <div class="mt-8">
+          <button onclick="startCalibrator()" class="script-btn-primary uppercase text-xs tracking-widest">
+            [ INITIATE DIAGNOSTIC ]
+          </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 1: PARAMETERS -->
+      <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
+        <div class="scene-heading text-xs">INT. PRE-FLIGHT CALIBRATION - CONTINUOUS</div>
+        <div class="action text-xs">The machine demands structural boundaries before querying the live global database.</div>
+        <div class="character text-xs">THE SYSTEM</div>
+        <div class="dialogue cursor-blink text-xs" id="param-dialogue"></div>
+        <div class="space-y-5 mt-4">
+          <div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">1. Cultural Origin</div>
+            <div class="grid grid-cols-3 gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="setParameter('language', 'any')" id="lang-any" class="script-btn active">GLOBAL</button>
+              <button onclick="setParameter('language', 'english')" id="lang-english" class="script-btn">ENGLISH</button>
+              <button onclick="setParameter('language', 'foreign')" id="lang-foreign" class="script-btn">FOREIGN</button>
+            </div>
+          </div>
+          <div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">2. Chronological Epoch</div>
+            <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="setParameter('era', 'any')" id="era-any" class="script-btn active flex justify-between"><span>ANY ERA</span><span class="text-neutral-600">ALL</span></button>
+              <button onclick="setParameter('era', 'golden')" id="era-golden" class="script-btn flex justify-between"><span>GOLDEN</span><span class="text-neutral-600">&lt;1970</span></button>
+              <button onclick="setParameter('era', 'neon')" id="era-neon" class="script-btn flex justify-between"><span>NEON</span><span class="text-neutral-600">70-99</span></button>
+              <button onclick="setParameter('era', 'digital')" id="era-digital" class="script-btn flex justify-between"><span>DIGITAL</span><span class="text-neutral-600">2000+</span></button>
+            </div>
+          </div>
+          <div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Cognitive Depth</div>
+            <div class="flex flex-col gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="setParameter('depth', 'casual')" id="depth-casual" class="script-btn text-left p-3">[ CASUAL ] - Accessible pacing, universal narratives.</button>
+              <button onclick="setParameter('depth', 'cinephile')" id="depth-cinephile" class="script-btn active text-left p-3">[ CINEPHILE ] - Art-house focus, deep film grammar.</button>
+            </div>
+          </div>
+        </div>
+        <div class="transition text-[10px]">CUT TO:</div>
+        <div class="mt-2">
+          <button onclick="goToGame1()" class="script-btn-primary uppercase text-xs tracking-widest">[ LOCK LENS & CONTINUE ]</button>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: SLIDERS & VIBE TRANSLATOR -->
+      <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
+        <div class="scene-heading text-xs">INT. THE CORE SPECTRUM - GAME 01</div>
+        <div class="action text-xs">Five mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
+        <div class="character text-xs">THE SYSTEM</div>
+        <div class="parenthetical text-xs">(patiently)</div>
+        <div class="dialogue cursor-blink text-xs" id="slider-dialogue"></div>
+        <div class="space-y-4 mt-6 pl-3 border-l border-neutral-800">
+          <div class="space-y-1">
+            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>COZY</span><span id="val-warmth" class="text-neonRed">50</span><span>DREAD</span></div>
+            <input type="range" id="slider-warmth" min="1" max="100" value="50" oninput="updateSliderVal('warmth')">
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>MEDITATIVE</span><span id="val-tempo" class="text-neonRed">50</span><span>KINETIC</span></div>
+            <input type="range" id="slider-tempo" min="1" max="100" value="50" oninput="updateSliderVal('tempo')">
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>GROUNDED</span><span id="val-reality" class="text-neonRed">50</span><span>SURREAL</span></div>
+            <input type="range" id="slider-reality" min="1" max="100" value="50" oninput="updateSliderVal('reality')">
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>MAINSTREAM</span><span id="val-obscurity" class="text-neonRed">50</span><span>OBSCURE</span></div>
+            <input type="range" id="slider-obscurity" min="1" max="100" value="50" oninput="updateSliderVal('obscurity')">
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>BLEAK / NIHILISTIC</span><span id="val-humor" class="text-neonRed">50</span><span>WITTY / FUNNY</span></div>
+            <input type="range" id="slider-humor" min="1" max="100" value="50" oninput="updateSliderVal('humor')">
+          </div>
+        </div>
+
+        <!-- DIRECT NEURAL LINK (VIBE TRANSLATOR via CLOUDFLARE WORKER) -->
+        <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
+          <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Describe Your Headspace</div>
+          <div class="flex space-x-2">
+            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A rainy neon city at 3 AM...">
+            <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
+          </div>
+          <div id="vibe-status" class="text-[9px] text-neutral-500 mt-2 uppercase h-3"></div>
+        </div>
+
+        <div class="transition text-[10px] mt-4">CUT TO:</div>
+        <div class="mt-2">
+          <button onclick="goToTarotGame()" class="script-btn-primary uppercase text-xs tracking-widest">[ SET MARGINS & DRAW DECK ]</button>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: CINEMA TAROT (3D COVER FLOW SPREAD) -->
+      <section id="screen-game3" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
+        <div class="scene-heading text-xs">INT. THE DIRECTOR'S DESK - GAME 02</div>
+        <div class="action text-xs mb-2">The Cinematic Arcana hovers above the terminal. Swipe the wheel. Let intuition guide the draw.</div>
+        <div class="character text-xs mt-0">THE SYSTEM</div>
+        <div class="parenthetical text-xs">(whispering)</div>
+        <div class="dialogue cursor-blink text-xs min-h-[40px]" id="tarot-dialogue"></div>
+        
+        <div class="text-[9px] font-bold text-neonRed text-center mb-6 tracking-widest uppercase">Draw 3 Cards: <span id="draw-count">0/3</span></div>
+        
+        <!-- Cover Flow Wheel Container -->
+        <div class="relative w-full h-[260px] overflow-visible select-none touch-pan-y" id="coverflow-container">
+            <!-- Cards injected here via JS -->
+        </div>
+        
+        <div class="flex justify-between items-center w-full max-w-[250px] mx-auto mt-6">
+            <button onclick="spinWheel(-1)" class="script-btn border-none hover:bg-transparent text-neutral-400 hover:text-neonRed font-bold px-2 py-4">&lt;&lt;</button>
+            <button onclick="drawCenteredCard()" class="script-btn-primary mx-2 px-8 py-3 w-auto tracking-widest rounded-sm text-xs">DRAW</button>
+            <button onclick="spinWheel(1)" class="script-btn border-none hover:bg-transparent text-neutral-400 hover:text-neonRed font-bold px-2 py-4">&gt;&gt;</button>
+        </div>
+        
+        <div class="mt-6 flex justify-center h-10">
+          <button id="tarot-proceed-btn" onclick="goToSpreadReview()" class="hidden script-btn-primary uppercase text-xs tracking-widest border-neonRed shadow-[inset_0_0_10px_0_rgba(255,0,60,0.4)] text-white hover:bg-neonRed hover:text-black transition-all">
+            [ REVIEW THE SPREAD ]
+          </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 3.5: SPREAD REVIEW -->
+      <section id="screen-spread-review" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh] py-4">
+        <div class="scene-heading text-xs">INT. THE ANALYSIS TABLE - CONTINUOUS</div>
+        <div class="action text-xs mb-6">The three drawn cards dictate the exact trajectory of the projection. Read the margins carefully.</div>
+        
+        <div id="review-cards-container" class="space-y-5 flex-1 overflow-y-auto pr-2 pb-6">
+            <!-- Injected via JS -->
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-neutral-900 sticky bottom-0 bg-black pb-2">
+            <button onclick="initiateSubconsciousMatching()" class="script-btn-primary uppercase text-xs tracking-widest border-green-500 text-green-400 shadow-[inset_0_0_10px_0_rgba(34,197,94,0.3)] hover:bg-green-500 hover:text-black transition-all">
+                [ ENGAGE ALGORITHM ]
+            </button>
+        </div>
+      </section>
+
+      <!-- SCREEN 4: LOADING -->
+      <section id="screen-loading" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
+        <div class="scene-heading text-xs">MONTAGE: SYNTHESIZING PSYCHE</div>
+        <div class="action text-xs leading-loose">
+          -- The telemetrics lock into place.<br>
+          -- The Tarot vectors shift the margins.<br>
+          -- The global archives are queried.
+        </div>
+        <div class="character text-xs">THE SYSTEM</div>
+        <div class="parenthetical text-xs">(processing)</div>
+        <div class="dialogue text-xs">
+          <span id="loading-pct" class="font-bold text-2xl text-neonRed">0%</span><br><br>
+          <span class="cursor-blink text-neutral-400" id="loading-terminal">Mapping vectors...</span>
+        </div>
+      </section>
+
+      <!-- SCREEN 5: RESULT / PROJECTION -->
+      <section id="screen-result" class="hidden flex flex-col space-y-6 relative animate-fade-in font-sans">
+        <div id="ambient-bg" class="absolute -inset-x-6 -inset-y-8 bg-cover bg-center opacity-25 filter blur-3xl mix-blend-color-dodge transition-all duration-1000 z-0"></div>
+        <div class="relative z-10 space-y-4">
+          <div class="text-center space-y-1">
+            <span class="font-mono text-[9px] tracking-[0.3em] text-neonRed uppercase font-bold">PROJECTION SECURED</span>
+            <p id="vibe-tagline" class="font-serif text-sm italic text-neutral-300 px-4 mt-1">"Loading..."</p>
+          </div>
+          <div class="flex flex-wrap justify-center gap-2 mb-4" id="vibe-words-container"></div>
+          
+          <div class="bg-darkGrey/95 border border-neutral-800 p-3 shadow-neon-sm relative flex flex-row space-x-4 items-center">
+            <div class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg">
+              <img id="movie-poster" src="" alt="Cinema Poster" class="w-full h-full object-cover opacity-0 transition-opacity duration-1000" onerror="this.style.opacity='0'; document.getElementById('poster-fallback-text').style.display='flex';">
+              <div id="poster-fallback-text" class="absolute inset-0 hidden items-center justify-center text-center p-2 font-cinzel text-[8px] text-neutral-400 select-none">IMAGE REEL MISSING</div>
+            </div>
+            <div class="flex-1 flex flex-col justify-center font-sans space-y-2">
+              <div>
+                <h2 id="movie-title" class="font-cinzel text-lg sm:text-xl font-bold uppercase leading-tight mb-1 text-white">TITLE</h2>
+                <div class="text-[9px] font-bold text-neonRed tracking-widest font-mono">
+                  <span id="movie-year">YEAR</span> • <span id="movie-director">DIR</span> • <span id="movie-runtime">MIN</span>
+                </div>
+              </div>
+              <div class="border-l border-neutral-700 pl-2">
+                <p class="text-[11px] text-neutral-400 italic font-sans leading-snug" id="movie-plot">"One sentence plot goes here..."</p>
+              </div>
+              <div class="pt-1">
+                <div id="providers-container" class="flex flex-wrap gap-1 font-mono"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-black border border-neutral-900 p-4 font-mono text-xs leading-relaxed text-neutral-300 relative">
+            <div class="absolute top-2 right-2 font-mono text-[8px] text-neonRed font-bold border border-neonRed px-1 rounded-sm">AI ALIGNMENT MATRIX</div>
+            <div id="custom-analysis" class="pt-4 text-justify text-neutral-200 space-y-2">Analyzing...</div>
+          </div>
+          
+          <div class="bg-darkGrey/90 border border-dashed border-neutral-700 p-4 space-y-3 relative font-mono">
+            <span class="font-mono text-[9px] tracking-wider text-neutral-400 block uppercase font-bold">Script Notes (Adjustments):</span>
+            <div class="flex space-x-2 pt-1">
+              <button onclick="markMovieAsSeen()" class="script-btn flex-1 text-center text-[10px] tracking-widest text-green-500 hover:border-green-500 hover:text-green-400">I'VE SEEN THIS</button>
+              <button onclick="rerollCurrentSpectrum()" class="script-btn flex-1 text-center font-bold text-[10px] tracking-widest !text-neonRed hover:!border-neonRed hover:!text-neonRed">REROLL SCENE</button>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3 pt-2 font-mono">
+            <button onclick="shareProjection()" class="script-btn-primary uppercase text-xs tracking-widest">Copy Receipt</button>
+            <button onclick="recalibrate()" class="script-btn uppercase text-xs text-center tracking-widest border border-neutral-600 hover:border-white">Start Over</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 6: ERROR -->
+      <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
+        <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="WRITER'S BLOCK">WRITER'S BLOCK</div>
+        <div class="action text-center mt-2 text-xs leading-relaxed max-w-xs mx-auto" id="error-message">
+          The machine stares at a blank page. The live archive returned nothing it can stand behind, and no fallback script exists.<br><br>[ERR_NO_SCRIPT]
+        </div>
+        <div class="mt-8 space-y-3 max-w-xs mx-auto w-full">
+          <button onclick="retryProjection()" class="script-btn-primary uppercase text-xs tracking-widest border-neonRed text-neonRed shadow-[inset_0_0_10px_0_rgba(255,0,60,0.4)]">Retry Live Uplink</button>
+          <button onclick="recalibrate()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Action: Restart</button>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
+      <div>V 9.0.0 (LIVE-ONLY)</div>
+      <div class="flex items-center space-x-2">
+        <span>SCENES:</span>
+        <div id="retro-counter" class="flex space-x-0.5">
+          <span>0</span><span>0</span><span>0</span><span>0</span><span>0</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="notification-banner" class="fixed top-6 left-1/2 -translate-x-1/2 bg-neonRed text-white font-bold text-xs px-6 py-2 uppercase tracking-widest shadow-neon opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+    RECEIPT COPIED TO CLIPBOARD
+  </div>
+
+  <script>
+    const TMDB_API_KEY = "c2015ecda624b83d2e3d19ead77c0a8c";
+    
+    // --- APP STATE & 22-CARD REGISTRY ---
+    const AppState = {
+      audioEnabled: true,
+      currentScreen: 'intro',
+      language: 'any',
+      era: 'any',
+      depth: 'cinephile',
+      sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
+      seenMovies: [],
+      rejectedMovies: [],
+      currentMovie: null,
+      drawnSpread: [], // Array of up to 3 chosen cards
+      
+      tarotDeck: [
+        { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpg', audio: 'freq-tramp', glitch: 'glitch-shake',
+          upright: { shift: { w: -20, t: 25, r: 10, h: 40 }, hook: "The path is narrow, the script unwritten. Step into the void." },
+          reversed: { shift: { w: 20, t: -25, r: -10, h: -40 }, hook: "The act is failing. The precipice crumbles beneath your feet." } },
+        { id: 'auteur', name: 'The Auteur (Magician)', num: 'I', image: 'assets/1-auteur.jpg', audio: 'freq-harmonic', glitch: 'glitch-tear',
+          upright: { shift: { w: 10, t: 10, r: 25, h: 0 }, hook: "Focused manifestation. You demand absolute control of the frame." },
+          reversed: { shift: { w: -10, t: -10, r: -25, h: 0 }, hook: "The creator is blocked. The narrative spirals out of control." } },
+        { id: 'oracle', name: 'The Oracle (Priestess)', num: 'II', image: 'assets/2-oracle.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+          upright: { shift: { w: 20, t: -15, r: 40, h: -10 }, hook: "The code unravels. You see the hidden architecture of reality." },
+          reversed: { shift: { w: -20, t: 15, r: -40, h: 10 }, hook: "Ignorance is bliss. The subconscious refuses to be read." } },
+        { id: 'matriarch', name: 'The Matriarch (Empress)', num: 'III', image: 'assets/3-matriarch.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+          upright: { shift: { w: -25, t: 25, r: 0, h: -10 }, hook: "The maternal instinct weaponized. The ultimate protector in a hostile void." },
+          reversed: { shift: { w: 25, t: -25, r: 0, h: 10 }, hook: "The hive closes in. The instinct to protect has mutated." } },
+        { id: 'don', name: 'The Don (Emperor)', num: 'IV', image: 'assets/4-don.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+          upright: { shift: { w: 30, t: -10, r: -20, h: -20 }, hook: "Power cast in shadow. Structure enforced by heavy consequence." },
+          reversed: { shift: { w: -30, t: 10, r: 20, h: 20 }, hook: "The empire rots from within. Authority crumbles to chaos." } },
+        { id: 'monolith', name: 'The Monolith (Hierophant)', num: 'V', image: 'assets/5-monolith.jpg', audio: 'freq-bell', glitch: 'glitch-vertigo',
+          upright: { shift: { w: 40, t: -30, r: 40, h: -10 }, hook: "Evolution requires intervention. Touch the slab and ascend." },
+          reversed: { shift: { w: -40, t: 30, r: -40, h: 10 }, hook: "The system is rigid. Trapped in the cold vacuum of order." } },
+        { id: 'noir', name: 'The Lovers', num: 'VI', image: 'assets/6-noir.jpg', audio: 'freq-harmonic', glitch: 'glitch-tear',
+          upright: { shift: { w: -20, t: -10, r: -10, h: -10 }, hook: "A fatal attraction. The script says leave, but the frame pulls you back." },
+          reversed: { shift: { w: 20, t: 10, r: 10, h: 10 }, hook: "The fog is too thick. A betrayal masked by the tarmac's shadow." } },
+        { id: 'delorean', name: 'Time Machine (Chariot)', num: 'VII', image: 'assets/7-delorean.jpg', audio: 'freq-static', glitch: 'glitch-shake',
+          upright: { shift: { w: -20, t: 35, r: 20, h: 20 }, hook: "Momentum breaks the continuum. Escape is purely kinetic." },
+          reversed: { shift: { w: 20, t: -35, r: -20, h: -20 }, hook: "The timeline collapses. Trapped in an inescapable loop." } },
+        { id: 'finalgirl', name: 'The Final Girl (Strength)', num: 'VIII', image: 'assets/8-finalgirl.jpg', audio: 'freq-static', glitch: 'glitch-tear',
+          upright: { shift: { w: 20, t: 25, r: -10, h: -20 }, hook: "Endurance through terror. Outlasting the monster through sheer will." },
+          reversed: { shift: { w: -20, t: -25, r: 10, h: 20 }, hook: "The adrenaline fades. The shadow overtakes the survivor." } },
+        { id: 'driver', name: 'The Driver (Hermit)', num: 'IX', image: 'assets/9-driver.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+          upright: { shift: { w: 40, t: -10, r: -10, h: -30 }, hook: "Navigating the moral decay alone. The city is a rearview mirror." },
+          reversed: { shift: { w: -40, t: 10, r: 10, h: 30 }, hook: "Lost in the grid. Isolation turns to violent obsession." } },
+        { id: 'reel', name: 'The Reel of Fortune', num: 'X', image: 'assets/10-reel.jpg', audio: 'freq-tramp', glitch: 'glitch-tear',
+          upright: { shift: { w: 0, t: 20, r: 15, h: 10 }, hook: "The celluloid spins. A fateful turning point in the narrative." },
+          reversed: { shift: { w: 0, t: -20, r: -15, h: -10 }, hook: "The reel jams. Destiny repeats itself in a broken loop." } },
+        { id: 'standoff', name: 'The Man with No Name', num: 'XI', image: 'assets/11-standoff.jpg', audio: 'freq-bell', glitch: 'glitch-shake',
+          upright: { shift: { w: 10, t: -20, r: -20, h: -10 }, hook: "Fate balanced on a single bullet. The high-noon verdict." },
+          reversed: { shift: { w: -10, t: 20, r: 20, h: 10 }, hook: "The law is broken. Cause and effect bleed into chaos." } },
+        { id: 'falling', name: 'The Burned Man', num: 'XII', image: 'assets/12-falling.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+          upright: { shift: { w: 15, t: -30, r: 25, h: -15 }, hook: "Surrender to the fall. Gravity distorts the perspective." },
+          reversed: { shift: { w: -15, t: 30, r: -25, h: 15 }, hook: "Unable to wake up. The dream collapses inward." } },
+        { id: 'chess', name: 'Death', num: 'XIII', image: 'assets/13-chess.jpg', audio: 'freq-bell', glitch: 'glitch-shake',
+          upright: { shift: { w: 40, t: -10, r: -15, h: -30 }, hook: "Stark existentialism. The inevitable end of the match." },
+          reversed: { shift: { w: -40, t: 10, r: 15, h: 30 }, hook: "Refusing to yield. A terrifying stagnation of fate." } },
+        { id: 'reflection', name: 'Reflection', num: 'XIV', image: 'assets/14-reflection.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+          upright: { shift: { w: 20, t: -20, r: 30, h: -10 }, hook: "The alchemical blending of opposites. Two selves in perfect balance." },
+          reversed: { shift: { w: -20, t: 20, r: -30, h: 10 }, hook: "The mirror cracks. The terrifying equilibrium of dual identities fractures." } },
+        { id: 'hotel', name: 'The Hotel (The Devil)', num: 'XV', image: 'assets/15-hotel.jpg', audio: 'freq-static', glitch: 'glitch-tear',
+          upright: { shift: { w: 45, t: 15, r: 10, h: -25 }, hook: "Claustrophobic madness. The shadow self takes the wheel." },
+          reversed: { shift: { w: -45, t: -15, r: -10, h: 25 }, hook: "The chains loosen, but the isolation remains absolute." } },
+        { id: 'tower', name: 'The Nakatomi (The Tower)', num: 'XVI', image: 'assets/16-tower.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+          upright: { shift: { w: 20, t: 40, r: -20, h: 5 }, hook: "Explosive chaos. The physical structure burns to the ground." },
+          reversed: { shift: { w: -20, t: -40, r: 20, h: -5 }, hook: "The foundation holds, but the pressure is unbearable." } },
+        { id: 'escape', name: 'The Escape (The Star)', num: 'XVII', image: 'assets/17-escape.jpg', audio: 'freq-harmonic', glitch: 'glitch-tear',
+          upright: { shift: { w: -40, t: -10, r: 10, h: 30 }, hook: "Cosmic absolution. Pure hope standing in the pouring rain." },
+          reversed: { shift: { w: 40, t: 10, r: -10, h: -30 }, hook: "The tunnel caves in. Faith wavers in the absolute dark." } },
+        { id: 'moon', name: 'Méliès Moon (The Moon)', num: 'XVIII', image: 'assets/18-moon.jpg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
+          upright: { shift: { w: 0, t: -15, r: 45, h: 10 }, hook: "Surreal visions and visual trickery. The dream logic takes over." },
+          reversed: { shift: { w: 0, t: 15, r: -45, h: -10 }, hook: "The illusion shatters. A nightmare bleeding into reality." } },
+        { id: 'horror', name: 'The Horror (The Sun)', num: 'XIX', image: 'assets/19-horror.jpg', audio: 'freq-static', glitch: 'glitch-vertigo',
+          upright: { shift: { w: 50, t: 20, r: 20, h: -40 }, hook: "The blinding truth of the jungle. Exposure to raw, kinetic madness." },
+          reversed: { shift: { w: -50, t: -20, r: -20, h: 40 }, hook: "The sun sets permanently. Wading through the darkest atrocities." } },
+        { id: 'machine', name: 'Judgement', num: 'XX', image: 'assets/20-machine.jpg', audio: 'freq-heavy', glitch: 'glitch-shake',
+          upright: { shift: { w: 30, t: 30, r: -10, h: -20 }, hook: "The final verdict. An unstoppable force brings apocalyptic rebirth." },
+          reversed: { shift: { w: -30, t: -30, r: 10, h: 20 }, hook: "The creator judged by the creation. A synthetic search for a soul." } },
+        { id: 'rosebud', name: 'The Rosebud (The World)', num: 'XXI', image: 'assets/21-rosebud.jpg', audio: 'freq-bell', glitch: 'glitch-tear',
+          upright: { shift: { w: -15, t: -10, r: -10, h: 0 }, hook: "The search for absolute truth. A complete narrative arc burns away." },
+          reversed: { shift: { w: 15, t: 10, r: 10, h: 0 }, hook: "The legacy is poisoned. A frantic grasp for something already lost." } }
+      ]
+    };
+
+    const GENRE_MAP = {
+      18: { w: 50, t: 25, r: 10, h: 25, name: 'DRAMA' },
+      35: { w: 15, t: 65, r: 35, h: 95, name: 'COMEDY' },
+      53: { w: 85, t: 75, r: 30, h: 15, name: 'THRILLER' },
+      27: { w: 95, t: 70, r: 80, h: 10, name: 'HORROR' },
+      878: { w: 70, t: 60, r: 90, h: 30, name: 'SCI-FI' },
+      14: { w: 30, t: 50, r: 95, h: 50, name: 'FANTASY' },
+      10749: { w: 20, t: 30, r: 20, h: 60, name: 'ROMANCE' },
+      28: { w: 65, t: 95, r: 35, h: 40, name: 'ACTION' },
+      80: { w: 80, t: 65, r: 15, h: 20, name: 'CRIME' },
+      9648: { w: 75, t: 40, r: 55, h: 30, name: 'MYSTERY' },
+      36: { w: 45, t: 20, r: 5, h: 20, name: 'HISTORY' },
+      10752: { w: 90, t: 80, r: 10, h: 5, name: 'WAR' },
+      99: { w: 50, t: 15, r: 0, h: 35, name: 'DOC' },
+      10751: { w: 10, t: 40, r: 30, h: 70, name: 'FAMILY' },
+      12: { w: 40, t: 85, r: 50, h: 60, name: 'ADVENTURE' },
+      37: { w: 60, t: 50, r: 15, h: 30, name: 'WESTERN' },
+      10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' }
+    };
+
+    window.onload = function() {
+      fetchHitsTelemetry();
+      document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+      typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
+    };
+
+    let typeToken = 0;
+    async function typewriter(elementId, text, speed = 30) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = '';
+      typeToken++;
+      const currentToken = typeToken;
+      for (let i = 0; i < text.length; i++) {
+        if (typeToken !== currentToken) return;
+        el.innerHTML += text.charAt(i);
+        if (AppState.audioEnabled && i % 3 === 0) playSynthBeep(800 + Math.random() * 200, 0.01, 'square');
+        await sleep(speed + Math.random() * 20);
+      }
+    }
+
+    // --- SECURE CLOUDFLARE WORKER TRANSLATOR (WITH DETAILED ERROR REPORTING) ---
+    async function translateVibe() {
+      const inputEl = document.getElementById('vibe-input');
+      const statusEl = document.getElementById('vibe-status');
+      const btnEl = document.getElementById('vibe-submit-btn');
+      const text = inputEl.value.trim();
+
+      if (!text) return;
+
+      statusEl.classList.remove('text-neonRed');
+      statusEl.innerText = "Transmitting to ghost...";
+      btnEl.innerText = "WAIT";
+      btnEl.disabled = true;
+      playSynthBeep(600, 0.1, 'sine');
+
+      // The live link to your specific Cloudflare Worker
+      const WORKER_URL = "https://arcana-proxy.cory-gallant.workers.dev";
+
+      try {
+        let response;
+        try {
+          response = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mood: text })
+          });
+        } catch (netErr) {
+          // This almost always means CORS rejection or the Worker being unreachable
+          throw new Error("NET/CORS: " + netErr.message);
+        }
+
+        if (!response.ok) {
+          let bodyText = "";
+          try { bodyText = await response.text(); } catch (e) {}
+          throw new Error(`HTTP ${response.status}: ${bodyText.slice(0, 80)}`);
+        }
+
+        const data = await response.json();
+        console.log("RAW WORKER RESPONSE:", data);
+
+        // Check for proper structure depending on how Cloudflare returns it
+        const rawCandidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawCandidate) {
+          throw new Error("SHAPE: " + JSON.stringify(data).slice(0, 100));
+        }
+
+        let rawText = rawCandidate.trim();
+
+        // Strip markdown backticks if the LLM hallucinated them
+        if (rawText.startsWith('```json')) rawText = rawText.substring(7);
+        if (rawText.startsWith('```')) rawText = rawText.substring(3);
+        if (rawText.endsWith('```')) rawText = rawText.substring(0, rawText.length - 3);
+
+        let coordinates;
+        try {
+          coordinates = JSON.parse(rawText.trim());
+        } catch (parseErr) {
+          throw new Error("PARSE: " + rawText.slice(0, 60));
+        }
+
+        // Physically move the sliders
+        const axes = ['warmth', 'tempo', 'reality', 'obscurity', 'humor'];
+        axes.forEach(axis => {
+          if (coordinates[axis] !== undefined) {
+            const slider = document.getElementById(`slider-${axis}`);
+            if (slider) {
+              slider.value = coordinates[axis];
+              updateSliderVal(axis); // Call to update state & UI numbers
+            }
+          }
+        });
+
+        statusEl.innerText = "[ MARGINS CALIBRATED BY SYSTEM ]";
+        playSynthBeep(1200, 0.2, 'square');
+        triggerGlitchEffect('glitch-tear');
+
+      } catch (err) {
+        console.error("Vibe Translator Error:", err);
+        // Show the real failure reason on-screen instead of a generic message
+        statusEl.innerText = "[ FAILED: " + err.message.slice(0, 50) + " ]";
+        statusEl.classList.add('text-neonRed');
+        triggerGlitchEffect('glitch-shake');
+      } finally {
+        btnEl.innerText = "SYNC";
+        btnEl.disabled = false;
+      }
+    }
+
+    async function fetchHitsTelemetry() {
+      try {
+        const res = await fetch('https://api.counterapi.dev/v1/theblindcut_baconeggncheesy/hits/increment');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.count) {
+            renderHitCounter(data.count);
+            return;
+          }
+        }
+      } catch (e) {}
+      let localHits = parseInt(localStorage.getItem('blind_cut_telemetry') || '142');
+      localHits += 1;
+      localStorage.setItem('blind_cut_telemetry', localHits);
+      renderHitCounter(localHits);
+    }
+
+    function renderHitCounter(count) {
+      const paddedStr = count.toString().padStart(5, '0');
+      const container = document.getElementById('retro-counter');
+      if (container) {
+        container.innerHTML = paddedStr.split('').map(digit => 
+          `<span class="inline-block px-1 border border-neutral-700 bg-neutral-900 text-neonRed font-bold shadow-sm">${digit}</span>`
+        ).join('');
+      }
+    }
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function toggleAudio() {
+      AppState.audioEnabled = !AppState.audioEnabled;
+      document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
+      if (AppState.audioEnabled) playSynthBeep(440, 0.05, 'square');
+    }
+
+    function playSynthBeep(freq, duration, type = 'square') {
+      if (!AppState.audioEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playArcanaSound(type) {
+      if (!AppState.audioEnabled) return;
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      switch(type) {
+        case 'freq-heavy':
+          osc.type = 'sine'; osc.frequency.setValueAtTime(40, now);
+          osc.frequency.exponentialRampToValueAtTime(20, now + 1);
+          gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+          osc.start(now); osc.stop(now + 1); break;
+        case 'freq-bell':
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 2);
+          gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 2);
+          osc.start(now); osc.stop(now + 2); break;
+        case 'freq-static':
+          osc.type = 'square'; osc.frequency.setValueAtTime(100, now);
+          osc.frequency.linearRampToValueAtTime(1000, now + 0.1);
+          gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now); osc.stop(now + 0.2); break;
+        case 'freq-harmonic':
+          osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+          osc.frequency.linearRampToValueAtTime(800, now + 1.5);
+          gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+          osc.start(now); osc.stop(now + 1.5); break;
+        case 'freq-tramp':
+          osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
+          gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.start(now); osc.stop(now + 0.1); break;
+        default:
+          playSynthBeep(200, 0.5, 'sine');
+      }
+    }
+
+    function playTypewriterDing() {
+      playSynthBeep(1200, 0.1, 'sine');
+      setTimeout(() => playSynthBeep(1500, 0.1, 'sine'), 50);
+    }
+
+    function triggerGlitchEffect(glitchClass) {
+      const body = document.getElementById('app-body');
+      body.classList.add(glitchClass);
+      setTimeout(() => body.classList.remove(glitchClass), 500);
+    }
+
+    function showScreen(screenId) {
+      ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      const target = document.getElementById(screenId);
+      if (target) target.classList.remove('hidden');
+    }
+
+    async function startCalibrator() {
+      playTypewriterDing();
+      showScreen('screen-parameters');
+      updateParameterUI('language', AppState.language);
+      updateParameterUI('era', AppState.era);
+      updateParameterUI('depth', AppState.depth);
+      await sleep(300);
+      typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script.");
+    }
+
+    function setParameter(key, value) {
+      AppState[key] = value;
+      playSynthBeep(key === 'depth' ? 300 : 400, 0.05, 'square');
+      updateParameterUI(key, value);
+    }
+
+    function updateParameterUI(key, val) {
+      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'], depth: ['casual', 'cinephile'] };
+      ids[key].forEach(item => {
+        const btn = document.getElementById(`${key}-${item}`);
+        if (btn) {
+          if (item === val) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+    }
+
+    async function goToGame1() {
+      playTypewriterDing();
+      showScreen('screen-game1');
+      await sleep(300);
+      typewriter('slider-dialogue', "Adjust the margins of your mind. How do you want to feel?");
+    }
+
+    function updateSliderVal(sliderType) {
+      const val = document.getElementById(`slider-${sliderType}`).value;
+      document.getElementById(`val-${sliderType}`).innerText = val;
+      AppState.sliders[sliderType] = parseInt(val);
+      playSynthBeep(200 + parseInt(val) * 5, 0.02, 'square');
+    }
+
+    function tryJpegFallback(img, fallbackText = 'TAROT') {
+      const currentSrc = img.getAttribute('src') || '';
+      if (!img.dataset.triedJpeg && currentSrc.toLowerCase().endsWith('.jpg')) {
+        img.dataset.triedJpeg = 'true';
+        img.src = currentSrc.replace(/\.jpg$/i, '.jpeg');
+        return;
+      }
+      img.onerror = null;
+      img.src = `https://via.placeholder.com/150x210/0A0A0A/FF003C?text=${encodeURIComponent(fallbackText)}`;
+    }
+
+    // --- COVER FLOW WHEEL LOGIC (INFINITE LOOP) ---
+    let wheelIndex = 0;
+    let wheelCards = [];
+
+    async function goToTarotGame() {
+      playTypewriterDing();
+      AppState.drawnSpread = [];
+      document.getElementById('tarot-proceed-btn').classList.add('hidden');
+      document.getElementById('draw-count').innerText = "0/3";
+      
+      initTarotWheel();
+      
+      showScreen('screen-game3');
+      await sleep(300);
+      typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Spin to find the three cards that align with your frequency: Past, Present, Future.");
+    }
+
+    function initTarotWheel() {
+        const container = document.getElementById('coverflow-container');
+        container.innerHTML = '';
+        wheelCards = [...AppState.tarotDeck].sort(() => 0.5 - Math.random());
+        wheelIndex = Math.floor(wheelCards.length / 2); // Start in middle
+
+        wheelCards.forEach((card, i) => {
+            const el = document.createElement('div');
+            el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] transition-all duration-300 tarot-card-container';
+            el.id = `wheel-card-${i}`;
+            
+            // Click a card to centre it; click the centred card to draw it.
+            el.onclick = () => { if (wheelOffset(i) === 0) drawCenteredCard(); else spinTo(i); };
+
+            el.innerHTML = `
+                <div class="tarot-card w-full h-full shadow-lg">
+                    <div class="tarot-card-back rounded-sm border border-neutral-700 bg-black overflow-hidden">
+                        <img src="assets/card-back.jpg" class="w-full h-full object-cover" onerror="tryJpegFallback(this, 'TAROT')">
+                    </div>
+                    <div class="tarot-card-front shadow-neon-sm border border-neonRed bg-black overflow-hidden">
+                        <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${card.num}')">
+                        <div class="spread-indicator bg-black pb-1" id="ind-${card.id}"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(el);
+        });
+
+        // Add touch/swipe support
+        let startX = 0;
+        container.addEventListener('touchstart', e => startX = e.touches[0].clientX, {passive: true});
+        container.addEventListener('touchend', e => {
+            const diffX = e.changedTouches[0].clientX - startX;
+            if (diffX > 40) spinWheel(-1);
+            if (diffX < -40) spinWheel(1);
+        }, {passive: true});
+
+        updateWheel();
+    }
+
+    function wheelOffset(i) {
+        const N = wheelCards.length;
+        if (N === 0) return 0;
+        const idxMod = ((wheelIndex % N) + N) % N;
+        let raw = i - idxMod;
+        if (raw > N / 2) raw -= N;
+        if (raw < -N / 2) raw += N;
+        return raw;
+    }
+
+    function spinTo(index) {
+        wheelIndex += wheelOffset(index);
+        updateWheel();
+        playSynthBeep(400, 0.02, 'triangle');
+    }
+
+    function spinWheel(dir) {
+        wheelIndex += dir; // unbounded: the wheel loops forever in both directions
+        updateWheel();
+        const tone = ((wheelIndex % 12) + 12) % 12;
+        playSynthBeep(320 + tone * 12, 0.02, 'triangle');
+    }
+
+    function updateWheel() {
+        wheelCards.forEach((card, i) => {
+            const el = document.getElementById(`wheel-card-${i}`);
+            const offset = wheelOffset(i);
+            const absOffset = Math.abs(offset);
+
+            let translateX = offset * 65; 
+            let scale = Math.max(0.5, 1 - (absOffset * 0.15));
+            let rotateY = offset === 0 ? 0 : (offset > 0 ? -45 : 45);
+            let zIndex = 50 - absOffset;
+            let opacity = absOffset > 3 ? 0 : 1;
+
+            el.style.transform = `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1000px) rotateY(${rotateY}deg)`;
+            el.style.zIndex = zIndex;
+            el.style.opacity = opacity;
+            el.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
+        });
+    }
+
+    async function drawCenteredCard() {
+        if (AppState.drawnSpread.length >= 3) return;
+
+        const N = wheelCards.length;
+        const realIndex = ((wheelIndex % N) + N) % N;
+        const card = wheelCards[realIndex];
+        const el = document.getElementById(`wheel-card-${realIndex}`).querySelector('.tarot-card');
+        
+        if(el.classList.contains('flipped')) return; // already drawn
+
+        const isReversed = Math.random() >= 0.5;
+        AppState.drawnSpread.push({ card, isReversed, position: AppState.drawnSpread.length });
+        
+        // Setup Visuals
+        const ind = document.getElementById(`ind-${card.id}`);
+        const posName = AppState.drawnSpread.length === 1 ? "PAST" : AppState.drawnSpread.length === 2 ? "PRESENT" : "FUTURE";
+        ind.innerText = `${posName} ${isReversed ? '(REV)' : ''}`;
+
+        el.classList.add('flipped');
+        if (isReversed) el.classList.add('reversed-card');
+        
+        el.parentElement.style.filter = "brightness(1.2)";
+        
+        playArcanaSound(card.audio);
+        triggerGlitchEffect(card.glitch);
+        
+        document.getElementById('draw-count').innerText = `${AppState.drawnSpread.length}/3`;
+        
+        const logicObj = isReversed ? card.reversed : card.upright;
+        await typewriter('tarot-dialogue', `[${posName}] You drew ${card.name} ${isReversed ? 'Upside Down' : ''}. ${logicObj.hook}`, 15);
+
+        if (AppState.drawnSpread.length === 3) {
+            document.querySelectorAll('.tarot-card:not(.flipped)').forEach(c => c.parentElement.style.opacity = '0.2');
+            document.getElementById('tarot-proceed-btn').classList.remove('hidden');
+        }
+    }
+
+    // --- SPREAD REVIEW LOGIC ---
+    async function goToSpreadReview() {
+        playTypewriterDing();
+        
+        const container = document.getElementById('review-cards-container');
+        container.innerHTML = '';
+
+        AppState.drawnSpread.forEach((draw, i) => {
+            const posName = i === 0 ? "PAST" : i === 1 ? "PRESENT" : "FUTURE";
+            const logicObj = draw.isReversed ? draw.card.reversed : draw.card.upright;
+            
+            container.innerHTML += `
+                <div class="flex items-center space-x-4 bg-darkGrey p-2 border border-neutral-900 shadow-sm animate-fade-in" style="animation-delay: ${i*0.2}s">
+                    <div class="w-[60px] aspect-[2/3] flex-shrink-0 border border-neutral-700 bg-black overflow-hidden relative">
+                        <img src="${draw.card.image}" class="w-full h-full object-cover ${draw.isReversed ? 'rotate-180' : ''}" onerror="tryJpegFallback(this, '${draw.card.num}')">
+                    </div>
+                    <div class="flex-1 font-mono text-xs text-neutral-300">
+                        <div class="text-neonRed font-bold tracking-widest text-[10px] mb-1">[ ${posName} ]</div>
+                        <div class="font-bold text-white uppercase leading-tight">${draw.card.name}</div>
+                        <div class="italic text-[9px] text-neutral-500 mb-1.5 uppercase">${draw.isReversed ? 'Reversed (Inverted Matrices)' : 'Upright Alignment'}</div>
+                        <div class="leading-relaxed text-[10px] text-neutral-400 border-l border-neutral-700 pl-2">"${logicObj.hook}"</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        showScreen('screen-spread-review');
+    }
+
+    let progressInterval = null;
+    async function initiateSubconsciousMatching() {
+      showScreen('screen-loading');
+      
+      const logs = [
+        "Formatting margins...",
+        "Evaluating structural boundaries...",
+        "Applying 3-Card Spread vector shifts...",
+        "Checking Reversal inversions...",
+        "Querying live TMDB archives...",
+        "Cross-referencing multiple pages...",
+        "Printing definitive match..."
+      ];
+      
+      let step = 0;
+      const term = document.getElementById('loading-terminal');
+      const pct = document.getElementById('loading-pct');
+      pct.innerText = "0%";
+      
+      progressInterval = setInterval(() => {
+        let currentPct = parseInt(pct.innerText);
+        if (currentPct < 95) pct.innerText = `${currentPct + Math.floor(Math.random() * 5)}%`;
+        if (Math.random() > 0.7 && step < logs.length) {
+          term.innerText = logs[step];
+          playSynthBeep(700, 0.02, 'square');
+          step++;
+        }
+      }, 200);
+
+      try {
+        // Cards nudge the spectrum — they never get to swamp it.
+        // TAROT_INFLUENCE shrinks each card's raw shift before summing.
+        // MAX_TAROT_SHIFT then hard-caps the *combined* result per axis,
+        // so even an unlucky draw where all three cards stack the same
+        // direction can't exceed a true "nudge" — worst case is always
+        // bounded, not just typically small.
+        const TAROT_INFLUENCE = 0.3;
+        const MAX_TAROT_SHIFT = 20; // hard ceiling per axis, regardless of draw
+
+        const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
+
+        let tw=0, tt=0, tr=0, th=0;
+        AppState.drawnSpread.forEach(draw => {
+           const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
+           tw += s.w * TAROT_INFLUENCE;
+           tt += s.t * TAROT_INFLUENCE;
+           tr += s.r * TAROT_INFLUENCE;
+           th += s.h * TAROT_INFLUENCE;
+        });
+        tw = clampShift(tw); tt = clampShift(tt); tr = clampShift(tr); th = clampShift(th);
+
+        const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw));
+        const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt));
+        const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr));
+        const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th));
+        
+        let discoverParams = [
+          `api_key=${TMDB_API_KEY}`, `vote_average.gte=6.8`, `include_adult=false`, `with_runtime.gte=60`
+        ];
+        
+        if (AppState.language === 'english') discoverParams.push(`with_original_language=en`);
+        else if (AppState.language === 'foreign') discoverParams.push(`with_original_language=fr,ja,ko,it,es,de,ru,zh,pt,pl,da`);
+        if (AppState.era === 'golden') discoverParams.push(`primary_release_date.lte=1970-12-31`);
+        else if (AppState.era === 'neon') discoverParams.push(`primary_release_date.gte=1971-01-01`, `primary_release_date.lte=1999-12-31`);
+        else if (AppState.era === 'digital') discoverParams.push(`primary_release_date.gte=2000-01-01`);
+        
+        const obs = AppState.sliders.obscurity;
+        if (obs <= 35) discoverParams.push(`vote_count.gte=1500`, `sort_by=popularity.desc`);
+        else if (obs >= 70) discoverParams.push(`vote_count.gte=30`, `vote_count.lte=1200`, `sort_by=vote_average.desc`);
+        else discoverParams.push(`vote_count.gte=200`, `vote_count.lte=4000`, `sort_by=popularity.desc`);
+        
+        const fetchWithTimeout = async (url, ms = 8000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), ms);
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(id);
+          return response;
+        };
+
+        const fetchJsonWithRetry = async (url, retries = 2) => {
+          for (let attempt = 0; attempt <= retries; attempt++) {
+            try {
+              const res = await fetchWithTimeout(url);
+              if (res.ok) return await res.json();
+              if (res.status === 429 || res.status >= 500) { await sleep(450 * (attempt + 1)); continue; }
+              return null;
+            } catch (e) {
+              await sleep(450 * (attempt + 1));
+            }
+          }
+          return null;
+        };
+
+        const gatherCandidates = async (baseUrl) => {
+          const first = await fetchJsonWithRetry(`${baseUrl}&page=1`);
+          if (!first || !first.results) return [];
+          const pool = [...first.results];
+          const totalPages = Math.min(first.total_pages || 1, 20);
+          const chosen = new Set([1]);
+          let guard = 0;
+          while (chosen.size < Math.min(totalPages, 3) && guard++ < 40) {
+            chosen.add(Math.floor(Math.random() * totalPages) + 1);
+          }
+          for (const p of chosen) {
+            if (p === 1) continue;
+            const d = await fetchJsonWithRetry(`${baseUrl}&page=${p}`);
+            if (d && d.results) pool.push(...d.results);
+          }
+          const seenIds = new Set();
+          return pool.filter(m => { if (seenIds.has(m.id)) return false; seenIds.add(m.id); return true; });
+        };
+
+        const baseDiscoverUrl = `https://api.themoviedb.org/3/discover/movie?${discoverParams.join('&')}`;
+
+        let candidates = await gatherCandidates(baseDiscoverUrl);
+        candidates = candidates.filter(m => !AppState.seenMovies.includes(m.id) && !AppState.rejectedMovies.includes(m.id));
+
+        // NOTE: No relaxed/fallback query by design. If the live archive
+        // returns nothing under the user's actual parameters, we surface
+        // a real error rather than silently broadening the search.
+        if (candidates.length === 0) throw new Error("The live archive returned no usable matches. No fallback permitted by design.");
+        
+        let selectedMovieMeta = null;
+        let minDistance = Infinity;
+        candidates.forEach(movie => {
+          let wSum=0, tSum=0, rSum=0, hSum=0, count=0;
+          if (movie.genre_ids) {
+            movie.genre_ids.forEach(gid => {
+              if (GENRE_MAP[gid]) {
+                wSum += GENRE_MAP[gid].w; tSum += GENRE_MAP[gid].t; rSum += GENRE_MAP[gid].r; hSum += GENRE_MAP[gid].h; count++;
+              }
+            });
+          }
+          const movieW = count > 0 ? wSum / count : 50;
+          const movieT = count > 0 ? tSum / count : 50;
+          const movieR = count > 0 ? rSum / count : 50;
+          const movieH = count > 0 ? hSum / count : 50;
+          const movieObscurity = Math.max(0, Math.min(100, 100 - (Math.log10(movie.vote_count || 1) * 22)));
+          
+          const score = Math.sqrt(Math.pow(movieW - finalWarmth, 2) + Math.pow(movieT - finalTempo, 2) + Math.pow(movieR - finalReality, 2) + Math.pow(movieObscurity - obs, 2) + Math.pow(movieH - finalHumor, 2));
+          if (score < minDistance) { minDistance = score; selectedMovieMeta = movie; }
+        });
+        
+        if (!selectedMovieMeta) throw new Error("Vector match failed against the live archive.");
+
+        let fullDetails = null;
+        try {
+          const res = await fetchWithTimeout(`https://api.themoviedb.org/3/movie/${selectedMovieMeta.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,watch/providers`);
+          fullDetails = res.ok ? await res.json() : selectedMovieMeta;
+        } catch (e) { fullDetails = selectedMovieMeta; }
+        
+        finalizeProjection(fullDetails, finalWarmth, finalTempo, finalReality, finalHumor);
+        
+      } catch (err) {
+        clearInterval(progressInterval);
+        console.error("Matchmaker Crash: ", err.message);
+        showScreen('screen-error');
+      }
+    }
+
+    async function finalizeProjection(movie, w, t, r, h) {
+      clearInterval(progressInterval);
+      document.getElementById('loading-pct').innerText = "100%";
+      playTypewriterDing();
+      
+      AppState.currentMovie = movie;
+      const plotSentence = getOneSentencePlot(movie.overview);
+      const vibes = generateVibeWords(movie, w, t, r, h);
+      const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
+      
+      populateFinalReveal(movie, critique, vibes, plotSentence);
+      
+      setTimeout(async () => {
+        showScreen('screen-result');
+        await renderAIAnalysis(movie, w, t, r, h, AppState.sliders.obscurity);
+      }, 600);
+    }
+
+    // --- REAL-TIME AI ALIGNMENT MATRIX ---
+    // No template fallback by design. If Gemini fails, we show "WRITER'S
+    // BLOCK" rather than silently substituting canned copy.
+    async function renderAIAnalysis(movie, w, t, r, h, obs) {
+      const analysisEl = document.getElementById('custom-analysis');
+      analysisEl.classList.remove('cursor-blink');
+      analysisEl.style.whiteSpace = 'pre-wrap';
+      analysisEl.innerHTML = '<span class="text-neutral-500">Transmitting to ghost...</span>';
+
+      const WORKER_URL = "https://arcana-proxy.cory-gallant.workers.dev";
+
+      const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "an unnamed auteur";
+      const yr = movie.release_date ? movie.release_date.split('-')[0] : "";
+
+      const spreadSummary = AppState.drawnSpread.map((draw, i) => {
+        const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
+        return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
+      }).join(', ');
+
+      const payload = {
+        type: 'analysis',
+        movie: { title: movie.title, year: yr, director: dir, plot: movie.overview || '' },
+        sliders: { warmth: w, tempo: t, reality: r, obscurity: obs, humor: h },
+        spread: spreadSummary,
+        params: { language: AppState.language, era: AppState.era, depth: AppState.depth }
+      };
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("Empty response");
+
+        text = text.trim();
+        if (text.startsWith('```')) text = text.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
+
+        analysisEl.innerHTML = '';
+        analysisEl.classList.add('cursor-blink');
+        await typewriter('custom-analysis', text, 16);
+        analysisEl.classList.remove('cursor-blink');
+
+      } catch (err) {
+        console.error("AI Alignment Matrix failed:", err);
+        analysisEl.classList.remove('cursor-blink');
+        analysisEl.innerHTML =
+          '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br>' +
+          '<span class="text-neutral-400">The machine has nothing to say. The signal that writes this analysis has gone quiet — no template, no fallback, just silence. Try REROLL SCENE or come back later.</span>';
+      }
+    }
+
+    function markMovieAsSeen() {
+      if (AppState.currentMovie && AppState.currentMovie.id) {
+        AppState.seenMovies.push(AppState.currentMovie.id);
+        initiateSubconsciousMatching();
+      }
+    }
+
+    function rerollCurrentSpectrum() {
+      if (AppState.currentMovie && AppState.currentMovie.id) {
+        AppState.rejectedMovies.push(AppState.currentMovie.id);
+        initiateSubconsciousMatching();
+      }
+    }
+
+    function getOneSentencePlot(overview) {
+      if (!overview) return "A cinematic journey unfolds in the dark.";
+      const match = overview.match(/^.*?[.!?](?:\s|$)/);
+      return match ? match[0].trim() : overview.substring(0, 100) + '...';
+    }
+
+    function dominantWord(name) {
+      const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']);
+      const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
+      const parts = cleaned.split(/\s+/).filter(Boolean);
+      const meaningful = parts.filter(wd => !stop.has(wd));
+      return (meaningful[0] || parts[0] || 'SHADOW');
+    }
+
+    function generateVibeWords(movie, w, t, r, h) {
+      let w1 = "SHADOW";
+      if (AppState.drawnSpread[2]) w1 = dominantWord(AppState.drawnSpread[2].card.name);
+      let w2 = "ATMOSPHERIC";
+      if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name;
+      let w3 = r > 60 ? "SURREAL" : (h > 60 ? "SATIRICAL" : (w > 60 ? "DREAD" : "INTIMATE"));
+      return [w1.replace(/[^A-Z]/g, ''), w2, w3];
+    }
+
+    function buildAssessmentSegments(movie, w, t, r, h, obs) {
+      const RED = 'text-neonRed font-bold';
+      const DIM = 'text-neutral-500';
+      const title = movie.title || "the projection";
+      const yr = movie.release_date ? movie.release_date.split('-')[0] : "";
+      const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "an unnamed auteur";
+
+      const warmthLabel = w < 35 ? "warmth and comfort" : w > 65 ? "dread and unease" : "an even emotional register";
+      const tempoLabel = t < 35 ? "a meditative, slow-burning pace" : t > 65 ? "kinetic, propulsive momentum" : "a measured rhythm";
+      const realityLabel = r < 35 ? "grounded realism" : r > 65 ? "surreal, dream-logic imagery" : "a foothold between the real and the strange";
+      const humorLabel = h < 35 ? "a bleak, nihilistic edge" : h > 65 ? "wit and levity" : "an ambiguous tone";
+      const obsLabel = obs < 35 ? "something canonical and widely seen" : obs > 65 ? "something obscure and overlooked" : "something respected but not over-exposed";
+
+      const langLabel = { any: "the full global archive", english: "the Anglophone canon", foreign: "world cinema beyond the Anglosphere" }[AppState.language] || "the archive";
+      const eraLabel = { any: "any era", golden: "the pre-1970 golden age", neon: "the 1970-99 neon decades", digital: "the post-2000 digital era" }[AppState.era] || "any era";
+      const depthLabel = AppState.depth === 'casual' ? "accessible, universally legible storytelling" : "art-house density and deep film grammar";
+
+      const futureDraw = AppState.drawnSpread[2];
+      const futureName = futureDraw ? futureDraw.card.name : null;
+      const futureRev = futureDraw ? futureDraw.isReversed : false;
+
+      const seg = [];
+      seg.push({ text: "> ALIGNMENT COMPLETE.\n\n", className: RED });
+      seg.push({ text: `You aimed the lens at ${langLabel}, narrowed it to ${eraLabel}, and asked for ${depthLabel}. ` });
+      seg.push({ text: `Your spectrum leaned toward ${warmthLabel}, ${tempoLabel}, and ${realityLabel}, cut with ${humorLabel} — and you wanted ${obsLabel}. ` });
+      if (futureName) {
+        seg.push({ text: "The spread then bent those coordinates. The " });
+        seg.push({ text: "Future", className: RED });
+        seg.push({ text: " position — " });
+        seg.push({ text: `${futureName}${futureRev ? ' reversed' : ''}`, className: RED });
+        seg.push({ text: " — pulled hardest on the final vector. " });
+      }
+      seg.push({ text: "Triangulating every input against the live archive, the closest match in vector-space is " });
+      seg.push({ text: `${title}${yr ? ` (${yr})` : ''}`, className: RED });
+      seg.push({ text: `, directed by ${dir}. ` });
+      seg.push({ text: "It lands almost exactly where your subconscious was pointing.", className: DIM });
+      return seg;
+    }
+
+    async function typeRichText(el, segments, speed = 16) {
+      el.innerHTML = '';
+      typeToken++;
+      const token = typeToken;
+      for (const sgmt of segments) {
+        const span = document.createElement('span');
+        if (sgmt.className) span.className = sgmt.className;
+        el.appendChild(span);
+        for (let i = 0; i < sgmt.text.length; i++) {
+          if (typeToken !== token) return;
+          span.textContent += sgmt.text.charAt(i);
+          if (AppState.audioEnabled && i % 4 === 0) playSynthBeep(680 + Math.random() * 220, 0.008, 'square');
+          await sleep(speed + Math.random() * 14);
+        }
+      }
+    }
+
+    function populateFinalReveal(movie, critique, vibes, plot) {
+      const vtagEl = document.getElementById('vibe-tagline');
+      if (vtagEl) vtagEl.innerText = `"${critique.vibeTagline}"`;
+      
+      const mtitleEl = document.getElementById('movie-title');
+      if (mtitleEl) mtitleEl.innerText = movie.title || "UNKNOWN";
+      
+      const myearEl = document.getElementById('movie-year');
+      if (myearEl) myearEl.innerText = movie.release_date ? movie.release_date.split('-')[0] : "----";
+      
+      const mdirEl = document.getElementById('movie-director');
+      if (mdirEl) mdirEl.innerText = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "AUTEUR";
+      
+      const mrunEl = document.getElementById('movie-runtime');
+      if (mrunEl) mrunEl.innerText = movie.runtime ? `${movie.runtime} MIN` : '--- MIN';
+      
+      const mplotEl = document.getElementById('movie-plot');
+      if (mplotEl) mplotEl.innerText = `"${plot}"`;
+      
+      const vibeC = document.getElementById('vibe-words-container');
+      if (vibeC) vibeC.innerHTML = vibes.map(v => `<span class="px-2 py-0.5 border border-neonRed text-neonRed text-[9px] uppercase font-bold tracking-widest shadow-neon-sm">${v}</span>`).join('');
+      
+      const posterImg = document.getElementById('movie-poster');
+      const ambientBg = document.getElementById('ambient-bg');
+      const fallbackText = document.getElementById('poster-fallback-text');
+      
+      if (posterImg) posterImg.style.opacity = "0";
+      if (fallbackText) fallbackText.style.display = "flex";
+      
+      if (movie.poster_path && posterImg) {
+        posterImg.src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+        posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; };
+      } else {
+         if(posterImg && AppState.drawnSpread[2]) {
+             posterImg.src = AppState.drawnSpread[2].card.image;
+             posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; };
+         }
+      }
+      
+      if (movie.backdrop_path && ambientBg) {
+        ambientBg.style.backgroundImage = `url('https://image.tmdb.org/t/p/original${movie.backdrop_path}')`;
+      } else if (ambientBg) {
+        ambientBg.style.backgroundImage = "none";
+      }
+
+      const providersContainer = document.getElementById('providers-container');
+      if (providersContainer) {
+        providersContainer.innerHTML = "";
+        const usFlatrate = movie["watch/providers"]?.results?.US?.flatrate;
+        if (usFlatrate && usFlatrate.length > 0) {
+          usFlatrate.slice(0, 3).forEach(p => {
+            providersContainer.innerHTML += `<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]">${p.provider_name}</span>`;
+          });
+        } else {
+          providersContainer.innerHTML = `<span class="text-[9px] font-mono text-neutral-600 font-bold uppercase border border-neutral-800 border-dashed px-2 py-1">LOCAL CINEMA / PHYSICAL MEDIA</span>`;
+        }
+      }
+    }
+
+    function shareProjection() {
+      const mtitleEl = document.getElementById('movie-title');
+      const title = mtitleEl ? mtitleEl.innerText : "A Masterpiece";
+      
+      let shareText = `THE BLIND CUT : PROJECTION SECURED\n`;
+      shareText += `Match: ${title}\n\n`;
+      shareText += `THE SPREAD:\n`;
+      AppState.drawnSpread.forEach((draw, i) => {
+          const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
+          shareText += `[${pos}] ${draw.card.name} ${draw.isReversed ? '(Reversed)' : ''}\n`;
+      });
+      shareText += `\nScript locked.`;
+      
+      const temp = document.createElement('input');
+      temp.value = shareText;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      
+      const banner = document.getElementById('notification-banner');
+      if (banner) {
+        banner.classList.remove('opacity-0');
+        banner.classList.add('opacity-100');
+        playTypewriterDing();
+        setTimeout(() => {
+          banner.classList.remove('opacity-100');
+          banner.classList.add('opacity-0');
+        }, 2000);
+      }
+    }
+
+    function retryProjection() { initiateSubconsciousMatching(); }
+    function recalibrate() { location.reload(); }
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+  </script>
+</body>
+</html>
