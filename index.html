@@ -537,6 +537,7 @@
       drawnSpread: [], 
       fullInversion: false, 
       journal: [], 
+      sceneCount: 0,
       
       tarotDeck: [
         { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpeg', audio: 'freq-tramp', glitch: 'glitch-shake',
@@ -706,7 +707,8 @@
     const STORAGE_KEYS = {
       seen: 'cinema_arcana_seen',
       rejected: 'cinema_arcana_rejected',
-      journal: 'cinema_arcana_journal'
+      journal: 'cinema_arcana_journal',
+      sceneCount: 'cinema_arcana_scene_count'
     };
 
     function loadPersistedState() {
@@ -717,9 +719,15 @@
         if (Array.isArray(seen)) AppState.seenMovies = seen;
         if (Array.isArray(rejected)) AppState.rejectedMovies = rejected;
         if (Array.isArray(journal)) AppState.journal = journal;
+
+        // The journal array itself is capped at 50 entries for storage size, so the SCENES
+        // counter is tracked separately and uncapped — it's the real lifetime count of
+        // projections completed on this device, not just what's still in the journal.
+        AppState.sceneCount = parseInt(localStorage.getItem(STORAGE_KEYS.sceneCount) || '0', 10) || 0;
       } catch (e) {
         console.error("Failed to load persisted state:", e);
       }
+      renderHitCounter(AppState.sceneCount || 0);
     }
 
     function persistSeenRejected() {
@@ -734,11 +742,14 @@
     function addJournalEntry(entry) {
       AppState.journal.unshift(entry);
       if (AppState.journal.length > 50) AppState.journal.length = 50; 
+      AppState.sceneCount = (AppState.sceneCount || 0) + 1;
       try {
         localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
+        localStorage.setItem(STORAGE_KEYS.sceneCount, String(AppState.sceneCount));
       } catch (e) {
         console.error("Failed to persist journal entry:", e);
       }
+      renderHitCounter(AppState.sceneCount);
     }
 
     let journalTab = 'recommended'; 
@@ -827,13 +838,16 @@
       AppState.journal = [];
       AppState.seenMovies = [];
       AppState.rejectedMovies = [];
+      AppState.sceneCount = 0;
       try {
         localStorage.removeItem(STORAGE_KEYS.journal);
         localStorage.removeItem(STORAGE_KEYS.seen);
         localStorage.removeItem(STORAGE_KEYS.rejected);
+        localStorage.removeItem(STORAGE_KEYS.sceneCount);
       } catch (e) {
         console.error("Failed to clear persisted history:", e);
       }
+      renderHitCounter(0);
       document.getElementById('clear-history-confirm').classList.add('hidden');
       triggerGlitchEffect('glitch-shake');
       playTypewriterDing();
@@ -843,7 +857,6 @@
 
     window.onload = function() {
       loadPersistedState();
-      fetchHitsTelemetry();
       renderGenreChips();
       document.getElementById('current-date').innerText = new Date().toLocaleDateString();
       typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
@@ -974,23 +987,6 @@
         btnEl.innerText = "SYNC";
         btnEl.disabled = false;
       }
-    }
-
-    async function fetchHitsTelemetry() {
-      try {
-        const res = await fetch('[https://api.counterapi.dev/v1/theblindcut_baconeggncheesy/hits/increment](https://api.counterapi.dev/v1/theblindcut_baconeggncheesy/hits/increment)');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.count) {
-            renderHitCounter(data.count);
-            return;
-          }
-        }
-      } catch (e) {}
-      let localHits = parseInt(localStorage.getItem('blind_cut_telemetry') || '142');
-      localHits += 1;
-      localStorage.setItem('blind_cut_telemetry', localHits);
-      renderHitCounter(localHits);
     }
 
     function renderHitCounter(count) {
