@@ -178,6 +178,19 @@
       100% { filter: blur(0) brightness(1) saturate(1) contrast(1); opacity: 1; }
     }
     .focus-reveal { animation: focus-reveal-anim 2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+    /* Full-screen -> thumbnail poster reveal. Transform-based (not width/height) so the
+       shrink animates on the GPU compositor instead of triggering layout every frame. */
+    .poster-reveal-img {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      transform-origin: top left;
+      will-change: transform, filter;
+    }
   </style>
 </head>
 <body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
@@ -431,6 +444,12 @@
         </div>
       </section>
 
+      <!-- CINEMATIC POSTER REVEAL OVERLAY: starts full-screen & blurred, animates down to the
+           real poster's slot in the result card. See showScreenWithFocusReveal(). -->
+      <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black">
+        <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
+      </div>
+
       <!-- VISUAL SHARE CARD OVERLAY -->
       <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
         <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
@@ -587,6 +606,12 @@
           reversed: { shift: { w: 15, t: 10, r: 10, h: 0 }, hook: "The legacy is poisoned. A frantic grasp for something already lost." } }
       ]
     };
+
+    // Each card gets a stable position in the deck (0-21), used by AudioEngine.cardSound()
+    // to walk a musical scale so every Major Arcana card has a distinct base pitch.
+    // (The old per-card `audio: 'freq-xxx'` field is legacy now — sound is generated
+    // procedurally from each card's own w/t/r/h stats instead, see AudioEngine.cardSound.)
+    AppState.tarotDeck.forEach((card, i) => { card.arcanaIndex = i; });
 
     const GENRE_MAP = {
       18: { w: 50, t: 25, r: 10, h: 25, name: 'DRAMA' },
@@ -1149,6 +1174,105 @@
           if (!this.active || !AudioEngine.ctx) return;
           this.gain.gain.setTargetAtTime(0.0001, AudioEngine.ctx.currentTime, 0.15);
         }
+      },
+
+      // --- Per-card draw sound: all 22 Major Arcana get their own distinct voice, generated
+      // procedurally (no audio files) from the card's OWN w/t/r/h stats plus its position in
+      // the deck. Same underlying trick as everything else here: persistent node graph, master
+      // bus, nothing hardcoded per-card except the deck data that already existed.
+      //   - deck position -> walks a moody scale, so all 22 cards are tonally distinct
+      //   - dread (w)      -> darkens the filter + timbre (cozy cards ring bright, dread cards go muffled/harsh)
+      //   - kinetic (t)    -> shortens the envelope (fast cards snap, slow cards ring out)
+      //   - surreal (r)    -> adds pitch-wobble vibrato
+      //   - witty (h)      -> brightens the oscillator waveform
+      //   - reversed draws -> drop in pitch + get a short bandpassed noise burst layered in, so an
+      //                       upside-down card audibly sounds "wrong," not just visually
+      cardSound(card, isReversed) {
+        if (!AppState.audioEnabled) return;
+        try {
+          this.init();
+          const ctx = this.ctx;
+          const now = ctx.currentTime;
+          const idx = typeof card.arcanaIndex === 'number' ? card.arcanaIndex : 0;
+          const stats = isReversed ? card.reversed.shift : card.upright.shift;
+
+          // Normalize each stat to 0-1 using its magnitude (stats are stored as +/- shifts)
+          const dread = Math.min(1, Math.abs(stats.w) / 50);
+          const kinetic = Math.min(1, Math.abs(stats.t) / 50);
+          const surreal = Math.min(1, Math.abs(stats.r) / 50);
+          const witty = Math.min(1, Math.abs(stats.h) / 50);
+          const leansDread = stats.w >= 0;
+          const leansWitty = stats.h >= 0;
+
+          const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10]; // natural minor — moody, cinematic
+          const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
+          let freq = 110 * Math.pow(2, semis / 12);
+          if (isReversed) freq *= 0.667; // drops roughly a fifth — feels "wrong"
+
+          const dur = 0.45 + (1 - kinetic) * 1.1;
+          const filterCutoff = leansDread ? (500 + (1 - dread) * 2200) : (2200 + witty * 3000);
+          const oscType = leansWitty && witty > 0.4 ? 'triangle' : (leansDread && dread > 0.4 ? 'sawtooth' : 'sine');
+
+          const osc = ctx.createOscillator();
+          osc.type = oscType;
+          osc.frequency.setValueAtTime(freq, now);
+
+          // A quiet second oscillator (5th or minor-7th above) gives each card body/resonance
+          const osc2 = ctx.createOscillator();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(freq * (leansDread ? 1.5 : 1.682), now);
+          const gain2 = ctx.createGain();
+          gain2.gain.value = 0.09;
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = filterCutoff;
+
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(0.22, now + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+          osc.connect(filter);
+          osc2.connect(gain2);
+          gain2.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.master);
+
+          osc.start(now); osc.stop(now + dur);
+          osc2.start(now); osc2.stop(now + dur);
+
+          // Surreal cards get a slow vibrato wobble on the fundamental
+          if (surreal > 0.35) {
+            const lfo = ctx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = 4 + surreal * 5;
+            const lfoGain = ctx.createGain();
+            lfoGain.gain.value = freq * 0.025 * surreal;
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            lfo.start(now);
+            lfo.stop(now + dur);
+          }
+
+          // Reversed cards get a short bandpassed noise burst — an audible "glitch"
+          if (isReversed && this.noiseBuffer) {
+            const noiseSrc = ctx.createBufferSource();
+            noiseSrc.buffer = this.noiseBuffer;
+            const noiseFilter = ctx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.value = Math.min(9000, freq * 2.2);
+            noiseFilter.Q.value = 5;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.07, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+            noiseSrc.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(this.master);
+            noiseSrc.start(now);
+            noiseSrc.stop(now + 0.16);
+          }
+        } catch (e) {}
       }
     };
 
@@ -1536,7 +1660,7 @@
         el.parentElement.style.filter = "brightness(1.2)";
         AudioEngine.wheelHum.silence();
         
-        playArcanaSound(card.audio);
+        AudioEngine.cardSound(card, isReversed);
         triggerGlitchEffect(card.glitch);
         
         document.getElementById('draw-count').innerText = `${AppState.drawnSpread.length}/3`;
@@ -1805,18 +1929,64 @@
       showScreenWithFocusReveal('screen-result');
     }
 
-    // Swaps in the result screen and runs the 2s blur-to-focus reveal, with the audio
-    // clearing from muffled to sharp on the exact same timeline.
+    // Swaps in the result screen, then runs the cinematic poster reveal: the poster starts
+    // full-screen and blurred, then shrinks/sharpens down into its real slot in the result
+    // card over 2s, with the audio clearing from muffled to sharp on the same timeline.
     function showScreenWithFocusReveal(screenId) {
       showScreen(screenId);
-      const el = document.getElementById(screenId);
-      if (el) {
-        el.classList.remove('focus-reveal');
-        void el.offsetWidth; // restart the CSS animation
-        el.classList.add('focus-reveal');
-      }
+
+      const overlay = document.getElementById('poster-reveal-overlay');
+      const overlayImg = document.getElementById('poster-reveal-img');
+      const realPoster = document.getElementById('movie-poster');
+      const movie = AppState.currentMovie;
+      const posterUrl = movie && movie.poster_path
+        ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+        : null;
+
       AudioEngine.focusSweep(2.0);
       playTypewriterDing();
+
+      if (!overlay || !overlayImg || !realPoster || !posterUrl) {
+        // No poster to work with (rare) — fall back to a whole-page blur-to-focus instead.
+        const el = document.getElementById(screenId);
+        if (el) { el.classList.remove('focus-reveal'); void el.offsetWidth; el.classList.add('focus-reveal'); }
+        return;
+      }
+
+      // The real poster is already fully loaded/positioned behind the overlay — force it
+      // visible immediately so there's zero flash once the overlay steps aside.
+      realPoster.style.opacity = '1';
+      const fallbackText = document.getElementById('poster-fallback-text');
+      if (fallbackText) fallbackText.style.display = 'none';
+
+      overlayImg.src = posterUrl;
+      overlay.classList.remove('hidden');
+      overlayImg.style.transition = 'none';
+      overlayImg.style.transform = 'translate(0px, 0px) scale(1, 1)';
+      overlayImg.style.filter = 'blur(26px) brightness(0.55) saturate(0.35)';
+
+      // Wait a frame so the full-screen starting state actually paints before we measure
+      // the target slot and animate toward it.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const targetRect = realPoster.getBoundingClientRect();
+          const fullRect = overlayImg.getBoundingClientRect();
+          if (!targetRect.width || !fullRect.width) {
+            overlay.classList.add('hidden');
+            return;
+          }
+          const scaleX = targetRect.width / fullRect.width;
+          const scaleY = targetRect.height / fullRect.height;
+          const translateX = targetRect.left - fullRect.left;
+          const translateY = targetRect.top - fullRect.top;
+
+          overlayImg.style.transition = 'transform 2s cubic-bezier(0.22, 1, 0.36, 1), filter 2s cubic-bezier(0.22, 1, 0.36, 1)';
+          overlayImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+          overlayImg.style.filter = 'blur(0) brightness(1) saturate(1)';
+        });
+      });
+
+      setTimeout(() => { overlay.classList.add('hidden'); }, 2100);
     }
 
     function addToSeenList(movieId) {
