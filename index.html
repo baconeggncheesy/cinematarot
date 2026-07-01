@@ -188,6 +188,7 @@
       width: 100vw;
       height: 100vh;
       object-fit: cover;
+      object-position: center center;
       transform-origin: top left;
       will-change: transform, filter;
     }
@@ -612,6 +613,33 @@
     // (The old per-card `audio: 'freq-xxx'` field is legacy now — sound is generated
     // procedurally from each card's own w/t/r/h stats instead, see AudioEngine.cardSound.)
     AppState.tarotDeck.forEach((card, i) => { card.arcanaIndex = i; });
+
+    // Maps each card to a thematic sound archetype (see AudioEngine.playThemedTexture).
+    // This is what makes e.g. The Burned Man crackle like fire instead of just playing a tone.
+    const CARD_THEME_MAP = {
+      tramp: 'pluck-playful',        // The Fool — a light, wandering little blip
+      auteur: 'chime',                // The Magician — sparkling, conjured
+      oracle: 'shimmer-glass',        // The Priestess — mystic, reflective
+      matriarch: 'swell-warm',        // The Empress — a soft protective pad
+      don: 'thud-heavy',              // The Emperor — an authoritative stamp
+      monolith: 'drone-deep',         // The Hierophant — 2001-style ominous bass drone
+      noir: 'sax-smooth',             // The Lovers — smoky, sultry vibrato
+      delorean: 'zap-whoosh',         // The Chariot — electric time-travel zap
+      finalgirl: 'scream-tense',      // Strength — a tense, rising shriek
+      driver: 'engine',               // The Hermit — a low idling car engine
+      reel: 'ratchet',                // Wheel of Fortune — a spinning reel's ratchet click
+      standoff: 'gunshot-whistle',    // The Man with No Name — crack + spaghetti-western whistle
+      falling: 'fire',                // The Burned Man — actual crackling fire
+      chess: 'toll-clock',            // Death — a clock tick and low toll
+      reflection: 'shimmer-glass',    // Temperance — mirrored glass shimmer
+      hotel: 'buzz-electric',         // The Devil — sleazy neon buzz
+      tower: 'explosion',             // The Tower (Nakatomi) — a Die Hard-style blast
+      escape: 'chime',                // The Star — bright, hopeful sparkle
+      moon: 'boop-comic',             // The Moon (Méliès) — silent-film comic boop
+      horror: 'blazing-harsh',        // The Sun (Horror) — harsh blinding noise
+      machine: 'beep-robotic',        // Judgement — mechanical robotic beeps
+      rosebud: 'swell-warm',          // The World — a wistful, nostalgic swell
+    };
 
     const GENRE_MAP = {
       18: { w: 50, t: 25, r: 10, h: 25, name: 'DRAMA' },
@@ -1187,6 +1215,180 @@
       //   - witty (h)      -> brightens the oscillator waveform
       //   - reversed draws -> drop in pitch + get a short bandpassed noise burst layered in, so an
       //                       upside-down card audibly sounds "wrong," not just visually
+      // --- Sound-design primitives, reused across every themed texture below. Each takes an
+      // absolute AudioContext time (not a relative offset) so textures can layer multiple
+      // hits at different moments. This is the toolkit for adding new tricks later — most new
+      // sounds are just a few calls to these four functions with different numbers.
+      _noiseTransient(t, { filterType = 'bandpass', freq = 2000, Q = 1, gain = 0.08, decay = 0.08, duration = 0.12 } = {}) {
+        const ctx = this.ctx;
+        const src = ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+        const filt = ctx.createBiquadFilter();
+        filt.type = filterType; filt.frequency.value = freq; filt.Q.value = Q;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        src.connect(filt); filt.connect(g); g.connect(this.master);
+        src.start(t); src.stop(t + duration);
+      },
+      _noiseBed(t, dur, { filterType = 'bandpass', freq = 500, Q = 0.6, peakGain = 0.08, attack = 0.15 } = {}) {
+        const ctx = this.ctx;
+        const src = ctx.createBufferSource();
+        src.buffer = this.noiseBuffer; src.loop = true;
+        const filt = ctx.createBiquadFilter();
+        filt.type = filterType; filt.frequency.value = freq; filt.Q.value = Q;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(peakGain, t + attack);
+        g.gain.linearRampToValueAtTime(0.0001, t + dur);
+        src.connect(filt); filt.connect(g); g.connect(this.master);
+        src.start(t); src.stop(t + dur);
+      },
+      _toneBlip(t, { freq = 440, type = 'sine', gain = 0.15, decay = 0.15 } = {}) {
+        const ctx = this.ctx;
+        const osc = ctx.createOscillator();
+        osc.type = type; osc.frequency.setValueAtTime(Math.max(20, freq), t);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        osc.connect(g); g.connect(this.master);
+        osc.start(t); osc.stop(t + decay + 0.02);
+      },
+      _freqSweep(t, dur, { startFreq = 200, endFreq = 800, type = 'sawtooth', gain = 0.12 } = {}) {
+        const ctx = this.ctx;
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.setValueAtTime(Math.max(20, startFreq), t);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t + dur);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.connect(g); g.connect(this.master);
+        osc.start(t); osc.stop(t + dur + 0.02);
+      },
+
+      // --- Thematic textures: this is what makes each card sound like what it IS, not just
+      // a generic tone. `freq` is the card's own pitch (from its position in the deck) so
+      // every texture still lands somewhere musically coherent with the others.
+      // To add a new archetype later: add a case here, then point a card at it in CARD_THEME_MAP.
+      playThemedTexture(themeKey, freq, dur, now) {
+        switch (themeKey) {
+          case 'fire': { // The Burned Man — a low crackling bed plus scattered random pops
+            this._noiseBed(now, dur, { filterType: 'bandpass', freq: 420, Q: 0.5, peakGain: 0.09, attack: 0.1 });
+            const crackles = 7 + Math.floor(Math.random() * 6);
+            for (let i = 0; i < crackles; i++) {
+              const t = now + Math.random() * dur * 0.85;
+              this._noiseTransient(t, { filterType: 'highpass', freq: 1800 + Math.random() * 4500, Q: 1.2, gain: 0.05 + Math.random() * 0.08, decay: 0.02 + Math.random() * 0.05, duration: 0.1 });
+            }
+            break;
+          }
+          case 'explosion': { // The Tower (Nakatomi)
+            this._noiseTransient(now, { filterType: 'lowpass', freq: 1000, Q: 0.4, gain: 0.3, decay: 0.55, duration: 0.65 });
+            this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.3, decay: 0.45 });
+            for (let i = 0; i < 5; i++) {
+              const t = now + 0.05 + Math.random() * 0.35;
+              this._noiseTransient(t, { filterType: 'highpass', freq: 2500 + Math.random() * 3000, Q: 1, gain: 0.04 + Math.random() * 0.05, decay: 0.05, duration: 0.08 });
+            }
+            break;
+          }
+          case 'engine': { // The Driver
+            this._noiseBed(now, dur, { filterType: 'lowpass', freq: 180, Q: 0.8, peakGain: 0.1, attack: 0.08 });
+            this._toneBlip(now, { freq: freq * 0.5, type: 'sawtooth', gain: 0.14, decay: dur * 0.9 });
+            break;
+          }
+          case 'gunshot-whistle': { // The Man with No Name
+            this._noiseTransient(now, { filterType: 'highpass', freq: 1000, Q: 0.7, gain: 0.3, decay: 0.08, duration: 0.1 });
+            this._freqSweep(now + 0.05, Math.max(0.3, dur - 0.05), { startFreq: freq * 2.2, endFreq: freq * 0.9, type: 'sine', gain: 0.09 });
+            break;
+          }
+          case 'ratchet': { // Wheel of Fortune
+            const clicks = 6;
+            for (let i = 0; i < clicks; i++) {
+              this._noiseTransient(now + i * (dur / clicks), { filterType: 'highpass', freq: 3500, Q: 2, gain: 0.08, decay: 0.02, duration: 0.04 });
+            }
+            break;
+          }
+          case 'zap-whoosh': { // The Chariot (DeLorean)
+            this._freqSweep(now, dur * 0.6, { startFreq: freq * 0.5, endFreq: freq * 3, type: 'sawtooth', gain: 0.14 });
+            this._noiseTransient(now + dur * 0.15, { filterType: 'highpass', freq: 4000, Q: 0.8, gain: 0.08, decay: 0.12, duration: 0.15 });
+            break;
+          }
+          case 'chime': { // The Magician / The Star
+            [1, 1.5, 2.01].forEach((ratio, i) => this._toneBlip(now + i * 0.02, { freq: freq * ratio, type: 'sine', gain: 0.13 / (i + 1), decay: dur * 0.8 }));
+            break;
+          }
+          case 'drone-deep': { // The Hierophant (Monolith)
+            this._noiseBed(now, dur, { filterType: 'lowpass', freq: 120, Q: 0.3, peakGain: 0.09, attack: 0.2 });
+            this._toneBlip(now, { freq: freq * 0.25, type: 'sine', gain: 0.2, decay: dur });
+            break;
+          }
+          case 'buzz-electric': { // The Devil (Hotel)
+            this._toneBlip(now, { freq, type: 'square', gain: 0.1, decay: dur * 0.7 });
+            this._noiseTransient(now, { filterType: 'bandpass', freq: 2000, Q: 3, gain: 0.04, decay: dur * 0.6, duration: dur });
+            break;
+          }
+          case 'thud-heavy': { // The Emperor
+            this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.26, decay: 0.3 });
+            this._noiseTransient(now, { filterType: 'lowpass', freq: 400, Q: 0.5, gain: 0.1, decay: 0.15, duration: 0.2 });
+            break;
+          }
+          case 'shimmer-glass': { // The Priestess / Temperance
+            [1, 2.02, 3.01].forEach((ratio, i) => this._toneBlip(now + i * 0.015, { freq: freq * ratio, type: 'sine', gain: 0.1 / (i + 1), decay: dur }));
+            break;
+          }
+          case 'beep-robotic': { // Judgement (Machine)
+            for (let i = 0; i < 3; i++) {
+              this._toneBlip(now + i * 0.12, { freq: freq * (1 + i * 0.15), type: 'square', gain: 0.11, decay: 0.07 });
+            }
+            break;
+          }
+          case 'scream-tense': { // Strength (Final Girl)
+            this._freqSweep(now, dur * 0.5, { startFreq: freq * 1.5, endFreq: freq * 3.2, type: 'sawtooth', gain: 0.09 });
+            break;
+          }
+          case 'boop-comic': { // The Moon (Méliès)
+            this._freqSweep(now, 0.25, { startFreq: freq * 1.4, endFreq: freq * 0.7, type: 'triangle', gain: 0.16 });
+            break;
+          }
+          case 'blazing-harsh': { // The Sun (Horror)
+            this._noiseTransient(now, { filterType: 'highpass', freq: 2500, Q: 0.6, gain: 0.16, decay: dur * 0.7, duration: dur });
+            this._toneBlip(now, { freq, type: 'sawtooth', gain: 0.12, decay: dur * 0.6 });
+            break;
+          }
+          case 'toll-clock': { // Death
+            this._noiseTransient(now, { filterType: 'highpass', freq: 4500, Q: 3, gain: 0.06, decay: 0.02, duration: 0.03 });
+            this._toneBlip(now + 0.02, { freq: freq * 0.5, type: 'sine', gain: 0.18, decay: dur * 0.9 });
+            break;
+          }
+          case 'pluck-playful': { // The Fool
+            this._toneBlip(now, { freq, type: 'triangle', gain: 0.15, decay: 0.18 });
+            this._toneBlip(now + 0.09, { freq: freq * 1.25, type: 'triangle', gain: 0.1, decay: 0.15 });
+            break;
+          }
+          case 'swell-warm': { // The Empress / The World
+            this._noiseBed(now, dur, { filterType: 'lowpass', freq: 900, Q: 0.4, peakGain: 0.05, attack: dur * 0.4 });
+            this._toneBlip(now, { freq, type: 'sine', gain: 0.14, decay: dur });
+            break;
+          }
+          case 'sax-smooth': { // The Lovers
+            this._toneBlip(now, { freq, type: 'sine', gain: 0.16, decay: dur * 0.9 });
+            this._toneBlip(now, { freq: freq * 1.005, type: 'triangle', gain: 0.08, decay: dur * 0.9 });
+            break;
+          }
+          default:
+            this._toneBlip(now, { freq, type: 'sine', gain: 0.15, decay: dur * 0.7 });
+        }
+      },
+
+      // --- Per-card draw sound: all 22 Major Arcana get their own distinct voice — a themed
+      // texture (fire crackle, engine rumble, gunshot, etc., from CARD_THEME_MAP) layered over
+      // a quiet musical tone so every card still sits in the same harmonic world.
+      //   - deck position -> walks a moody scale, so the underlying pitch is unique per card
+      //   - dread (w)      -> darkens the underlying tone (cozy cards ring bright, dread cards go muffled)
+      //   - kinetic (t)    -> shortens the envelope (fast cards snap, slow cards ring out)
+      //   - surreal (r)    -> adds pitch-wobble vibrato to the underlying tone
+      //   - witty (h)      -> brightens the underlying oscillator waveform
+      //   - reversed draws -> drop in pitch + a short bandpassed noise glitch, on top of the theme
       cardSound(card, isReversed) {
         if (!AppState.audioEnabled) return;
         try {
@@ -1196,53 +1398,38 @@
           const idx = typeof card.arcanaIndex === 'number' ? card.arcanaIndex : 0;
           const stats = isReversed ? card.reversed.shift : card.upright.shift;
 
-          // Normalize each stat to 0-1 using its magnitude (stats are stored as +/- shifts)
           const dread = Math.min(1, Math.abs(stats.w) / 50);
           const kinetic = Math.min(1, Math.abs(stats.t) / 50);
           const surreal = Math.min(1, Math.abs(stats.r) / 50);
-          const witty = Math.min(1, Math.abs(stats.h) / 50);
           const leansDread = stats.w >= 0;
-          const leansWitty = stats.h >= 0;
 
           const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10]; // natural minor — moody, cinematic
           const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
           let freq = 110 * Math.pow(2, semis / 12);
           if (isReversed) freq *= 0.667; // drops roughly a fifth — feels "wrong"
 
-          const dur = 0.45 + (1 - kinetic) * 1.1;
-          const filterCutoff = leansDread ? (500 + (1 - dread) * 2200) : (2200 + witty * 3000);
-          const oscType = leansWitty && witty > 0.4 ? 'triangle' : (leansDread && dread > 0.4 ? 'sawtooth' : 'sine');
+          const dur = 0.6 + (1 - kinetic) * 1.3;
 
+          // The card's own theme is the star of the sound (fire crackles, engine rumbles, etc.)
+          const themeKey = CARD_THEME_MAP[card.id] || 'chime';
+          this.playThemedTexture(themeKey, freq, dur, now);
+
+          // A quiet underlying tone keeps every card in the same harmonic world and carries
+          // the dread/surreal stat-based coloring, sitting just beneath the theme in volume.
+          const filterCutoff = leansDread ? (500 + (1 - dread) * 2200) : (2200 + (1 - dread) * 3000);
           const osc = ctx.createOscillator();
-          osc.type = oscType;
+          osc.type = 'sine';
           osc.frequency.setValueAtTime(freq, now);
-
-          // A quiet second oscillator (5th or minor-7th above) gives each card body/resonance
-          const osc2 = ctx.createOscillator();
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(freq * (leansDread ? 1.5 : 1.682), now);
-          const gain2 = ctx.createGain();
-          gain2.gain.value = 0.09;
-
           const filter = ctx.createBiquadFilter();
           filter.type = 'lowpass';
           filter.frequency.value = filterCutoff;
-
           const gain = ctx.createGain();
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.22, now + 0.025);
+          gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
           gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
-          osc.connect(filter);
-          osc2.connect(gain2);
-          gain2.connect(filter);
-          filter.connect(gain);
-          gain.connect(this.master);
-
+          osc.connect(filter); filter.connect(gain); gain.connect(this.master);
           osc.start(now); osc.stop(now + dur);
-          osc2.start(now); osc2.stop(now + dur);
 
-          // Surreal cards get a slow vibrato wobble on the fundamental
           if (surreal > 0.35) {
             const lfo = ctx.createOscillator();
             lfo.type = 'sine';
@@ -1255,22 +1442,10 @@
             lfo.stop(now + dur);
           }
 
-          // Reversed cards get a short bandpassed noise burst — an audible "glitch"
+          // Reversed cards get a short bandpassed noise burst layered on top of everything —
+          // an audible "glitch," so an upside-down card sounds wrong, not just looks it.
           if (isReversed && this.noiseBuffer) {
-            const noiseSrc = ctx.createBufferSource();
-            noiseSrc.buffer = this.noiseBuffer;
-            const noiseFilter = ctx.createBiquadFilter();
-            noiseFilter.type = 'bandpass';
-            noiseFilter.frequency.value = Math.min(9000, freq * 2.2);
-            noiseFilter.Q.value = 5;
-            const noiseGain = ctx.createGain();
-            noiseGain.gain.setValueAtTime(0.07, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-            noiseSrc.connect(noiseFilter);
-            noiseFilter.connect(noiseGain);
-            noiseGain.connect(this.master);
-            noiseSrc.start(now);
-            noiseSrc.stop(now + 0.16);
+            this._noiseTransient(now, { filterType: 'bandpass', freq: Math.min(9000, freq * 2.2), Q: 5, gain: 0.07, decay: 0.16, duration: 0.16 });
           }
         } catch (e) {}
       }
@@ -1932,6 +2107,8 @@
     // Swaps in the result screen, then runs the cinematic poster reveal: the poster starts
     // full-screen and blurred, then shrinks/sharpens down into its real slot in the result
     // card over 2s, with the audio clearing from muffled to sharp on the same timeline.
+    const REVEAL_DURATION = 3.4; // seconds — poster shrink + audio focus-sweep share this
+
     function showScreenWithFocusReveal(screenId) {
       showScreen(screenId);
 
@@ -1943,7 +2120,7 @@
         ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
         : null;
 
-      AudioEngine.focusSweep(2.0);
+      AudioEngine.focusSweep(REVEAL_DURATION);
       playTypewriterDing();
 
       if (!overlay || !overlayImg || !realPoster || !posterUrl) {
@@ -1959,9 +2136,22 @@
       const fallbackText = document.getElementById('poster-fallback-text');
       if (fallbackText) fallbackText.style.display = 'none';
 
+      // Size the starting frame with the ACTUAL visible viewport in pixels rather than CSS
+      // 100vw/100vh — on iOS Safari 100vh is taller than what's actually on screen (it
+      // includes the area the collapsible address bar can occupy), which was pushing the
+      // full-screen start frame off-center. window.innerWidth/innerHeight always matches
+      // what's really visible right now.
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
       overlayImg.src = posterUrl;
       overlay.classList.remove('hidden');
       overlayImg.style.transition = 'none';
+      overlayImg.style.objectPosition = 'center center';
+      overlayImg.style.width = `${vw}px`;
+      overlayImg.style.height = `${vh}px`;
+      overlayImg.style.top = '0px';
+      overlayImg.style.left = '0px';
       overlayImg.style.transform = 'translate(0px, 0px) scale(1, 1)';
       overlayImg.style.filter = 'blur(26px) brightness(0.55) saturate(0.35)';
 
@@ -1980,13 +2170,13 @@
           const translateX = targetRect.left - fullRect.left;
           const translateY = targetRect.top - fullRect.top;
 
-          overlayImg.style.transition = 'transform 2s cubic-bezier(0.22, 1, 0.36, 1), filter 2s cubic-bezier(0.22, 1, 0.36, 1)';
+          overlayImg.style.transition = `transform ${REVEAL_DURATION}s cubic-bezier(0.22, 1, 0.36, 1), filter ${REVEAL_DURATION}s cubic-bezier(0.22, 1, 0.36, 1)`;
           overlayImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
           overlayImg.style.filter = 'blur(0) brightness(1) saturate(1)';
         });
       });
 
-      setTimeout(() => { overlay.classList.add('hidden'); }, 2100);
+      setTimeout(() => { overlay.classList.add('hidden'); }, REVEAL_DURATION * 1000 + 100);
     }
 
     function addToSeenList(movieId) {
