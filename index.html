@@ -170,6 +170,14 @@
     .glitch-text::after { left: -2px; text-shadow: -1px 0 #FF003C; clip: rect(85px, 450px, 140px, 0); animation: glitch-anim2 5s infinite linear alternate-reverse; }
     @keyframes glitch-anim { 0% { clip: rect(15px, 9999px, 66px, 0); } 100% { clip: rect(34px, 9999px, 55px, 0); } }
     @keyframes glitch-anim2 { 0% { clip: rect(70px, 9999px, 105px, 0); } 100% { clip: rect(12px, 9999px, 85px, 0); } }
+
+    /* PROJECTION REVEAL: blur-to-focus, 2s, synced with the audio focus-sweep */
+    @keyframes focus-reveal-anim {
+      0%   { filter: blur(26px) brightness(0.55) saturate(0.35) contrast(1.1); opacity: 0.35; }
+      55%  { filter: blur(8px) brightness(0.8) saturate(0.65) contrast(1.05); opacity: 0.85; }
+      100% { filter: blur(0) brightness(1) saturate(1) contrast(1); opacity: 1; }
+    }
+    .focus-reveal { animation: focus-reveal-anim 2s cubic-bezier(0.22, 1, 0.36, 1) both; }
   </style>
 </head>
 <body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
@@ -312,8 +320,8 @@
         
         <div class="text-[9px] font-bold text-neonRed text-center mb-6 tracking-widest uppercase">Draw 3 Cards: <span id="draw-count">0/3</span></div>
         
-        <!-- Cover Flow Wheel Container -->
-        <div class="relative w-full h-[260px] overflow-visible select-none touch-none" id="coverflow-container">
+        <!-- Cover Flow Wheel Container (touch-pan-y allows vertical scrolling!) -->
+        <div class="relative w-full h-[260px] overflow-visible select-none touch-pan-y" id="coverflow-container">
             <!-- Cards injected here via JS -->
         </div>
         
@@ -423,7 +431,7 @@
         </div>
       </section>
 
-      <!-- VISUAL SHARE CARD OVERLAY (fallback for browsers without native share-sheet file support) -->
+      <!-- VISUAL SHARE CARD OVERLAY -->
       <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
         <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
         <img id="share-image-output" class="hidden max-w-full max-h-[75vh] border border-neonRed shadow-neon" alt="Shareable tarot card">
@@ -487,8 +495,10 @@
   </div>
 
   <script>
-    const TMDB_API_KEY = "c2015ecda624b83d2e3d19ead77c0a8c";
     const WORKER_BASE_URL = "https://arcana-proxy.cory-gallant.workers.dev"; // single source of truth for the Cloudflare Worker
+    // NOTE: TMDB_API_KEY no longer lives here. All TMDB traffic (discover, movie details,
+    // reference-film search) now happens server-side inside the worker, which holds the key
+    // as a secret. The client never sees it.
     
     // --- APP STATE & 22-CARD REGISTRY ---
     const AppState = {
@@ -498,15 +508,15 @@
       era: 'any',
       depth: 'cinephile',
       sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
-      vibeGenreIds: [], // TMDB genre IDs detected by the AI from free-text mood, e.g. "murder mystery"
-      runtimeMax: null, // AI-detected runtime ceiling in minutes, e.g. "only have 90 minutes"
+      vibeGenreIds: [], 
+      runtimeMax: null, 
       seenMovies: [],
       rejectedMovies: [],
       currentMovie: null,
-      runnerUps: [], // 2nd/3rd closest candidates from the last match, for "Other timelines considered"
-      drawnSpread: [], // Array of up to 3 chosen cards
-      fullInversion: false, // true if all 3 drawn cards landed reversed (rare omen)
-      journal: [], // persisted history of past projections, loaded from localStorage on boot
+      runnerUps: [], 
+      drawnSpread: [], 
+      fullInversion: false, 
+      journal: [], 
       
       tarotDeck: [
         { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpeg', audio: 'freq-tramp', glitch: 'glitch-shake',
@@ -598,16 +608,11 @@
       10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' }
     };
 
-    // Reverse lookup: genre name (as the AI will say it, e.g. "MYSTERY") -> TMDB genre ID.
-    // Built automatically from GENRE_MAP so the two never drift out of sync.
     const GENRE_NAME_TO_ID = Object.fromEntries(
       Object.entries(GENRE_MAP).map(([id, data]) => [data.name, parseInt(id)])
     );
 
     // --- MANUAL GENRE CHIPS ---
-    // A tap-able fallback to the AI's text-based genre detection. Tapping a
-    // chip directly sets AppState.vibeGenreIds, same field the AI writes to,
-    // so the two stay in sync and either one can drive the TMDB filter.
     function renderGenreChips() {
       const container = document.getElementById('genre-chips-container');
       if (!container) return;
@@ -626,8 +631,6 @@
       if (idx >= 0) {
         AppState.vibeGenreIds.splice(idx, 1);
       } else {
-        // Cap manual selection at 2 to keep the candidate pool from
-        // narrowing too aggressively, same reasoning as the AI's limit.
         if (AppState.vibeGenreIds.length >= 2) AppState.vibeGenreIds.shift();
         AppState.vibeGenreIds.push(genreId);
       }
@@ -646,10 +649,7 @@
       }
     }
 
-    // --- LOCAL PERSISTENCE (survives reloads/closed tabs on this device) ---
-    // Uses localStorage, not Claude's window.storage — this file runs as a
-    // real deployed page on GitHub Pages, not inside the Claude artifact
-    // sandbox, so window.storage isn't available here.
+    // --- LOCAL PERSISTENCE ---
     const STORAGE_KEYS = {
       seen: 'cinema_arcana_seen',
       rejected: 'cinema_arcana_rejected',
@@ -679,8 +679,8 @@
     }
 
     function addJournalEntry(entry) {
-      AppState.journal.unshift(entry); // newest first
-      if (AppState.journal.length > 50) AppState.journal.length = 50; // cap history
+      AppState.journal.unshift(entry);
+      if (AppState.journal.length > 50) AppState.journal.length = 50; 
       try {
         localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
       } catch (e) {
@@ -688,7 +688,7 @@
       }
     }
 
-    let journalTab = 'recommended'; // 'recommended' | 'seen'
+    let journalTab = 'recommended'; 
 
     function openJournal() {
       playSynthBeep(500, 0.05, 'square');
@@ -716,10 +716,6 @@
         return;
       }
 
-      // Membership is computed live against AppState.seenMovies rather than
-      // stored per-entry, so marking a movie seen from EITHER the result
-      // screen or the journal itself instantly moves every matching entry
-      // (including past duplicates from rerolls) into the Seen tab.
       const filtered = AppState.journal.filter(entry => {
         const isSeen = entry.id && AppState.seenMovies.includes(entry.id);
         return journalTab === 'seen' ? isSeen : !isSeen;
@@ -800,22 +796,17 @@
       typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
     };
 
-    let typeToken = 0;
-    async function typewriter(elementId, text, speed = 30) {
+
+    // Text now pops in whole, no character-by-character animation anywhere in the app.
+    // Kept as an async function (and kept its name/signature) so every existing call site
+    // — dialogue lines, the psychic reading, the AI analysis — needs zero changes.
+    async function typewriter(elementId, text) {
       const el = document.getElementById(elementId);
       if (!el) return;
-      el.innerHTML = '';
-      typeToken++;
-      const currentToken = typeToken;
-      for (let i = 0; i < text.length; i++) {
-        if (typeToken !== currentToken) return;
-        el.innerHTML += text.charAt(i);
-        if (AppState.audioEnabled && i % 3 === 0) playSynthBeep(800 + Math.random() * 200, 0.01, 'square');
-        await sleep(speed + Math.random() * 20);
-      }
+      el.innerHTML = text;
     }
 
-    // --- SECURE CLOUDFLARE WORKER TRANSLATOR (WITH DETAILED ERROR REPORTING) ---
+    // --- SECURE CLOUDFLARE WORKER TRANSLATOR ---
     async function translateVibe() {
       const inputEl = document.getElementById('vibe-input');
       const statusEl = document.getElementById('vibe-status');
@@ -830,7 +821,6 @@
       btnEl.disabled = true;
       playSynthBeep(600, 0.1, 'sine');
 
-      // Uses the single global WORKER_BASE_URL defined near the top of the file
       const WORKER_URL = WORKER_BASE_URL;
 
       try {
@@ -842,7 +832,6 @@
             body: JSON.stringify({ mood: text })
           });
         } catch (netErr) {
-          // This almost always means CORS rejection or the Worker being unreachable
           throw new Error("NET/CORS: " + netErr.message);
         }
 
@@ -853,17 +842,13 @@
         }
 
         const data = await response.json();
-        console.log("RAW WORKER RESPONSE:", data);
 
-        // Check for proper structure depending on how Cloudflare returns it
         const rawCandidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!rawCandidate) {
           throw new Error("SHAPE: " + JSON.stringify(data).slice(0, 100));
         }
 
         let rawText = rawCandidate.trim();
-
-        // Strip markdown backticks if the LLM hallucinated them
         if (rawText.startsWith('```json')) rawText = rawText.substring(7);
         if (rawText.startsWith('```')) rawText = rawText.substring(3);
         if (rawText.endsWith('```')) rawText = rawText.substring(0, rawText.length - 3);
@@ -875,22 +860,17 @@
           throw new Error("PARSE: " + rawText.slice(0, 60));
         }
 
-        // Physically move the sliders
         const axes = ['warmth', 'tempo', 'reality', 'obscurity', 'humor'];
         axes.forEach(axis => {
           if (coordinates[axis] !== undefined) {
             const slider = document.getElementById(`slider-${axis}`);
             if (slider) {
               slider.value = coordinates[axis];
-              updateSliderVal(axis); // Call to update state & UI numbers
+              updateSliderVal(axis); 
             }
           }
         });
 
-        // Genre detection: only locks a genre when the AI is confident the
-        // text implies one (e.g. "murder mystery"). Each new sync call
-        // overwrites the previous lock — typing something genre-neutral
-        // clears it back out.
         let detectedGenres = [];
         if (Array.isArray(coordinates.genres)) {
           detectedGenres = coordinates.genres
@@ -898,39 +878,19 @@
             .filter(id => id !== undefined);
         }
 
-        // Runtime awareness: "only have 90 minutes tonight" -> a hard cap
-        // on the TMDB query. Sanity-clamped so a bad AI value can't produce
-        // an unusable filter (e.g. 0 minutes).
         AppState.runtimeMax = null;
         if (typeof coordinates.runtimeMax === 'number' && coordinates.runtimeMax > 0) {
           AppState.runtimeMax = Math.max(40, Math.min(240, Math.round(coordinates.runtimeMax)));
         }
 
-        // Reference film: "more like Parasite" -> look that title up on
-        // TMDB and borrow its genres as an additional signal. We merge
-        // rather than overwrite, so an explicit genre word ("mystery")
-        // and a reference film ("like Knives Out") can stack.
-        let referenceGenres = [];
-        let referenceTitleFound = null;
-        if (coordinates.referenceFilm && String(coordinates.referenceFilm).trim()) {
-          try {
-            const q = encodeURIComponent(String(coordinates.referenceFilm).trim());
-            const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${q}&include_adult=false`);
-            if (searchRes.ok) {
-              const searchData = await searchRes.json();
-              const topHit = searchData?.results?.[0];
-              if (topHit) {
-                referenceTitleFound = topHit.title;
-                referenceGenres = (topHit.genre_ids || []).filter(id => GENRE_MAP[id]);
-              }
-            }
-          } catch (e) {
-            console.error("Reference film lookup failed:", e);
-          }
-        }
+        // The worker already resolved any referenced film (e.g. "more like Parasite")
+        // against TMDB server-side and folded the result into this same response —
+        // no separate client-side TMDB call, no exposed key.
+        const referenceGenres = Array.isArray(coordinates.referenceGenreIds)
+          ? coordinates.referenceGenreIds.filter(id => GENRE_MAP[id])
+          : [];
+        const referenceTitleFound = coordinates.referenceTitle || null;
 
-        // Merge AI-detected genres + reference-film genres, cap at 3 total
-        // so the TMDB filter doesn't get so narrow it starves the pool.
         const mergedGenres = [...new Set([...detectedGenres, ...referenceGenres])].slice(0, 3);
         AppState.vibeGenreIds = mergedGenres;
         renderGenreChips();
@@ -954,7 +914,6 @@
 
       } catch (err) {
         console.error("Vibe Translator Error:", err);
-        // Show the real failure reason on-screen instead of a generic message
         statusEl.innerText = "[ FAILED: " + err.message.slice(0, 50) + " ]";
         statusEl.classList.add('text-neonRed');
         triggerGlitchEffect('glitch-shake');
@@ -966,7 +925,7 @@
 
     async function fetchHitsTelemetry() {
       try {
-        const res = await fetch('https://api.counterapi.dev/v1/theblindcut_baconeggncheesy/hits/increment');
+        const res = await fetch('[https://api.counterapi.dev/v1/theblindcut_baconeggncheesy/hits/increment](https://api.counterapi.dev/v1/theblindcut_baconeggncheesy/hits/increment)');
         if (res.ok) {
           const data = await res.json();
           if (data && data.count) {
@@ -991,43 +950,239 @@
       }
     }
 
-    let audioCtx = null;
-    function initAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(audioCtx.state === 'suspended') audioCtx.resume();
-    }
+    // ============================================================================
+    // AUDIO ENGINE — "a living machine"
+    // ------------------------------------------------------------------------
+    // Everything funnels through one master bus: masterGain -> masterFilter (lowpass) -> speakers.
+    // Routing every sound (beeps, drones, hums) through that shared lowpass filter is what makes
+    // the "muffled -> sharp" reveal trick work: sweep ONE filter's cutoff and the entire mix
+    // clarifies at once, in sync with the visual blur-to-focus.
+    //
+    // To add new tricks later: grab AudioEngine.ctx / AudioEngine.master and build a small
+    // node graph the same way heartbeat/wheelHum do (persistent oscillator + gain you ramp,
+    // rather than one-shot fire-and-forget nodes). Route the final node into AudioEngine.master.
+    // ============================================================================
+    const AudioEngine = {
+      ctx: null,
+      master: null,
+      filter: null,
+      noiseBuffer: null,
+      _idleHumStarted: false,
+
+      init() {
+        if (this.ctx) {
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+          return;
+        }
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = 0.9;
+        this.filter = this.ctx.createBiquadFilter();
+        this.filter.type = 'lowpass';
+        this.filter.frequency.value = 19000; // wide open ("sharp") by default
+        this.filter.Q.value = 0.7;
+        this.master.connect(this.filter);
+        this.filter.connect(this.ctx.destination);
+        this._buildNoiseBuffer();
+        this.idleHum.start();
+      },
+
+      _buildNoiseBuffer() {
+        const len = this.ctx.sampleRate * 2;
+        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+        this.noiseBuffer = buf;
+      },
+
+      // Simple one-shot tone, routed through the shared master bus/filter.
+      tone(freq, duration, type = 'square', gainAmt = 0.05) {
+        if (!AppState.audioEnabled) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainAmt, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.master);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      },
+
+      // Ramp the master filter DOWN (muffled) quickly — used going into the loading montage.
+      muffle(cutoffHz = 380, rampSec = 0.5) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        this.filter.frequency.cancelScheduledValues(now);
+        this.filter.frequency.setValueAtTime(this.filter.frequency.value, now);
+        this.filter.frequency.linearRampToValueAtTime(cutoffHz, now + rampSec);
+      },
+
+      // Ramp the master filter back UP (sharp/open) — this is "the reveal."
+      // Called at the exact moment the blur-to-focus visual kicks off, same duration.
+      focusSweep(durationSec = 2) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        this.filter.frequency.cancelScheduledValues(now);
+        this.filter.frequency.setValueAtTime(Math.max(60, this.filter.frequency.value), now);
+        this.filter.frequency.exponentialRampToValueAtTime(19000, now + durationSec);
+      },
+
+      // Very quiet, always-on machine hum once audio has ever been initialized — the app
+      // "breathes" faintly even outside the loading montage. Cheap and easy to build on.
+      idleHum: {
+        playing: false,
+        osc: null, osc2: null, gain: null,
+        start() {
+          if (this.playing) return;
+          const ctx = AudioEngine.ctx;
+          this.osc = ctx.createOscillator();
+          this.osc.type = 'sine';
+          this.osc.frequency.value = 59; // mains-hum register
+          this.osc2 = ctx.createOscillator();
+          this.osc2.type = 'sine';
+          this.osc2.frequency.value = 118;
+          this.gain = ctx.createGain();
+          this.gain.gain.value = 0.0;
+          const now = ctx.currentTime;
+          this.gain.gain.linearRampToValueAtTime(0.006, now + 3);
+          this.osc.connect(this.gain);
+          this.osc2.connect(this.gain);
+          this.gain.connect(AudioEngine.master);
+          this.osc.start();
+          this.osc2.start();
+          this.playing = true;
+        }
+      },
+
+      // --- Heartbeat drone: plays through the loading montage ---
+      heartbeat: {
+        playing: false,
+        osc: null, lfo: null, lfoGain: null, gain: null,
+        start() {
+          if (!AppState.audioEnabled || this.playing) return;
+          AudioEngine.init();
+          const ctx = AudioEngine.ctx;
+          this.playing = true;
+
+          this.osc = ctx.createOscillator();
+          this.osc.type = 'sine';
+          this.osc.frequency.value = 44; // low-frequency drone
+
+          this.gain = ctx.createGain();
+          this.gain.gain.value = 0.0001;
+
+          // Slow LFO on the gain gives it a pulsing, "alive" heartbeat feel (~68bpm)
+          this.lfo = ctx.createOscillator();
+          this.lfo.type = 'sine';
+          this.lfo.frequency.value = 1.13;
+          this.lfoGain = ctx.createGain();
+          this.lfoGain.gain.value = 0.05;
+          this.lfo.connect(this.lfoGain);
+          this.lfoGain.connect(this.gain.gain);
+
+          this.osc.connect(this.gain);
+          this.gain.connect(AudioEngine.master);
+
+          const now = ctx.currentTime;
+          this.gain.gain.setValueAtTime(0.0001, now);
+          this.gain.gain.linearRampToValueAtTime(0.1, now + 1.1);
+
+          this.osc.start();
+          this.lfo.start();
+        },
+        stop(fadeSec = 0.5) {
+          if (!this.playing || !AudioEngine.ctx) return;
+          const ctx = AudioEngine.ctx;
+          const now = ctx.currentTime;
+          this.gain.gain.cancelScheduledValues(now);
+          this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+          this.gain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
+          const osc = this.osc, lfo = this.lfo;
+          setTimeout(() => { try { osc.stop(); lfo.stop(); } catch (e) {} }, fadeSec * 1000 + 100);
+          this.playing = false;
+        }
+      },
+
+      // --- Wheel hum: pitch/brightness/volume track the wheel's spin speed live ---
+      wheelHum: {
+        active: false,
+        osc: null, filter: null, gain: null,
+        ensure() {
+          if (this.active || !AppState.audioEnabled) return;
+          AudioEngine.init();
+          const ctx = AudioEngine.ctx;
+          this.osc = ctx.createOscillator();
+          this.osc.type = 'sawtooth';
+          this.osc.frequency.value = 55;
+          this.filter = ctx.createBiquadFilter();
+          this.filter.type = 'lowpass';
+          this.filter.frequency.value = 250;
+          this.gain = ctx.createGain();
+          this.gain.gain.value = 0.0001;
+          this.osc.connect(this.filter);
+          this.filter.connect(this.gain);
+          this.gain.connect(AudioEngine.master);
+          this.osc.start();
+          this.active = true;
+        },
+        // velocityAbs: absolute wheel velocity in index-units/frame, roughly 0 - 1.5
+        update(velocityAbs) {
+          if (!AppState.audioEnabled) { this.silence(); return; }
+          this.ensure();
+          if (!this.active) return;
+          const ctx = AudioEngine.ctx;
+          const now = ctx.currentTime;
+          const v = Math.min(1.5, velocityAbs);
+          const targetFreq = 50 + v * 260;
+          const targetFilterFreq = 220 + v * 3400;
+          const targetGain = v < 0.02 ? 0.0001 : Math.min(0.11, 0.015 + v * 0.09);
+          this.osc.frequency.setTargetAtTime(targetFreq, now, 0.05);
+          this.filter.frequency.setTargetAtTime(targetFilterFreq, now, 0.05);
+          this.gain.gain.setTargetAtTime(targetGain, now, 0.08);
+        },
+        silence() {
+          if (!this.active || !AudioEngine.ctx) return;
+          this.gain.gain.setTargetAtTime(0.0001, AudioEngine.ctx.currentTime, 0.15);
+        }
+      }
+    };
 
     function toggleAudio() {
       AppState.audioEnabled = !AppState.audioEnabled;
       document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
-      if (AppState.audioEnabled) playSynthBeep(440, 0.05, 'square');
+      if (AppState.audioEnabled) {
+        AudioEngine.tone(440, 0.05, 'square');
+        // If audio gets turned on mid-loading-montage, catch the drone up rather than
+        // leaving it silent for the rest of the wait.
+        const loadingVisible = !document.getElementById('screen-loading')?.classList.contains('hidden');
+        if (loadingVisible) {
+          AudioEngine.heartbeat.start();
+          AudioEngine.muffle(380, 0.3);
+        }
+      } else {
+        AudioEngine.heartbeat.stop(0.15);
+        AudioEngine.wheelHum.silence();
+      }
     }
 
     function playSynthBeep(freq, duration, type = 'square') {
-      if (!AppState.audioEnabled) return;
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {}
+      AudioEngine.tone(freq, duration, type, 0.05);
     }
 
     function playArcanaSound(type) {
       if (!AppState.audioEnabled) return;
-      initAudio();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      AudioEngine.init();
+      const ctx = AudioEngine.ctx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      const now = audioCtx.currentTime;
+      gain.connect(AudioEngine.master);
+      const now = ctx.currentTime;
       switch(type) {
         case 'freq-heavy':
           osc.type = 'sine'; osc.frequency.setValueAtTime(40, now);
@@ -1096,9 +1251,6 @@
 
     function updateParameterUI(key, val) {
       const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'], depth: ['casual', 'cinephile'] };
-      // ID prefixes don't always match the AppState key name (the language
-      // buttons use "lang-" in the HTML, not "language-"), so this maps
-      // each key to its real prefix instead of assuming they're identical.
       const idPrefixes = { language: 'lang', era: 'era', depth: 'depth' };
       const prefix = idPrefixes[key] || key;
       ids[key].forEach(item => {
@@ -1135,20 +1287,22 @@
       img.src = `https://via.placeholder.com/150x210/0A0A0A/FF003C?text=${encodeURIComponent(fallbackText)}`;
     }
 
-    // --- COVER FLOW WHEEL LOGIC (INFINITE LOOP) ---
-    let wheelIndex = 0; // fractional during drag/inertia, always settles to an integer when idle
+    // --- COVER FLOW WHEEL LOGIC (100% JS PHYSICS REWRITE) ---
+    let wheelIndex = 0; 
     let wheelCards = [];
 
-    const WHEEL_CARD_SPACING = 65; // must match the translateX(offset*65) math below
-    const WHEEL_FRICTION = 0.0035; // higher = stops sooner, lower = keeps spinning longer after release
+    const WHEEL_CARD_SPACING = 65; 
 
     let wheelDragActive = false;
-    let wheelDragStartIndex = 0;
+    let isSwipingWheel = false;
     let wheelTouchStartX = 0;
-    let wheelPrevMoveX = 0;
-    let wheelPrevMoveTime = 0;
-    let wheelInertiaRAF = null;
-    let wheelInertiaVelocity = 0; // in "card index units" per ms
+    let wheelTouchStartY = 0;
+    let wheelDragStartIndex = 0;
+    let wheelVelocityTracker = [];
+    let wheelVelocity = 0; 
+    let wheelRAF = null;
+    let wheelTargetIndex = 0;
+    let isSettling = false;
 
     async function goToTarotGame() {
       playTypewriterDing();
@@ -1161,21 +1315,20 @@
       
       showScreen('screen-game3');
       await sleep(300);
-      typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Spin to find the three cards that align with your frequency: Past, Present, Future.");
+      typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
     }
 
     function initTarotWheel() {
         const container = document.getElementById('coverflow-container');
         container.innerHTML = '';
         wheelCards = [...AppState.tarotDeck].sort(() => 0.5 - Math.random());
-        wheelIndex = Math.floor(wheelCards.length / 2); // Start in middle
+        wheelIndex = Math.floor(wheelCards.length / 2); 
 
         wheelCards.forEach((card, i) => {
             const el = document.createElement('div');
             el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] tarot-card-container';
             el.id = `wheel-card-${i}`;
             
-            // Click a card to centre it; click the centred card to draw it.
             el.onclick = () => { if (wheelOffset(i) === 0) drawCenteredCard(); else spinTo(i); };
 
             el.innerHTML = `
@@ -1192,136 +1345,143 @@
             container.appendChild(el);
         });
 
-        // Real physics-based drag + inertia:
-        // - touchstart cancels any in-progress spin and starts 1:1 finger tracking
-        // - touchmove moves the wheel exactly with the finger, no animation lag
-        // - touchend hands off to an inertia loop using the most recent release
-        //   velocity, which decays naturally over time — a hard flick keeps
-        //   spinning and gradually slows down; a soft drag barely moves at all
-        //   once released, since there's little velocity to carry it further.
         container.addEventListener('touchstart', e => {
-            cancelWheelInertia();
             wheelDragActive = true;
-            wheelDragStartIndex = wheelIndex;
+            isSettling = false;
+            isSwipingWheel = false;
+            if (wheelRAF !== null) { cancelAnimationFrame(wheelRAF); wheelRAF = null; }
+            
             wheelTouchStartX = e.touches[0].clientX;
-            wheelPrevMoveX = wheelTouchStartX;
-            wheelPrevMoveTime = performance.now();
-            setWheelCardsTransition('none'); // instant tracking while dragging, no CSS animation lag
+            wheelTouchStartY = e.touches[0].clientY;
+            wheelDragStartIndex = wheelIndex;
+            wheelVelocityTracker = [{ x: wheelTouchStartX, t: performance.now() }];
+            wheelVelocity = 0;
         }, {passive: true});
 
-        // Belt-and-suspenders alongside the touch-none CSS class: actively
-        // blocks the page from scrolling during the gesture, since
-        // touch-action isn't 100% consistently honored mid-swipe on every
-        // browser. {passive: false} is required for preventDefault to work.
         container.addEventListener('touchmove', e => {
-            e.preventDefault();
             if (!wheelDragActive) return;
+            
             const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
             const now = performance.now();
-            const deltaFromStart = currentX - wheelTouchStartX;
-            wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING);
-            updateWheel();
-            wheelPrevMoveX = currentX;
-            wheelPrevMoveTime = now;
+            
+            // Smart scroll detection: yield to vertical scrolling, hijack horizontal swiping
+            if (!isSwipingWheel) {
+                const dx = Math.abs(currentX - wheelTouchStartX);
+                const dy = Math.abs(currentY - wheelTouchStartY);
+                if (dy > dx && dy > 5) {
+                    wheelDragActive = false; // It's a vertical scroll, let browser handle it
+                    return;
+                }
+                if (dx > 5) isSwipingWheel = true;
+            }
+
+            if (isSwipingWheel) {
+                if (e.cancelable) e.preventDefault(); // Stop page from bouncing horizontally
+                const prevPoint = wheelVelocityTracker[wheelVelocityTracker.length - 1];
+                wheelVelocityTracker.push({ x: currentX, t: now });
+                if (wheelVelocityTracker.length > 5) wheelVelocityTracker.shift();
+
+                const deltaFromStart = currentX - wheelTouchStartX;
+                wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING);
+                updateWheel();
+
+                // Live drag speed -> hum, so the sound tracks your finger, not just the physics settle
+                if (prevPoint) {
+                    const dt = Math.max(1, now - prevPoint.t);
+                    const instVelocity = Math.abs((currentX - prevPoint.x) / dt) * 16 / WHEEL_CARD_SPACING;
+                    AudioEngine.wheelHum.update(instVelocity);
+                }
+            }
         }, {passive: false});
 
         container.addEventListener('touchend', e => {
             if (!wheelDragActive) return;
             wheelDragActive = false;
 
-            const endX = e.changedTouches[0].clientX;
-            const endTime = performance.now();
-            // Velocity is computed from only the last bit of movement (not
-            // the whole gesture's average), since that's what actually
-            // reflects how fast the finger was moving at the moment of release.
-            const dt = Math.max(1, endTime - wheelPrevMoveTime);
-            const pxVelocity = (endX - wheelPrevMoveX) / dt; // px per ms
-            wheelInertiaVelocity = -(pxVelocity / WHEEL_CARD_SPACING); // index-units/ms, sign matches drag direction
-
-            runWheelInertia();
+            if (isSwipingWheel) {
+                const now = performance.now();
+                const validPoints = wheelVelocityTracker.filter(p => now - p.t < 150);
+                const oldest = validPoints[0] || wheelVelocityTracker[0];
+                
+                const dt = Math.max(1, now - oldest.t);
+                const dx = e.changedTouches[0].clientX - oldest.x;
+                
+                wheelVelocity = -(dx / dt) * 16 / WHEEL_CARD_SPACING; 
+                wheelVelocity = Math.max(-1.5, Math.min(1.5, wheelVelocity)); // Terminal velocity
+            } else {
+                wheelVelocity = 0;
+            }
+            
+            isSettling = false; 
+            if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics);
         }, {passive: true});
 
         updateWheel();
     }
 
-    function wheelOffset(i) {
-        const N = wheelCards.length;
-        if (N === 0) return 0;
-        const idxMod = ((wheelIndex % N) + N) % N;
-        let raw = i - idxMod;
-        if (raw > N / 2) raw -= N;
-        if (raw < -N / 2) raw += N;
-        return raw;
-    }
-
-    function setWheelCardsTransition(transitionStr) {
-        wheelCards.forEach((card, i) => {
-            const el = document.getElementById(`wheel-card-${i}`);
-            if (el) el.style.transition = transitionStr;
-        });
-    }
-
-    function cancelWheelInertia() {
-        if (wheelInertiaRAF !== null) {
-            cancelAnimationFrame(wheelInertiaRAF);
-            wheelInertiaRAF = null;
+    function runPhysics() {
+        if (wheelDragActive) {
+            AudioEngine.wheelHum.update(Math.abs(wheelVelocity));
+            wheelRAF = requestAnimationFrame(runPhysics);
+            return;
         }
-    }
 
-    // Runs the post-release momentum animation: velocity decays
-    // exponentially each frame (frame-rate independent, using real elapsed
-    // time rather than assuming 60fps) until it's negligible, then the
-    // wheel settles into the nearest card with one short eased snap.
-    function runWheelInertia() {
-        let lastTime = performance.now();
+        if (!isSettling) {
+            wheelVelocity *= 0.94; // Friction
+            wheelIndex += wheelVelocity;
 
-        function frame(now) {
-            const dt = now - lastTime;
-            lastTime = now;
+            if (Math.abs(wheelVelocity) < 0.05) {
+                isSettling = true;
+                wheelTargetIndex = Math.round(wheelIndex);
+            }
+        } else {
+            const diff = wheelTargetIndex - wheelIndex;
+            wheelVelocity = diff * 0.15; // Spring snap
+            wheelIndex += wheelVelocity;
 
-            wheelInertiaVelocity *= Math.exp(-WHEEL_FRICTION * dt);
-            wheelIndex += wheelInertiaVelocity * dt;
-            updateWheel();
-
-            if (Math.abs(wheelInertiaVelocity) > 0.00025) {
-                wheelInertiaRAF = requestAnimationFrame(frame);
-            } else {
-                settleWheelToNearestCard();
+            if (Math.abs(diff) < 0.005) {
+                wheelIndex = wheelTargetIndex;
+                wheelVelocity = 0;
+                updateWheel();
+                AudioEngine.wheelHum.silence();
+                wheelRAF = null; 
+                
+                const tone = ((Math.round(wheelIndex) % 12) + 12) % 12;
+                playSynthBeep(320 + tone * 12, 0.02, 'triangle');
+                return; 
             }
         }
 
-        wheelInertiaRAF = requestAnimationFrame(frame);
-    }
-
-    function settleWheelToNearestCard() {
-        wheelInertiaRAF = null;
-        const target = Math.round(wheelIndex);
-        setWheelCardsTransition('transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms cubic-bezier(0.16, 1, 0.3, 1)');
-        wheelIndex = target;
+        AudioEngine.wheelHum.update(Math.abs(wheelVelocity));
         updateWheel();
-        const tone = ((wheelIndex % 12) + 12) % 12;
-        playSynthBeep(320 + tone * 12, 0.02, 'triangle');
+        wheelRAF = requestAnimationFrame(runPhysics);
     }
 
-    // Used by the << / >> buttons and tap-to-center: a single discrete
-    // step or jump, animated with a short eased transition rather than
-    // the instant/physics-driven path used during an actual touch drag.
+    // Safely calculates the circular distance between two indices avoiding floating point weirdness
+    function wheelOffset(i) {
+        const N = wheelCards.length;
+        if (N === 0) return 0;
+        let diff = (i - wheelIndex) % N;
+        if (diff > N / 2) diff -= N;
+        else if (diff < -N / 2) diff += N;
+        return diff;
+    }
+
     function spinTo(index) {
-        cancelWheelInertia();
-        const steps = Math.abs(wheelOffset(index)) || 1;
-        const duration = Math.min(900, Math.max(240, 240 + steps * 45));
-        setWheelCardsTransition(`transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1), opacity ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`);
-        wheelIndex += wheelOffset(index);
-        updateWheel();
+        wheelTargetIndex = Math.round(wheelIndex) + Math.round(wheelOffset(index));
+        isSettling = true;
+        AudioEngine.wheelHum.update(0.5);
+        if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics);
         playSynthBeep(400, 0.02, 'triangle');
     }
 
     function spinWheel(dir) {
-        cancelWheelInertia();
-        setWheelCardsTransition('transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms cubic-bezier(0.16, 1, 0.3, 1)');
-        wheelIndex += dir; // unbounded: the wheel loops forever in both directions
-        updateWheel();
-        const tone = ((wheelIndex % 12) + 12) % 12;
+        wheelTargetIndex = Math.round(wheelIndex) + dir;
+        isSettling = true;
+        AudioEngine.wheelHum.update(0.5);
+        if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics);
+        const tone = ((Math.abs(wheelTargetIndex) % 12) + 12) % 12;
         playSynthBeep(320 + tone * 12, 0.02, 'triangle');
     }
 
@@ -1347,20 +1507,25 @@
     async function drawCenteredCard() {
         if (AppState.drawnSpread.length >= 3) return;
 
-        cancelWheelInertia(); // grabbing a card stops any residual spin
-        wheelIndex = Math.round(wheelIndex); // ensure a clean array index even if grabbed mid-spin
+        // Force an absolute math lock to an integer so array lookups don't crash on a .001 decimal
+        wheelDragActive = false;
+        wheelVelocity = 0;
+        const cleanIndex = Math.round(wheelIndex);
+        wheelTargetIndex = cleanIndex;
+        wheelIndex = cleanIndex;
+        if (wheelRAF) { cancelAnimationFrame(wheelRAF); wheelRAF = null; }
+        updateWheel(); 
 
         const N = wheelCards.length;
-        const realIndex = ((wheelIndex % N) + N) % N;
+        const realIndex = ((cleanIndex % N) + N) % N; // Flawless array extraction
         const card = wheelCards[realIndex];
         const el = document.getElementById(`wheel-card-${realIndex}`).querySelector('.tarot-card');
         
-        if(el.classList.contains('flipped')) return; // already drawn
+        if(el.classList.contains('flipped')) return; 
 
         const isReversed = Math.random() >= 0.5;
         AppState.drawnSpread.push({ card, isReversed, position: AppState.drawnSpread.length });
         
-        // Setup Visuals
         const ind = document.getElementById(`ind-${card.id}`);
         const posName = AppState.drawnSpread.length === 1 ? "PAST" : AppState.drawnSpread.length === 2 ? "PRESENT" : "FUTURE";
         ind.innerText = `${posName} ${isReversed ? '(REV)' : ''}`;
@@ -1369,6 +1534,7 @@
         if (isReversed) el.classList.add('reversed-card');
         
         el.parentElement.style.filter = "brightness(1.2)";
+        AudioEngine.wheelHum.silence();
         
         playArcanaSound(card.audio);
         triggerGlitchEffect(card.glitch);
@@ -1382,9 +1548,6 @@
             document.querySelectorAll('.tarot-card:not(.flipped)').forEach(c => c.parentElement.style.opacity = '0.2');
             document.getElementById('tarot-proceed-btn').classList.remove('hidden');
 
-            // Rare omen: all three cards landed reversed (1-in-8 odds).
-            // Worth a special beat — this is a real statistical outlier,
-            // not just flavor text.
             AppState.fullInversion = AppState.drawnSpread.every(d => d.isReversed);
             if (AppState.fullInversion) {
                 triggerGlitchEffect('glitch-vertigo');
@@ -1430,15 +1593,11 @@
             `;
         });
 
+        AudioEngine.wheelHum.silence();
         showScreen('screen-spread-review');
         await renderPsychicReading();
     }
 
-    // --- PSYCHIC READING (genuine tarot reading, no movie content at all) ---
-    // Separate from the movie-matching math entirely — this is pure flavor,
-    // generated live by AI, written the way an actual tarot reader would
-    // speak about the querent's life. No fallback template by design,
-    // consistent with the rest of the app's "WRITER'S BLOCK" philosophy.
     async function renderPsychicReading() {
       const el = document.getElementById('psychic-reading-text');
       if (!el) return;
@@ -1479,54 +1638,75 @@
       }
     }
 
+    // --- LOADING MONTAGE: climbs to 100%, then HOLDS there with a decrypt message
+    //     until the worker's single-package response actually arrives. ---
     let progressInterval = null;
-    async function initiateSubconsciousMatching() {
-      showScreen('screen-loading');
-      
+
+    function startLoadingSequence() {
       const logs = [
         "Formatting margins...",
         "Evaluating structural boundaries...",
         "Applying 3-Card Spread vector shifts...",
         "Checking Reversal inversions...",
-        "Querying live TMDB archives...",
-        "Cross-referencing multiple pages...",
-        "Printing definitive match..."
+        "Establishing secure uplink...",
+        "Cross-referencing the archive...",
+        "Compiling definitive match..."
       ];
-      
+
       let step = 0;
       const term = document.getElementById('loading-terminal');
       const pct = document.getElementById('loading-pct');
       pct.innerText = "0%";
-      
+      term.innerText = logs[0];
+      term.classList.remove('cursor-blink');
+
       progressInterval = setInterval(() => {
-        let currentPct = parseInt(pct.innerText);
-        if (currentPct < 95) pct.innerText = `${currentPct + Math.floor(Math.random() * 5)}%`;
-        if (Math.random() > 0.7 && step < logs.length) {
-          term.innerText = logs[step];
-          playSynthBeep(700, 0.02, 'square');
-          step++;
+        const currentPct = parseInt(pct.innerText);
+        if (currentPct >= 100) return;
+        const next = Math.min(100, currentPct + Math.floor(Math.random() * 6) + 2);
+        pct.innerText = `${next}%`;
+        if (next < 100) {
+          if (Math.random() > 0.6 && step < logs.length - 1) {
+            step++;
+            term.innerText = logs[step];
+            playSynthBeep(700, 0.02, 'square');
+          }
+        } else {
+          // Hold here — this is the state until the worker's response actually lands.
+          term.innerText = "[ DECRYPTING SUBCONSCIOUS TRUTHS... ]";
+          term.classList.add('cursor-blink');
+          playSynthBeep(220, 0.06, 'sine');
         }
-      }, 200);
+      }, 180);
+    }
+
+    function stopLoadingSequence() {
+      if (progressInterval) clearInterval(progressInterval);
+      progressInterval = null;
+      const term = document.getElementById('loading-terminal');
+      if (term) term.classList.remove('cursor-blink');
+    }
+
+    async function initiateSubconsciousMatching() {
+      showScreen('screen-loading');
+      AudioEngine.heartbeat.start();
+      AudioEngine.muffle(380, 0.6); // the whole mix goes muffled while "the machine thinks"
+      startLoadingSequence();
 
       try {
-        // Cards nudge the spectrum — they never get to swamp it.
-        // TAROT_INFLUENCE shrinks each card's raw shift before summing.
-        // MAX_TAROT_SHIFT then hard-caps the *combined* result per axis,
-        // so even an unlucky draw where all three cards stack the same
-        // direction can't exceed a true "nudge" — worst case is always
-        // bounded, not just typically small.
+        // Tarot draw nudges the baseline sliders exactly as before — this is local,
+        // static card data and needs no server round trip.
         const TAROT_INFLUENCE = 0.3;
-        const MAX_TAROT_SHIFT = 20; // hard ceiling per axis, regardless of draw
-
+        const MAX_TAROT_SHIFT = 20;
         const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
 
-        let tw=0, tt=0, tr=0, th=0;
+        let tw = 0, tt = 0, tr = 0, th = 0;
         AppState.drawnSpread.forEach(draw => {
-           const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
-           tw += s.w * TAROT_INFLUENCE;
-           tt += s.t * TAROT_INFLUENCE;
-           tr += s.r * TAROT_INFLUENCE;
-           th += s.h * TAROT_INFLUENCE;
+          const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
+          tw += s.w * TAROT_INFLUENCE;
+          tt += s.t * TAROT_INFLUENCE;
+          tr += s.r * TAROT_INFLUENCE;
+          th += s.h * TAROT_INFLUENCE;
         });
         tw = clampShift(tw); tt = clampShift(tt); tr = clampShift(tr); th = clampShift(th);
 
@@ -1534,142 +1714,78 @@
         const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt));
         const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr));
         const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th));
-        
-        // Default runtime floor is 60min; if the AI detected a tighter
-        // ceiling (e.g. "only have 90 minutes"), lower the floor too so
-        // the two filters can never form an impossible range (e.g.
-        // gte=60 + lte=50 would silently return zero candidates).
-        const runtimeFloor = AppState.runtimeMax ? Math.min(60, Math.max(20, AppState.runtimeMax - 15)) : 60;
-        let discoverParams = [
-          `api_key=${TMDB_API_KEY}`, `vote_average.gte=6.8`, `include_adult=false`, `with_runtime.gte=${runtimeFloor}`
-        ];
-        if (AppState.runtimeMax) {
-          discoverParams.push(`with_runtime.lte=${AppState.runtimeMax}`);
+        const finalObscurity = AppState.sliders.obscurity;
+
+        const spreadSummary = AppState.drawnSpread.map((draw, i) => {
+          const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
+          return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Rev)' : ''}`;
+        }).join(', ');
+
+        // Everything that needs the TMDB key (discover, scoring, movie details) and the
+        // Gemini key now happens server-side in one shot. The worker sends back one package:
+        // the selected movie's full details, runner-ups, the noir teaser, and the assessment.
+        const payload = {
+          type: 'match',
+          sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
+          language: AppState.language,
+          era: AppState.era,
+          runtimeMax: AppState.runtimeMax,
+          vibeGenreIds: AppState.vibeGenreIds,
+          seenMovies: AppState.seenMovies,
+          rejectedMovies: AppState.rejectedMovies,
+          spread: spreadSummary
+        };
+
+        const res = await fetch(WORKER_BASE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || data.error || !data.movie) {
+          throw new Error((data && data.error) || `HTTP ${res.status}`);
         }
-        
-        if (AppState.language === 'english') discoverParams.push(`with_original_language=en`);
-        else if (AppState.language === 'foreign') discoverParams.push(`with_original_language=fr,ja,ko,it,es,de,ru,zh,pt,pl,da`);
-        if (AppState.era === 'golden') discoverParams.push(`primary_release_date.lte=1970-12-31`);
-        else if (AppState.era === 'neon') discoverParams.push(`primary_release_date.gte=1971-01-01`, `primary_release_date.lte=1999-12-31`);
-        else if (AppState.era === 'digital') discoverParams.push(`primary_release_date.gte=2000-01-01`);
-        
-        const obs = AppState.sliders.obscurity;
-        if (obs <= 35) discoverParams.push(`vote_count.gte=1500`, `sort_by=popularity.desc`);
-        else if (obs >= 70) discoverParams.push(`vote_count.gte=30`, `vote_count.lte=1200`, `sort_by=vote_average.desc`);
-        else discoverParams.push(`vote_count.gte=200`, `vote_count.lte=4000`, `sort_by=popularity.desc`);
 
-        // Hard genre lock from AI-detected mood text (e.g. "rainy day murder
-        // mystery" -> Mystery/Crime) or manually-tapped chips. Pipe = OR in
-        // TMDB's syntax, so any matching genre qualifies a candidate rather
-        // than requiring all.
-        if (AppState.vibeGenreIds.length > 0) {
-          discoverParams.push(`with_genres=${AppState.vibeGenreIds.join('|')}`);
-        }
-        
-        const fetchWithTimeout = async (url, ms = 8000) => {
-          const controller = new AbortController();
-          const id = setTimeout(() => controller.abort(), ms);
-          const response = await fetch(url, { signal: controller.signal });
-          clearTimeout(id);
-          return response;
-        };
+        await revealResult(data, finalWarmth, finalTempo, finalReality, finalHumor);
 
-        const fetchJsonWithRetry = async (url, retries = 2) => {
-          for (let attempt = 0; attempt <= retries; attempt++) {
-            try {
-              const res = await fetchWithTimeout(url);
-              if (res.ok) return await res.json();
-              if (res.status === 429 || res.status >= 500) { await sleep(450 * (attempt + 1)); continue; }
-              return null;
-            } catch (e) {
-              await sleep(450 * (attempt + 1));
-            }
-          }
-          return null;
-        };
-
-        const gatherCandidates = async (baseUrl) => {
-          const first = await fetchJsonWithRetry(`${baseUrl}&page=1`);
-          if (!first || !first.results) return [];
-          const pool = [...first.results];
-          const totalPages = Math.min(first.total_pages || 1, 20);
-          const chosen = new Set([1]);
-          let guard = 0;
-          while (chosen.size < Math.min(totalPages, 3) && guard++ < 40) {
-            chosen.add(Math.floor(Math.random() * totalPages) + 1);
-          }
-          for (const p of chosen) {
-            if (p === 1) continue;
-            const d = await fetchJsonWithRetry(`${baseUrl}&page=${p}`);
-            if (d && d.results) pool.push(...d.results);
-          }
-          const seenIds = new Set();
-          return pool.filter(m => { if (seenIds.has(m.id)) return false; seenIds.add(m.id); return true; });
-        };
-
-        const baseDiscoverUrl = `https://api.themoviedb.org/3/discover/movie?${discoverParams.join('&')}`;
-
-        let candidates = await gatherCandidates(baseDiscoverUrl);
-        candidates = candidates.filter(m => !AppState.seenMovies.includes(m.id) && !AppState.rejectedMovies.includes(m.id));
-
-        // NOTE: No relaxed/fallback query by design. If the live archive
-        // returns nothing under the user's actual parameters, we surface
-        // a real error rather than silently broadening the search.
-        if (candidates.length === 0) throw new Error("The live archive returned no usable matches. No fallback permitted by design.");
-        
-        // Score every candidate, then keep the full ranked list so we can
-        // surface "other timelines considered" (2nd/3rd place) alongside
-        // the winning match, instead of throwing that information away.
-        const scored = candidates.map(movie => {
-          let wSum=0, tSum=0, rSum=0, hSum=0, count=0;
-          if (movie.genre_ids) {
-            movie.genre_ids.forEach(gid => {
-              if (GENRE_MAP[gid]) {
-                wSum += GENRE_MAP[gid].w; tSum += GENRE_MAP[gid].t; rSum += GENRE_MAP[gid].r; hSum += GENRE_MAP[gid].h; count++;
-              }
-            });
-          }
-          const movieW = count > 0 ? wSum / count : 50;
-          const movieT = count > 0 ? tSum / count : 50;
-          const movieR = count > 0 ? rSum / count : 50;
-          const movieH = count > 0 ? hSum / count : 50;
-          const movieObscurity = Math.max(0, Math.min(100, 100 - (Math.log10(movie.vote_count || 1) * 22)));
-
-          const score = Math.sqrt(Math.pow(movieW - finalWarmth, 2) + Math.pow(movieT - finalTempo, 2) + Math.pow(movieR - finalReality, 2) + Math.pow(movieObscurity - obs, 2) + Math.pow(movieH - finalHumor, 2));
-          return { movie, score };
-        }).sort((a, b) => a.score - b.score);
-
-        const selectedMovieMeta = scored.length > 0 ? scored[0].movie : null;
-        AppState.runnerUps = scored.slice(1, 3).map(s => s.movie); // 2nd and 3rd place
-        
-        if (!selectedMovieMeta) throw new Error("Vector match failed against the live archive.");
-
-        let fullDetails = null;
-        try {
-          const res = await fetchWithTimeout(`https://api.themoviedb.org/3/movie/${selectedMovieMeta.id}?api_key=${TMDB_API_KEY}&append_to_response=credits,watch/providers`);
-          fullDetails = res.ok ? await res.json() : selectedMovieMeta;
-        } catch (e) { fullDetails = selectedMovieMeta; }
-        
-        finalizeProjection(fullDetails, finalWarmth, finalTempo, finalReality, finalHumor);
-        
       } catch (err) {
-        clearInterval(progressInterval);
+        stopLoadingSequence();
+        AudioEngine.heartbeat.stop();
         console.error("Matchmaker Crash: ", err.message);
         showScreen('screen-error');
       }
     }
 
-    async function finalizeProjection(movie, w, t, r, h) {
-      clearInterval(progressInterval);
+    function getOneSentencePlot(overview) {
+      if (!overview) return "A cinematic journey unfolds in the dark.";
+      const match = overview.match(/^.*?[.!?](?:\s|$)/);
+      return match ? match[0].trim() : overview.substring(0, 100) + '...';
+    }
+
+    // Single package in, full page painted at once — no separate AI round trip, no typing.
+    async function revealResult(data, w, t, r, h) {
+      stopLoadingSequence();
       document.getElementById('loading-pct').innerText = "100%";
-      playTypewriterDing();
-      
+
+      const movie = data.movie;
       AppState.currentMovie = movie;
-      const plotSentence = getOneSentencePlot(movie.overview);
+      AppState.runnerUps = data.runnerUps || [];
+
       const vibes = generateVibeWords(movie, w, t, r, h);
       const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
-      
-      populateFinalReveal(movie, critique, vibes, plotSentence);
+
+      // The teaser is the noir-style rewrite the worker generated from the real synopsis.
+      const teaser = (data.teaser && data.teaser.trim()) || getOneSentencePlot(movie.overview);
+      populateFinalReveal(movie, critique, vibes, teaser);
+
+      const analysisEl = document.getElementById('custom-analysis');
+      analysisEl.classList.remove('cursor-blink');
+      analysisEl.style.whiteSpace = 'pre-wrap';
+      analysisEl.innerHTML = (data.assessment && data.assessment.trim())
+        ? data.assessment.trim()
+        : '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br>' +
+          '<span class="text-neutral-400">The machine has nothing to say. Try REROLL SCENE or come back later.</span>';
 
       const spreadSummary = AppState.drawnSpread.map((draw, i) => {
         const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
@@ -1684,75 +1800,25 @@
         spread: spreadSummary,
         date: new Date().toLocaleDateString()
       });
-      
-      setTimeout(async () => {
-        showScreen('screen-result');
-        await renderAIAnalysis(movie, w, t, r, h, AppState.sliders.obscurity);
-      }, 600);
+
+      AudioEngine.heartbeat.stop();
+      showScreenWithFocusReveal('screen-result');
     }
 
-    // --- REAL-TIME AI ALIGNMENT MATRIX ---
-    // No template fallback by design. If Gemini fails, we show "WRITER'S
-    // BLOCK" rather than silently substituting canned copy.
-    async function renderAIAnalysis(movie, w, t, r, h, obs) {
-      const analysisEl = document.getElementById('custom-analysis');
-      analysisEl.classList.remove('cursor-blink');
-      analysisEl.style.whiteSpace = 'pre-wrap';
-      analysisEl.innerHTML = '<span class="text-neutral-500">Transmitting to ghost...</span>';
-
-      const WORKER_URL = WORKER_BASE_URL;
-
-      const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "an unnamed auteur";
-      const yr = movie.release_date ? movie.release_date.split('-')[0] : "";
-
-      const spreadSummary = AppState.drawnSpread.map((draw, i) => {
-        const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
-        return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
-      }).join(', ');
-
-      const payload = {
-        type: 'analysis',
-        movie: { title: movie.title, year: yr, director: dir, plot: movie.overview || '' },
-        sliders: { warmth: w, tempo: t, reality: r, obscurity: obs, humor: h },
-        spread: spreadSummary,
-        params: { language: AppState.language, era: AppState.era, depth: AppState.depth }
-      };
-
-      try {
-        const res = await fetch(WORKER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error("Empty response");
-
-        text = text.trim();
-        if (text.startsWith('```')) text = text.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
-
-        analysisEl.innerHTML = '';
-        analysisEl.classList.add('cursor-blink');
-        await typewriter('custom-analysis', text, 16);
-        analysisEl.classList.remove('cursor-blink');
-
-      } catch (err) {
-        console.error("AI Alignment Matrix failed:", err);
-        analysisEl.classList.remove('cursor-blink');
-        analysisEl.innerHTML =
-          '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br>' +
-          '<span class="text-neutral-400">The machine has nothing to say. The signal that writes this analysis has gone quiet — no template, no fallback, just silence. Try REROLL SCENE or come back later.</span>';
+    // Swaps in the result screen and runs the 2s blur-to-focus reveal, with the audio
+    // clearing from muffled to sharp on the exact same timeline.
+    function showScreenWithFocusReveal(screenId) {
+      showScreen(screenId);
+      const el = document.getElementById(screenId);
+      if (el) {
+        el.classList.remove('focus-reveal');
+        void el.offsetWidth; // restart the CSS animation
+        el.classList.add('focus-reveal');
       }
+      AudioEngine.focusSweep(2.0);
+      playTypewriterDing();
     }
 
-    // Shared helper: marks a movie ID as seen and persists it. Used by both
-    // the result screen's "I'VE SEEN THIS" button and the journal's
-    // per-entry "Mark Seen" action, so the two stay perfectly in sync —
-    // a movie marked seen from either place disappears from Recommended
-    // and appears in Seen everywhere in the app.
     function addToSeenList(movieId) {
       if (!movieId) return;
       if (!AppState.seenMovies.includes(movieId)) {
@@ -1776,12 +1842,6 @@
       }
     }
 
-    function getOneSentencePlot(overview) {
-      if (!overview) return "A cinematic journey unfolds in the dark.";
-      const match = overview.match(/^.*?[.!?](?:\s|$)/);
-      return match ? match[0].trim() : overview.substring(0, 100) + '...';
-    }
-
     function dominantWord(name) {
       const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']);
       const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
@@ -1797,62 +1857,6 @@
       if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name;
       let w3 = r > 60 ? "SURREAL" : (h > 60 ? "SATIRICAL" : (w > 60 ? "DREAD" : "INTIMATE"));
       return [w1.replace(/[^A-Z]/g, ''), w2, w3];
-    }
-
-    function buildAssessmentSegments(movie, w, t, r, h, obs) {
-      const RED = 'text-neonRed font-bold';
-      const DIM = 'text-neutral-500';
-      const title = movie.title || "the projection";
-      const yr = movie.release_date ? movie.release_date.split('-')[0] : "";
-      const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "an unnamed auteur";
-
-      const warmthLabel = w < 35 ? "warmth and comfort" : w > 65 ? "dread and unease" : "an even emotional register";
-      const tempoLabel = t < 35 ? "a meditative, slow-burning pace" : t > 65 ? "kinetic, propulsive momentum" : "a measured rhythm";
-      const realityLabel = r < 35 ? "grounded realism" : r > 65 ? "surreal, dream-logic imagery" : "a foothold between the real and the strange";
-      const humorLabel = h < 35 ? "a bleak, nihilistic edge" : h > 65 ? "wit and levity" : "an ambiguous tone";
-      const obsLabel = obs < 35 ? "something canonical and widely seen" : obs > 65 ? "something obscure and overlooked" : "something respected but not over-exposed";
-
-      const langLabel = { any: "the full global archive", english: "the Anglophone canon", foreign: "world cinema beyond the Anglosphere" }[AppState.language] || "the archive";
-      const eraLabel = { any: "any era", golden: "the pre-1970 golden age", neon: "the 1970-99 neon decades", digital: "the post-2000 digital era" }[AppState.era] || "any era";
-      const depthLabel = AppState.depth === 'casual' ? "accessible, universally legible storytelling" : "art-house density and deep film grammar";
-
-      const futureDraw = AppState.drawnSpread[2];
-      const futureName = futureDraw ? futureDraw.card.name : null;
-      const futureRev = futureDraw ? futureDraw.isReversed : false;
-
-      const seg = [];
-      seg.push({ text: "> ALIGNMENT COMPLETE.\n\n", className: RED });
-      seg.push({ text: `You aimed the lens at ${langLabel}, narrowed it to ${eraLabel}, and asked for ${depthLabel}. ` });
-      seg.push({ text: `Your spectrum leaned toward ${warmthLabel}, ${tempoLabel}, and ${realityLabel}, cut with ${humorLabel} — and you wanted ${obsLabel}. ` });
-      if (futureName) {
-        seg.push({ text: "The spread then bent those coordinates. The " });
-        seg.push({ text: "Future", className: RED });
-        seg.push({ text: " position — " });
-        seg.push({ text: `${futureName}${futureRev ? ' reversed' : ''}`, className: RED });
-        seg.push({ text: " — pulled hardest on the final vector. " });
-      }
-      seg.push({ text: "Triangulating every input against the live archive, the closest match in vector-space is " });
-      seg.push({ text: `${title}${yr ? ` (${yr})` : ''}`, className: RED });
-      seg.push({ text: `, directed by ${dir}. ` });
-      seg.push({ text: "It lands almost exactly where your subconscious was pointing.", className: DIM });
-      return seg;
-    }
-
-    async function typeRichText(el, segments, speed = 16) {
-      el.innerHTML = '';
-      typeToken++;
-      const token = typeToken;
-      for (const sgmt of segments) {
-        const span = document.createElement('span');
-        if (sgmt.className) span.className = sgmt.className;
-        el.appendChild(span);
-        for (let i = 0; i < sgmt.text.length; i++) {
-          if (typeToken !== token) return;
-          span.textContent += sgmt.text.charAt(i);
-          if (AppState.audioEnabled && i % 4 === 0) playSynthBeep(680 + Math.random() * 220, 0.008, 'square');
-          await sleep(speed + Math.random() * 14);
-        }
-      }
     }
 
     function populateFinalReveal(movie, critique, vibes, plot) {
@@ -1948,19 +1952,13 @@
     function loadImageCrossOrigin(url) {
       return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous'; // needed to keep the canvas untainted for toDataURL/toBlob
+        img.crossOrigin = 'anonymous'; 
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = url;
       });
     }
 
-    // Same as above, but mirrors the app's existing tryJpegFallback()
-    // behavior: some tarot card assets are saved as .jpeg while the deck
-    // data assumes .jpg. The regular <img> tags elsewhere already retry
-    // with the other extension on error — this does the same for the
-    // canvas-loaded version, since a failed load here was silently
-    // producing a blank gray box instead of the actual card art.
     async function loadImageWithJpegFallback(url) {
       try {
         return await loadImageCrossOrigin(url);
@@ -1975,9 +1973,6 @@
       }
     }
 
-    // Builds the canvas and returns a PNG data URL. Pure — does not touch
-    // any overlay/DOM state, so both the native share-sheet path and the
-    // manual-save fallback path can call this the same way.
     async function buildReadingCanvasDataUrl() {
       const movie = AppState.currentMovie || {};
       const W = 1080, H = 1920;
@@ -1986,18 +1981,15 @@
       canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // Background
       ctx.fillStyle = '#0A0A0A';
       ctx.fillRect(0, 0, W, H);
 
-      // Subtle red vignette glow at top
       const grad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, W);
       grad.addColorStop(0, 'rgba(255,0,60,0.18)');
       grad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H * 0.6);
 
-      // Branding
       ctx.fillStyle = '#FF003C';
       ctx.font = 'bold 32px Courier New, monospace';
       ctx.textAlign = 'center';
@@ -2006,11 +1998,6 @@
       ctx.font = '20px Courier New, monospace';
       ctx.fillText('TAROT FOR MOVIES', W/2, 135);
 
-      // Poster — routed through the Worker's image proxy. TMDB's image
-      // CDN doesn't send CORS headers, so loading it directly with
-      // crossOrigin="anonymous" silently fails and taints/blanks the
-      // canvas. The Worker fetches it server-side (no CORS issue there)
-      // and re-serves it with the right header attached.
       const posterW = 460, posterH = 690;
       const posterX = (W - posterW) / 2;
       const posterY = 170;
@@ -2027,7 +2014,6 @@
           ctx.lineWidth = 3;
           ctx.strokeRect(posterX, posterY, posterW, posterH);
         } catch (e) {
-          console.error("Poster proxy load failed:", e);
           ctx.fillStyle = '#1a1a1a';
           ctx.fillRect(posterX, posterY, posterW, posterH);
         }
@@ -2036,7 +2022,6 @@
         ctx.fillRect(posterX, posterY, posterW, posterH);
       }
 
-      // Title + meta
       let cursorY = posterY + posterH + 70;
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 44px Georgia, serif';
@@ -2051,7 +2036,6 @@
       ctx.font = 'bold 22px Courier New, monospace';
       ctx.fillText([year, dir].filter(Boolean).join('  •  '), W/2, cursorY);
 
-      // Tarot spread — with actual card art. Same-origin assets, no CORS issue.
       cursorY += 70;
       ctx.fillStyle = '#666';
       ctx.font = '20px Courier New, monospace';
@@ -2079,7 +2063,6 @@
           }
           ctx.restore();
         } catch (e) {
-          console.error("Tarot card image load failed:", draw.card.image, e);
           ctx.fillStyle = '#1a1a1a';
           ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH);
         }
@@ -2117,7 +2100,6 @@
         ctx.fillText('⚠ FULL INVERSION — RARE OMEN ⚠', W/2, cursorY);
       }
 
-      // Footer
       ctx.textAlign = 'center';
       ctx.fillStyle = '#444';
       ctx.font = '18px Courier New, monospace';
@@ -2126,9 +2108,6 @@
       return canvas.toDataURL('image/png');
     }
 
-    // Shows the canvas image full-screen for manual press-and-hold saving.
-    // This is the fallback path for browsers that don't support sharing
-    // image files via the native share sheet (mainly desktop browsers).
     function showShareOverlayFallback(dataUrl, failed) {
       const overlay = document.getElementById('share-image-overlay');
       const loadingEl = document.getElementById('share-image-loading');
@@ -2153,10 +2132,6 @@
       };
     }
 
-    // Main entry point: builds the card, then tries the native share sheet
-    // (Messages, AirDrop, Instagram, Save to Photos, etc. all live inside
-    // it) and only falls back to the manual long-press overlay if the
-    // browser can't share image files directly.
     async function shareReadingImage() {
       const btn = document.getElementById('share-reading-btn');
       const originalLabel = btn.innerText;
@@ -2177,7 +2152,7 @@
         const file = new File([blob], 'cinema-arcana-reading.png', { type: 'image/png' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          overlay.classList.add('hidden'); // let the native share sheet take over
+          overlay.classList.add('hidden'); 
           playTypewriterDing();
           await navigator.share({
             files: [file],
@@ -2185,15 +2160,12 @@
             text: 'My tarot-matched film projection.'
           });
         } else {
-          // Browser can't share files natively — fall back to manual save
           showShareOverlayFallback(dataUrl, false);
         }
       } catch (err) {
         if (err.name === 'AbortError') {
-          // User backed out of the share sheet — not a real failure, just close quietly
           overlay.classList.add('hidden');
         } else {
-          console.error('Share reading failed:', err);
           showShareOverlayFallback(null, true);
         }
       } finally {
@@ -2212,3 +2184,5 @@
   </script>
 </body>
 </html>
+
+
