@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-black select-none">
 <head>
@@ -2454,7 +2455,29 @@
         ctx.fillStyle = '#FF003C';
         ctx.font = 'bold 24px Courier New, monospace';
         ctx.fillText('⚠ FULL INVERSION — RARE OMEN ⚠', W/2, cursorY);
+        cursorY += 20; 
       }
+
+      // --- DIAGNOSTIC PARAMETERS ---
+      cursorY += 60;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FF003C';
+      ctx.font = 'bold 22px Courier New, monospace';
+      ctx.fillText('DIAGNOSTIC PARAMETERS', W/2, cursorY);
+      
+      cursorY += 40;
+      ctx.fillStyle = '#ccc';
+      ctx.font = '18px Courier New, monospace';
+      
+      const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id]?.name).join(' + ') || 'NONE';
+      const metaText = `GENRES: ${genreNames}  |  DEPTH: ${AppState.depth.toUpperCase()}  |  ERA: ${AppState.era.toUpperCase()}`;
+      ctx.fillText(metaText, W/2, cursorY);
+      
+      cursorY += 35;
+      const s = AppState.sliders;
+      const sliderText = `WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`;
+      ctx.fillText(sliderText, W/2, cursorY);
+      // --- END DIAGNOSTIC PARAMETERS ---
 
       ctx.textAlign = 'center';
       ctx.fillStyle = '#444';
@@ -2541,4 +2564,4 @@
 </body>
 </html>
 
-
+```
