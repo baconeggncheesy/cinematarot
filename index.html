@@ -401,15 +401,17 @@
           <div class="flex flex-wrap justify-center gap-2 mb-4" id="vibe-words-container"></div>
           
           <div class="bg-darkGrey/95 border border-neutral-800 p-3 shadow-neon-sm relative flex flex-row space-x-4 items-center">
-            <div class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg">
+            
+            <a id="letterboxd-link" href="#" target="_blank" rel="noopener noreferrer" class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg block hover:border-neonRed transition-colors cursor-pointer" title="View on Letterboxd">
               <img id="movie-poster" src="" alt="Cinema Poster" class="w-full h-full object-cover opacity-0 transition-opacity duration-1000" onerror="this.style.opacity='0'; document.getElementById('poster-fallback-text').style.display='flex';">
               <div id="poster-fallback-text" class="absolute inset-0 hidden items-center justify-center text-center p-2 font-cinzel text-[8px] text-neutral-400 select-none">IMAGE REEL MISSING</div>
-            </div>
+            </a>
+            
             <div class="flex-1 flex flex-col justify-center font-sans space-y-2">
               <div>
                 <h2 id="movie-title" class="font-cinzel text-lg sm:text-xl font-bold uppercase leading-tight mb-1 text-white">TITLE</h2>
                 <div class="text-[9px] font-bold text-neonRed tracking-widest font-mono">
-                  <span id="movie-year">YEAR</span> • <span id="movie-director">DIR</span> • <span id="movie-runtime">MIN</span>
+                  <span id="movie-year">YEAR</span> • <span id="movie-director">DIR</span> • <span id="movie-runtime">MIN</span> • ★ <span id="movie-rating">0.0</span>
                 </div>
               </div>
               <div class="border-l border-neutral-700 pl-2">
@@ -2231,6 +2233,12 @@
       
       const mrunEl = document.getElementById('movie-runtime');
       if (mrunEl) mrunEl.innerText = movie.runtime ? `${movie.runtime} MIN` : '--- MIN';
+
+      const mratingEl = document.getElementById('movie-rating');
+      if (mratingEl) mratingEl.innerText = movie.vote_average ? movie.vote_average.toFixed(1) : '--';
+
+      const letterboxdLink = document.getElementById('letterboxd-link');
+      if (letterboxdLink && movie.id) letterboxdLink.href = `https://letterboxd.com/tmdb/${movie.id}`;
       
       const mplotEl = document.getElementById('movie-plot');
       if (mplotEl) mplotEl.innerText = `"${plot}"`;
@@ -2563,3 +2571,6 @@
   </script>
 </body>
 </html>
+
+
+```
