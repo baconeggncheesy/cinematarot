@@ -260,10 +260,12 @@
             </div>
           </div>
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Cognitive Depth</div>
-            <div class="flex flex-col gap-1.5 text-[9px] font-bold tracking-wider">
-              <button onclick="setParameter('depth', 'casual')" id="depth-casual" class="script-btn text-left p-3">[ CASUAL ] - Accessible pacing, universal narratives.</button>
-              <button onclick="setParameter('depth', 'cinephile')" id="depth-cinephile" class="script-btn active text-left p-3">[ CINEPHILE ] - Art-house focus, deep film grammar.</button>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Reel Length</div>
+            <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="setRuntime('any')" id="runtime-any" class="script-btn active flex justify-between"><span>ANY LENGTH</span><span class="text-neutral-600">ALL</span></button>
+              <button onclick="setRuntime('short')" id="runtime-short" class="script-btn flex justify-between"><span>SHORT</span><span class="text-neutral-600">&lt;95</span></button>
+              <button onclick="setRuntime('feature')" id="runtime-feature" class="script-btn flex justify-between"><span>FEATURE</span><span class="text-neutral-600">95-135</span></button>
+              <button onclick="setRuntime('epic')" id="runtime-epic" class="script-btn flex justify-between"><span>EPIC</span><span class="text-neutral-600">135+</span></button>
             </div>
           </div>
         </div>
@@ -502,7 +504,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.0.0 (LIVE-ONLY)</div>
+      <div>V 9.1.0 (LIVE-ONLY)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -528,10 +530,13 @@
       currentScreen: 'intro',
       language: 'any',
       era: 'any',
-      depth: 'cinephile',
       sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
       vibeGenreIds: [], 
       runtimeMax: null, 
+      runtimeMin: null,
+      runtimeBand: 'any',
+      lastReadingText: null,
+      tasteAvoid: {},
       seenMovies: [],
       rejectedMovies: [],
       currentMovie: null,
@@ -613,35 +618,32 @@
 
     // Each card gets a stable position in the deck (0-21), used by AudioEngine.cardSound()
     // to walk a musical scale so every Major Arcana card has a distinct base pitch.
-    // (The old per-card `audio: 'freq-xxx'` field is legacy now — sound is generated
-    // procedurally from each card's own w/t/r/h stats instead, see AudioEngine.cardSound.)
     AppState.tarotDeck.forEach((card, i) => { card.arcanaIndex = i; });
 
     // Maps each card to a thematic sound archetype (see AudioEngine.playThemedTexture).
-    // This is what makes e.g. The Burned Man crackle like fire instead of just playing a tone.
     const CARD_THEME_MAP = {
-      tramp: 'pluck-playful',        // The Fool — a light, wandering little blip
-      auteur: 'chime',                // The Magician — sparkling, conjured
-      oracle: 'shimmer-glass',        // The Priestess — mystic, reflective
-      matriarch: 'swell-warm',        // The Empress — a soft protective pad
-      don: 'thud-heavy',              // The Emperor — an authoritative stamp
-      monolith: 'drone-deep',         // The Hierophant — 2001-style ominous bass drone
-      noir: 'sax-smooth',             // The Lovers — smoky, sultry vibrato
-      delorean: 'zap-whoosh',         // The Chariot — electric time-travel zap
-      finalgirl: 'scream-tense',      // Strength — a tense, rising shriek
-      driver: 'engine',               // The Hermit — a low idling car engine
-      reel: 'ratchet',                // Wheel of Fortune — a spinning reel's ratchet click
-      standoff: 'gunshot-whistle',    // The Man with No Name — crack + spaghetti-western whistle
-      falling: 'fire',                // The Burned Man — actual crackling fire
-      chess: 'toll-clock',            // Death — a clock tick and low toll
-      reflection: 'shimmer-glass',    // Temperance — mirrored glass shimmer
-      hotel: 'buzz-electric',         // The Devil — sleazy neon buzz
-      tower: 'explosion',             // The Tower (Nakatomi) — a Die Hard-style blast
-      escape: 'chime',                // The Star — bright, hopeful sparkle
-      moon: 'boop-comic',             // The Moon (Méliès) — silent-film comic boop
-      horror: 'blazing-harsh',        // The Sun (Horror) — harsh blinding noise
-      machine: 'beep-robotic',        // Judgement — mechanical robotic beeps
-      rosebud: 'swell-warm',          // The World — a wistful, nostalgic swell
+      tramp: 'pluck-playful',
+      auteur: 'chime',
+      oracle: 'shimmer-glass',
+      matriarch: 'swell-warm',
+      don: 'thud-heavy',
+      monolith: 'drone-deep',
+      noir: 'sax-smooth',
+      delorean: 'zap-whoosh',
+      finalgirl: 'scream-tense',
+      driver: 'engine',
+      reel: 'ratchet',
+      standoff: 'gunshot-whistle',
+      falling: 'fire',
+      chess: 'toll-clock',
+      reflection: 'shimmer-glass',
+      hotel: 'buzz-electric',
+      tower: 'explosion',
+      escape: 'chime',
+      moon: 'boop-comic',
+      horror: 'blazing-harsh',
+      machine: 'beep-robotic',
+      rosebud: 'swell-warm',
     };
 
     const GENRE_MAP = {
@@ -710,7 +712,8 @@
       seen: 'cinema_arcana_seen',
       rejected: 'cinema_arcana_rejected',
       journal: 'cinema_arcana_journal',
-      sceneCount: 'cinema_arcana_scene_count'
+      sceneCount: 'cinema_arcana_scene_count',
+      taste: 'cinema_arcana_taste'
     };
 
     function loadPersistedState() {
@@ -721,6 +724,9 @@
         if (Array.isArray(seen)) AppState.seenMovies = seen;
         if (Array.isArray(rejected)) AppState.rejectedMovies = rejected;
         if (Array.isArray(journal)) AppState.journal = journal;
+
+        const taste = JSON.parse(localStorage.getItem(STORAGE_KEYS.taste) || '{}');
+        if (taste && typeof taste === 'object' && !Array.isArray(taste)) AppState.tasteAvoid = taste;
 
         // The journal array itself is capped at 50 entries for storage size, so the SCENES
         // counter is tracked separately and uncapped — it's the real lifetime count of
@@ -739,6 +745,19 @@
       } catch (e) {
         console.error("Failed to persist seen/rejected:", e);
       }
+    }
+
+    // Taste memory: every reroll counts a strike against that film's genres. The worker
+    // uses these counts as a soft scoring penalty — discouraged, never banned.
+    function recordRejectionTaste(movie) {
+      if (!movie) return;
+      const gids = Array.isArray(movie.genres)
+        ? movie.genres.map(g => g.id)            // full-details shape from the worker
+        : (movie.genre_ids || []);               // discover-result shape fallback
+      gids.forEach(id => {
+        AppState.tasteAvoid[id] = (AppState.tasteAvoid[id] || 0) + 1;
+      });
+      try { localStorage.setItem(STORAGE_KEYS.taste, JSON.stringify(AppState.tasteAvoid)); } catch (e) {}
     }
 
     function addJournalEntry(entry) {
@@ -840,12 +859,14 @@
       AppState.journal = [];
       AppState.seenMovies = [];
       AppState.rejectedMovies = [];
+      AppState.tasteAvoid = {};
       AppState.sceneCount = 0;
       try {
         localStorage.removeItem(STORAGE_KEYS.journal);
         localStorage.removeItem(STORAGE_KEYS.seen);
         localStorage.removeItem(STORAGE_KEYS.rejected);
         localStorage.removeItem(STORAGE_KEYS.sceneCount);
+        localStorage.removeItem(STORAGE_KEYS.taste);
       } catch (e) {
         console.error("Failed to clear persisted history:", e);
       }
@@ -864,10 +885,7 @@
       typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
     };
 
-
     // Text now pops in whole, no character-by-character animation anywhere in the app.
-    // Kept as an async function (and kept its name/signature) so every existing call site
-    // — dialogue lines, the psychic reading, the AI analysis — needs zero changes.
     async function typewriter(elementId, text) {
       const el = document.getElementById(elementId);
       if (!el) return;
@@ -947,13 +965,17 @@
         }
 
         AppState.runtimeMax = null;
+        AppState.runtimeMin = null;
         if (typeof coordinates.runtimeMax === 'number' && coordinates.runtimeMax > 0) {
           AppState.runtimeMax = Math.max(40, Math.min(240, Math.round(coordinates.runtimeMax)));
         }
+        // A spoken time constraint overrides whatever band was tapped on the previous
+        // screen — deselect all band buttons so the UI doesn't lie about the ceiling.
+        AppState.runtimeBand = AppState.runtimeMax ? 'custom' : 'any';
+        updateRuntimeUI();
 
         // The worker already resolved any referenced film (e.g. "more like Parasite")
-        // against TMDB server-side and folded the result into this same response —
-        // no separate client-side TMDB call, no exposed key.
+        // against TMDB server-side and folded the result into this same response.
         const referenceGenres = Array.isArray(coordinates.referenceGenreIds)
           ? coordinates.referenceGenreIds.filter(id => GENRE_MAP[id])
           : [];
@@ -1003,15 +1025,7 @@
 
     // ============================================================================
     // AUDIO ENGINE — "a living machine"
-    // ------------------------------------------------------------------------
     // Everything funnels through one master bus: masterGain -> masterFilter (lowpass) -> speakers.
-    // Routing every sound (beeps, drones, hums) through that shared lowpass filter is what makes
-    // the "muffled -> sharp" reveal trick work: sweep ONE filter's cutoff and the entire mix
-    // clarifies at once, in sync with the visual blur-to-focus.
-    //
-    // To add new tricks later: grab AudioEngine.ctx / AudioEngine.master and build a small
-    // node graph the same way heartbeat/wheelHum do (persistent oscillator + gain you ramp,
-    // rather than one-shot fire-and-forget nodes). Route the final node into AudioEngine.master.
     // ============================================================================
     const AudioEngine = {
       ctx: null,
@@ -1030,7 +1044,7 @@
         this.master.gain.value = 0.9;
         this.filter = this.ctx.createBiquadFilter();
         this.filter.type = 'lowpass';
-        this.filter.frequency.value = 19000; // wide open ("sharp") by default
+        this.filter.frequency.value = 19000;
         this.filter.Q.value = 0.7;
         this.master.connect(this.filter);
         this.filter.connect(this.ctx.destination);
@@ -1046,7 +1060,6 @@
         this.noiseBuffer = buf;
       },
 
-      // Simple one-shot tone, routed through the shared master bus/filter.
       tone(freq, duration, type = 'square', gainAmt = 0.05) {
         if (!AppState.audioEnabled) return;
         try {
@@ -1064,7 +1077,6 @@
         } catch (e) {}
       },
 
-      // Ramp the master filter DOWN (muffled) quickly — used going into the loading montage.
       muffle(cutoffHz = 380, rampSec = 0.5) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1073,8 +1085,6 @@
         this.filter.frequency.linearRampToValueAtTime(cutoffHz, now + rampSec);
       },
 
-      // Ramp the master filter back UP (sharp/open) — this is "the reveal."
-      // Called at the exact moment the blur-to-focus visual kicks off, same duration.
       focusSweep(durationSec = 2) {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -1083,8 +1093,6 @@
         this.filter.frequency.exponentialRampToValueAtTime(19000, now + durationSec);
       },
 
-      // Very quiet, always-on machine hum once audio has ever been initialized — the app
-      // "breathes" faintly even outside the loading montage. Cheap and easy to build on.
       idleHum: {
         playing: false,
         osc: null, osc2: null, gain: null,
@@ -1093,7 +1101,7 @@
           const ctx = AudioEngine.ctx;
           this.osc = ctx.createOscillator();
           this.osc.type = 'sine';
-          this.osc.frequency.value = 59; // mains-hum register
+          this.osc.frequency.value = 59;
           this.osc2 = ctx.createOscillator();
           this.osc2.type = 'sine';
           this.osc2.frequency.value = 118;
@@ -1110,7 +1118,6 @@
         }
       },
 
-      // --- Heartbeat drone: plays through the loading montage ---
       heartbeat: {
         playing: false,
         osc: null, lfo: null, lfoGain: null, gain: null,
@@ -1119,15 +1126,11 @@
           AudioEngine.init();
           const ctx = AudioEngine.ctx;
           this.playing = true;
-
           this.osc = ctx.createOscillator();
           this.osc.type = 'sine';
-          this.osc.frequency.value = 44; // low-frequency drone
-
+          this.osc.frequency.value = 44;
           this.gain = ctx.createGain();
           this.gain.gain.value = 0.0001;
-
-          // Slow LFO on the gain gives it a pulsing, "alive" heartbeat feel (~68bpm)
           this.lfo = ctx.createOscillator();
           this.lfo.type = 'sine';
           this.lfo.frequency.value = 1.13;
@@ -1135,14 +1138,11 @@
           this.lfoGain.gain.value = 0.05;
           this.lfo.connect(this.lfoGain);
           this.lfoGain.connect(this.gain.gain);
-
           this.osc.connect(this.gain);
           this.gain.connect(AudioEngine.master);
-
           const now = ctx.currentTime;
           this.gain.gain.setValueAtTime(0.0001, now);
           this.gain.gain.linearRampToValueAtTime(0.1, now + 1.1);
-
           this.osc.start();
           this.lfo.start();
         },
@@ -1159,7 +1159,6 @@
         }
       },
 
-      // --- Wheel hum: pitch/brightness/volume track the wheel's spin speed live ---
       wheelHum: {
         active: false,
         osc: null, filter: null, gain: null,
@@ -1181,7 +1180,6 @@
           this.osc.start();
           this.active = true;
         },
-        // velocityAbs: absolute wheel velocity in index-units/frame, roughly 0 - 1.5
         update(velocityAbs) {
           if (!AppState.audioEnabled) { this.silence(); return; }
           this.ensure();
@@ -1202,21 +1200,6 @@
         }
       },
 
-      // --- Per-card draw sound: all 22 Major Arcana get their own distinct voice, generated
-      // procedurally (no audio files) from the card's OWN w/t/r/h stats plus its position in
-      // the deck. Same underlying trick as everything else here: persistent node graph, master
-      // bus, nothing hardcoded per-card except the deck data that already existed.
-      //   - deck position -> walks a moody scale, so all 22 cards are tonally distinct
-      //   - dread (w)      -> darkens the filter + timbre (cozy cards ring bright, dread cards go muffled/harsh)
-      //   - kinetic (t)    -> shortens the envelope (fast cards snap, slow cards ring out)
-      //   - surreal (r)    -> adds pitch-wobble vibrato
-      //   - witty (h)      -> brightens the oscillator waveform
-      //   - reversed draws -> drop in pitch + get a short bandpassed noise burst layered in, so an
-      //                       upside-down card audibly sounds "wrong," not just visually
-      // --- Sound-design primitives, reused across every themed texture below. Each takes an
-      // absolute AudioContext time (not a relative offset) so textures can layer multiple
-      // hits at different moments. This is the toolkit for adding new tricks later — most new
-      // sounds are just a few calls to these four functions with different numbers.
       _noiseTransient(t, { filterType = 'bandpass', freq = 2000, Q = 1, gain = 0.08, decay = 0.08, duration = 0.12 } = {}) {
         const ctx = this.ctx;
         const src = ctx.createBufferSource();
@@ -1265,13 +1248,9 @@
         osc.start(t); osc.stop(t + dur + 0.02);
       },
 
-      // --- Thematic textures: this is what makes each card sound like what it IS, not just
-      // a generic tone. `freq` is the card's own pitch (from its position in the deck) so
-      // every texture still lands somewhere musically coherent with the others.
-      // To add a new archetype later: add a case here, then point a card at it in CARD_THEME_MAP.
       playThemedTexture(themeKey, freq, dur, now) {
         switch (themeKey) {
-          case 'fire': { // The Burned Man — a low crackling bed plus scattered random pops
+          case 'fire': {
             this._noiseBed(now, dur, { filterType: 'bandpass', freq: 420, Q: 0.5, peakGain: 0.09, attack: 0.1 });
             const crackles = 7 + Math.floor(Math.random() * 6);
             for (let i = 0; i < crackles; i++) {
@@ -1280,7 +1259,7 @@
             }
             break;
           }
-          case 'explosion': { // The Tower (Nakatomi)
+          case 'explosion': {
             this._noiseTransient(now, { filterType: 'lowpass', freq: 1000, Q: 0.4, gain: 0.3, decay: 0.55, duration: 0.65 });
             this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.3, decay: 0.45 });
             for (let i = 0; i < 5; i++) {
@@ -1289,86 +1268,86 @@
             }
             break;
           }
-          case 'engine': { // The Driver
+          case 'engine': {
             this._noiseBed(now, dur, { filterType: 'lowpass', freq: 180, Q: 0.8, peakGain: 0.1, attack: 0.08 });
             this._toneBlip(now, { freq: freq * 0.5, type: 'sawtooth', gain: 0.14, decay: dur * 0.9 });
             break;
           }
-          case 'gunshot-whistle': { // The Man with No Name
+          case 'gunshot-whistle': {
             this._noiseTransient(now, { filterType: 'highpass', freq: 1000, Q: 0.7, gain: 0.3, decay: 0.08, duration: 0.1 });
             this._freqSweep(now + 0.05, Math.max(0.3, dur - 0.05), { startFreq: freq * 2.2, endFreq: freq * 0.9, type: 'sine', gain: 0.09 });
             break;
           }
-          case 'ratchet': { // Wheel of Fortune
+          case 'ratchet': {
             const clicks = 6;
             for (let i = 0; i < clicks; i++) {
               this._noiseTransient(now + i * (dur / clicks), { filterType: 'highpass', freq: 3500, Q: 2, gain: 0.08, decay: 0.02, duration: 0.04 });
             }
             break;
           }
-          case 'zap-whoosh': { // The Chariot (DeLorean)
+          case 'zap-whoosh': {
             this._freqSweep(now, dur * 0.6, { startFreq: freq * 0.5, endFreq: freq * 3, type: 'sawtooth', gain: 0.14 });
             this._noiseTransient(now + dur * 0.15, { filterType: 'highpass', freq: 4000, Q: 0.8, gain: 0.08, decay: 0.12, duration: 0.15 });
             break;
           }
-          case 'chime': { // The Magician / The Star
+          case 'chime': {
             [1, 1.5, 2.01].forEach((ratio, i) => this._toneBlip(now + i * 0.02, { freq: freq * ratio, type: 'sine', gain: 0.13 / (i + 1), decay: dur * 0.8 }));
             break;
           }
-          case 'drone-deep': { // The Hierophant (Monolith)
+          case 'drone-deep': {
             this._noiseBed(now, dur, { filterType: 'lowpass', freq: 120, Q: 0.3, peakGain: 0.09, attack: 0.2 });
             this._toneBlip(now, { freq: freq * 0.25, type: 'sine', gain: 0.2, decay: dur });
             break;
           }
-          case 'buzz-electric': { // The Devil (Hotel)
+          case 'buzz-electric': {
             this._toneBlip(now, { freq, type: 'square', gain: 0.1, decay: dur * 0.7 });
             this._noiseTransient(now, { filterType: 'bandpass', freq: 2000, Q: 3, gain: 0.04, decay: dur * 0.6, duration: dur });
             break;
           }
-          case 'thud-heavy': { // The Emperor
+          case 'thud-heavy': {
             this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.26, decay: 0.3 });
             this._noiseTransient(now, { filterType: 'lowpass', freq: 400, Q: 0.5, gain: 0.1, decay: 0.15, duration: 0.2 });
             break;
           }
-          case 'shimmer-glass': { // The Priestess / Temperance
+          case 'shimmer-glass': {
             [1, 2.02, 3.01].forEach((ratio, i) => this._toneBlip(now + i * 0.015, { freq: freq * ratio, type: 'sine', gain: 0.1 / (i + 1), decay: dur }));
             break;
           }
-          case 'beep-robotic': { // Judgement (Machine)
+          case 'beep-robotic': {
             for (let i = 0; i < 3; i++) {
               this._toneBlip(now + i * 0.12, { freq: freq * (1 + i * 0.15), type: 'square', gain: 0.11, decay: 0.07 });
             }
             break;
           }
-          case 'scream-tense': { // Strength (Final Girl)
+          case 'scream-tense': {
             this._freqSweep(now, dur * 0.5, { startFreq: freq * 1.5, endFreq: freq * 3.2, type: 'sawtooth', gain: 0.09 });
             break;
           }
-          case 'boop-comic': { // The Moon (Méliès)
+          case 'boop-comic': {
             this._freqSweep(now, 0.25, { startFreq: freq * 1.4, endFreq: freq * 0.7, type: 'triangle', gain: 0.16 });
             break;
           }
-          case 'blazing-harsh': { // The Sun (Horror)
+          case 'blazing-harsh': {
             this._noiseTransient(now, { filterType: 'highpass', freq: 2500, Q: 0.6, gain: 0.16, decay: dur * 0.7, duration: dur });
             this._toneBlip(now, { freq, type: 'sawtooth', gain: 0.12, decay: dur * 0.6 });
             break;
           }
-          case 'toll-clock': { // Death
+          case 'toll-clock': {
             this._noiseTransient(now, { filterType: 'highpass', freq: 4500, Q: 3, gain: 0.06, decay: 0.02, duration: 0.03 });
             this._toneBlip(now + 0.02, { freq: freq * 0.5, type: 'sine', gain: 0.18, decay: dur * 0.9 });
             break;
           }
-          case 'pluck-playful': { // The Fool
+          case 'pluck-playful': {
             this._toneBlip(now, { freq, type: 'triangle', gain: 0.15, decay: 0.18 });
             this._toneBlip(now + 0.09, { freq: freq * 1.25, type: 'triangle', gain: 0.1, decay: 0.15 });
             break;
           }
-          case 'swell-warm': { // The Empress / The World
+          case 'swell-warm': {
             this._noiseBed(now, dur, { filterType: 'lowpass', freq: 900, Q: 0.4, peakGain: 0.05, attack: dur * 0.4 });
             this._toneBlip(now, { freq, type: 'sine', gain: 0.14, decay: dur });
             break;
           }
-          case 'sax-smooth': { // The Lovers
+          case 'sax-smooth': {
             this._toneBlip(now, { freq, type: 'sine', gain: 0.16, decay: dur * 0.9 });
             this._toneBlip(now, { freq: freq * 1.005, type: 'triangle', gain: 0.08, decay: dur * 0.9 });
             break;
@@ -1378,15 +1357,6 @@
         }
       },
 
-      // --- Per-card draw sound: all 22 Major Arcana get their own distinct voice — a themed
-      // texture (fire crackle, engine rumble, gunshot, etc., from CARD_THEME_MAP) layered over
-      // a quiet musical tone so every card still sits in the same harmonic world.
-      //   - deck position -> walks a moody scale, so the underlying pitch is unique per card
-      //   - dread (w)      -> darkens the underlying tone (cozy cards ring bright, dread cards go muffled)
-      //   - kinetic (t)    -> shortens the envelope (fast cards snap, slow cards ring out)
-      //   - surreal (r)    -> adds pitch-wobble vibrato to the underlying tone
-      //   - witty (h)      -> brightens the underlying oscillator waveform
-      //   - reversed draws -> drop in pitch + a short bandpassed noise glitch, on top of the theme
       cardSound(card, isReversed) {
         if (!AppState.audioEnabled) return;
         try {
@@ -1401,19 +1371,16 @@
           const surreal = Math.min(1, Math.abs(stats.r) / 50);
           const leansDread = stats.w >= 0;
 
-          const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10]; // natural minor — moody, cinematic
+          const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10];
           const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
           let freq = 110 * Math.pow(2, semis / 12);
-          if (isReversed) freq *= 0.667; // drops roughly a fifth — feels "wrong"
+          if (isReversed) freq *= 0.667;
 
           const dur = 0.6 + (1 - kinetic) * 1.3;
 
-          // The card's own theme is the star of the sound (fire crackles, engine rumbles, etc.)
           const themeKey = CARD_THEME_MAP[card.id] || 'chime';
           this.playThemedTexture(themeKey, freq, dur, now);
 
-          // A quiet underlying tone keeps every card in the same harmonic world and carries
-          // the dread/surreal stat-based coloring, sitting just beneath the theme in volume.
           const filterCutoff = leansDread ? (500 + (1 - dread) * 2200) : (2200 + (1 - dread) * 3000);
           const osc = ctx.createOscillator();
           osc.type = 'sine';
@@ -1440,8 +1407,6 @@
             lfo.stop(now + dur);
           }
 
-          // Reversed cards get a short bandpassed noise burst layered on top of everything —
-          // an audible "glitch," so an upside-down card sounds wrong, not just looks it.
           if (isReversed && this.noiseBuffer) {
             this._noiseTransient(now, { filterType: 'bandpass', freq: Math.min(9000, freq * 2.2), Q: 5, gain: 0.07, decay: 0.16, duration: 0.16 });
           }
@@ -1454,8 +1419,6 @@
       document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
       if (AppState.audioEnabled) {
         AudioEngine.tone(440, 0.05, 'square');
-        // If audio gets turned on mid-loading-montage, catch the drone up rather than
-        // leaving it silent for the rest of the wait.
         const loadingVisible = !document.getElementById('screen-loading')?.classList.contains('hidden');
         if (loadingVisible) {
           AudioEngine.heartbeat.start();
@@ -1535,21 +1498,47 @@
       showScreen('screen-parameters');
       updateParameterUI('language', AppState.language);
       updateParameterUI('era', AppState.era);
-      updateParameterUI('depth', AppState.depth);
+      updateRuntimeUI();
       await sleep(300);
       typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script.");
     }
 
     function setParameter(key, value) {
       AppState[key] = value;
-      playSynthBeep(key === 'depth' ? 300 : 400, 0.05, 'square');
+      playSynthBeep(400, 0.05, 'square');
       updateParameterUI(key, value);
     }
 
+    // Reel Length bands. EPIC is a floor with no ceiling — that's why the app now
+    // tracks runtimeMin AND runtimeMax instead of the old max-only field.
+    const RUNTIME_BANDS = {
+      any:     { min: null, max: null },
+      short:   { min: null, max: 95 },
+      feature: { min: 95,   max: 135 },
+      epic:    { min: 135,  max: null },
+    };
+
+    function updateRuntimeUI() {
+      ['any', 'short', 'feature', 'epic'].forEach(k => {
+        const el = document.getElementById(`runtime-${k}`);
+        if (el) el.classList.toggle('active', k === AppState.runtimeBand);
+      });
+    }
+
+    function setRuntime(band) {
+      const b = RUNTIME_BANDS[band] || RUNTIME_BANDS.any;
+      AppState.runtimeBand = RUNTIME_BANDS[band] ? band : 'any';
+      AppState.runtimeMin = b.min;
+      AppState.runtimeMax = b.max;
+      playSynthBeep(300, 0.05, 'square');
+      updateRuntimeUI();
+    }
+
     function updateParameterUI(key, val) {
-      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'], depth: ['casual', 'cinephile'] };
-      const idPrefixes = { language: 'lang', era: 'era', depth: 'depth' };
+      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'] };
+      const idPrefixes = { language: 'lang', era: 'era' };
       const prefix = idPrefixes[key] || key;
+      if (!ids[key]) return;
       ids[key].forEach(item => {
         const btn = document.getElementById(`${prefix}-${item}`);
         if (btn) {
@@ -1662,19 +1651,18 @@
             const currentY = e.touches[0].clientY;
             const now = performance.now();
             
-            // Smart scroll detection: yield to vertical scrolling, hijack horizontal swiping
             if (!isSwipingWheel) {
                 const dx = Math.abs(currentX - wheelTouchStartX);
                 const dy = Math.abs(currentY - wheelTouchStartY);
                 if (dy > dx && dy > 5) {
-                    wheelDragActive = false; // It's a vertical scroll, let browser handle it
+                    wheelDragActive = false;
                     return;
                 }
                 if (dx > 5) isSwipingWheel = true;
             }
 
             if (isSwipingWheel) {
-                if (e.cancelable) e.preventDefault(); // Stop page from bouncing horizontally
+                if (e.cancelable) e.preventDefault();
                 const prevPoint = wheelVelocityTracker[wheelVelocityTracker.length - 1];
                 wheelVelocityTracker.push({ x: currentX, t: now });
                 if (wheelVelocityTracker.length > 5) wheelVelocityTracker.shift();
@@ -1683,7 +1671,6 @@
                 wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING);
                 updateWheel();
 
-                // Live drag speed -> hum, so the sound tracks your finger, not just the physics settle
                 if (prevPoint) {
                     const dt = Math.max(1, now - prevPoint.t);
                     const instVelocity = Math.abs((currentX - prevPoint.x) / dt) * 16 / WHEEL_CARD_SPACING;
@@ -1705,7 +1692,7 @@
                 const dx = e.changedTouches[0].clientX - oldest.x;
                 
                 wheelVelocity = -(dx / dt) * 16 / WHEEL_CARD_SPACING; 
-                wheelVelocity = Math.max(-1.5, Math.min(1.5, wheelVelocity)); // Terminal velocity
+                wheelVelocity = Math.max(-1.5, Math.min(1.5, wheelVelocity));
             } else {
                 wheelVelocity = 0;
             }
@@ -1725,7 +1712,7 @@
         }
 
         if (!isSettling) {
-            wheelVelocity *= 0.94; // Friction
+            wheelVelocity *= 0.94;
             wheelIndex += wheelVelocity;
 
             if (Math.abs(wheelVelocity) < 0.05) {
@@ -1734,7 +1721,7 @@
             }
         } else {
             const diff = wheelTargetIndex - wheelIndex;
-            wheelVelocity = diff * 0.15; // Spring snap
+            wheelVelocity = diff * 0.15;
             wheelIndex += wheelVelocity;
 
             if (Math.abs(diff) < 0.005) {
@@ -1755,7 +1742,6 @@
         wheelRAF = requestAnimationFrame(runPhysics);
     }
 
-    // Safely calculates the circular distance between two indices avoiding floating point weirdness
     function wheelOffset(i) {
         const N = wheelCards.length;
         if (N === 0) return 0;
@@ -1804,7 +1790,6 @@
     async function drawCenteredCard() {
         if (AppState.drawnSpread.length >= 3) return;
 
-        // Force an absolute math lock to an integer so array lookups don't crash on a .001 decimal
         wheelDragActive = false;
         wheelVelocity = 0;
         const cleanIndex = Math.round(wheelIndex);
@@ -1814,7 +1799,7 @@
         updateWheel(); 
 
         const N = wheelCards.length;
-        const realIndex = ((cleanIndex % N) + N) % N; // Flawless array extraction
+        const realIndex = ((cleanIndex % N) + N) % N;
         const card = wheelCards[realIndex];
         const el = document.getElementById(`wheel-card-${realIndex}`).querySelector('.tarot-card');
         
@@ -1928,15 +1913,16 @@
         el.classList.add('cursor-blink');
         await typewriter('psychic-reading-text', text, 16);
         el.classList.remove('cursor-blink');
+        AppState.lastReadingText = text; // fed into the match call so the film continues the reading's story
 
       } catch (err) {
+        AppState.lastReadingText = null;
         console.error('Psychic reading failed:', err);
         el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>';
       }
     }
 
-    // --- LOADING MONTAGE: climbs to 100%, then HOLDS there with a decrypt message
-    //     until the worker's single-package response actually arrives. ---
+    // --- LOADING MONTAGE ---
     let progressInterval = null;
 
     function startLoadingSequence() {
@@ -1969,7 +1955,6 @@
             playSynthBeep(700, 0.02, 'square');
           }
         } else {
-          // Hold here — this is the state until the worker's response actually lands.
           term.innerText = "[ DECRYPTING SUBCONSCIOUS TRUTHS... ]";
           term.classList.add('cursor-blink');
           playSynthBeep(220, 0.06, 'sine');
@@ -1987,12 +1972,10 @@
     async function initiateSubconsciousMatching() {
       showScreen('screen-loading');
       AudioEngine.heartbeat.start();
-      AudioEngine.muffle(380, 0.6); // the whole mix goes muffled while "the machine thinks"
+      AudioEngine.muffle(380, 0.6);
       startLoadingSequence();
 
       try {
-        // Tarot draw nudges the baseline sliders exactly as before — this is local,
-        // static card data and needs no server round trip.
         const TAROT_INFLUENCE = 0.3;
         const MAX_TAROT_SHIFT = 20;
         const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
@@ -2018,19 +2001,20 @@
           return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Rev)' : ''}`;
         }).join(', ');
 
-        // Everything that needs the TMDB key (discover, scoring, movie details) and the
-        // Gemini key now happens server-side in one shot. The worker sends back one package:
-        // the selected movie's full details, runner-ups, the noir teaser, and the assessment.
         const payload = {
           type: 'match',
           sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
           language: AppState.language,
           era: AppState.era,
+          runtimeMin: AppState.runtimeMin,
           runtimeMax: AppState.runtimeMax,
           vibeGenreIds: AppState.vibeGenreIds,
           seenMovies: AppState.seenMovies,
           rejectedMovies: AppState.rejectedMovies,
-          spread: spreadSummary
+          spread: spreadSummary,
+          readingText: AppState.lastReadingText,
+          tasteAvoid: AppState.tasteAvoid,
+          drawnCards: AppState.drawnSpread.map(d => ({ id: d.card.id, reversed: d.isReversed }))
         };
 
         const res = await fetch(WORKER_BASE_URL, {
@@ -2060,7 +2044,6 @@
       return match ? match[0].trim() : overview.substring(0, 100) + '...';
     }
 
-    // Single package in, full page painted at once — no separate AI round trip, no typing.
     async function revealResult(data, w, t, r, h) {
       stopLoadingSequence();
       document.getElementById('loading-pct').innerText = "100%";
@@ -2072,7 +2055,6 @@
       const vibes = generateVibeWords(movie, w, t, r, h);
       const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
 
-      // The teaser is the noir-style rewrite the worker generated from the real synopsis.
       const teaser = (data.teaser && data.teaser.trim()) || getOneSentencePlot(movie.overview);
       populateFinalReveal(movie, critique, vibes, teaser);
 
@@ -2102,10 +2084,7 @@
       showScreenWithFocusReveal('screen-result');
     }
 
-    // Swaps in the result screen, then runs the cinematic poster reveal: the poster starts
-    // full-screen and blurred, then shrinks/sharpens down into its real slot in the result
-    // card over 2s, with the audio clearing from muffled to sharp on the same timeline.
-    const REVEAL_DURATION = 3.4; // seconds — poster shrink + audio focus-sweep share this
+    const REVEAL_DURATION = 3.4;
 
     function showScreenWithFocusReveal(screenId) {
       showScreen(screenId);
@@ -2122,23 +2101,15 @@
       playTypewriterDing();
 
       if (!overlay || !overlayImg || !realPoster || !posterUrl) {
-        // No poster to work with (rare) — fall back to a whole-page blur-to-focus instead.
         const el = document.getElementById(screenId);
         if (el) { el.classList.remove('focus-reveal'); void el.offsetWidth; el.classList.add('focus-reveal'); }
         return;
       }
 
-      // The real poster is already fully loaded/positioned behind the overlay — force it
-      // visible immediately so there's zero flash once the overlay steps aside.
       realPoster.style.opacity = '1';
       const fallbackText = document.getElementById('poster-fallback-text');
       if (fallbackText) fallbackText.style.display = 'none';
 
-      // Size the starting frame with the ACTUAL visible viewport in pixels rather than CSS
-      // 100vw/100vh — on iOS Safari 100vh is taller than what's actually on screen (it
-      // includes the area the collapsible address bar can occupy), which was pushing the
-      // full-screen start frame off-center. window.innerWidth/innerHeight always matches
-      // what's really visible right now.
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
@@ -2153,8 +2124,6 @@
       overlayImg.style.transform = 'translate(0px, 0px) scale(1, 1)';
       overlayImg.style.filter = 'blur(26px) brightness(0.55) saturate(0.35)';
 
-      // Wait a frame so the full-screen starting state actually paints before we measure
-      // the target slot and animate toward it.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           const targetRect = realPoster.getBoundingClientRect();
@@ -2195,6 +2164,7 @@
     function rerollCurrentSpectrum() {
       if (AppState.currentMovie && AppState.currentMovie.id) {
         AppState.rejectedMovies.push(AppState.currentMovie.id);
+        recordRejectionTaste(AppState.currentMovie);
         persistSeenRejected();
         initiateSubconsciousMatching();
       }
@@ -2213,6 +2183,7 @@
       if (AppState.drawnSpread[2]) w1 = dominantWord(AppState.drawnSpread[2].card.name);
       let w2 = "ATMOSPHERIC";
       if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name;
+      else if (movie.genres && movie.genres.length > 0 && GENRE_MAP[movie.genres[0].id]) w2 = GENRE_MAP[movie.genres[0].id].name;
       let w3 = r > 60 ? "SURREAL" : (h > 60 ? "SATIRICAL" : (w > 60 ? "DREAD" : "INTIMATE"));
       return [w1.replace(/[^A-Z]/g, ''), w2, w3];
     }
@@ -2477,7 +2448,10 @@
       ctx.font = '18px Courier New, monospace';
       
       const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id]?.name).join(' + ') || 'NONE';
-      const metaText = `GENRES: ${genreNames}  |  DEPTH: ${AppState.depth.toUpperCase()}  |  ERA: ${AppState.era.toUpperCase()}`;
+      const runtimeLabel = AppState.runtimeBand === 'custom'
+        ? `≤${AppState.runtimeMax}MIN`
+        : (AppState.runtimeBand || 'any').toUpperCase();
+      const metaText = `GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}`;
       ctx.fillText(metaText, W/2, cursorY);
       
       cursorY += 35;
@@ -2570,6 +2544,3 @@
   </script>
 </body>
 </html>
-
-
-```
