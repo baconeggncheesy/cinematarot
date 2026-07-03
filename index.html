@@ -581,11 +581,11 @@
         <button onclick="closeShareImageOverlay()" class="script-btn uppercase text-xs px-6 py-2 mt-6 border border-neutral-600">Close</button>
       </div>
 
-      <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
-        <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="WRITER'S BLOCK">WRITER'S BLOCK</div>
-        <div class="action text-center mt-2 text-xs leading-relaxed max-w-xs mx-auto" id="error-message">
-          The machine stares at a blank page. The live archive returned nothing it can stand behind, and no fallback script exists.<br><br>[ERR_NO_SCRIPT]
-        </div>
+	      <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
+	        <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="APP NOT WORKING">APP NOT WORKING</div>
+	        <div class="action text-center mt-2 text-xs leading-relaxed max-w-xs mx-auto" id="error-message">
+	          The app could not get a valid response from the live worker. No fallback script was used.<br><br>[ERR_WORKER_RESPONSE]
+	        </div>
         <div class="mt-8 space-y-3 max-w-xs mx-auto w-full">
           <button onclick="retryProjection()" class="script-btn-primary uppercase text-xs tracking-widest border-neonRed text-neonRed shadow-[inset_0_0_10px_0_rgba(255,0,60,0.4)]">Retry Live Uplink</button>
           <button onclick="recalibrate()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Action: Restart</button>
@@ -2027,8 +2027,8 @@
         showScreen('screen-spread-review'); await renderPsychicReading();
     }
 
-    async function renderPsychicReading() {
-      const el = document.getElementById('psychic-reading-text'); if (!el) return; el.innerText = 'Consulting the cards...';
+	    async function renderPsychicReading() {
+	      const el = document.getElementById('psychic-reading-text'); if (!el) return; el.innerText = 'Consulting the cards...';
       const spreadArr = [];
       for (let i = 0; i < AppState.drawnSpread.length; i++) {
           const draw = AppState.drawnSpread[i];
@@ -2055,9 +2055,9 @@
         
         text = text.replace(/[*_`]/g, '').trim(); 
         
-        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ Hear';
-      } catch (err) { AppState.lastReadingText = null; el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>'; }
-    }
+	        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ Hear';
+	      } catch (err) { AppState.lastReadingText = null; el.innerHTML = '<span class="text-neonRed font-bold">[ THE READING SERVICE IS NOT WORKING ]</span><br><br><span class="text-neutral-400">The app could not get a real reading from the worker. Try again after the service recovers.</span>'; }
+	    }
 
 
     function startLoadingSequence() {
@@ -2108,7 +2108,14 @@
         const data = await res.json().catch(() => null);
         if (!res.ok || !data || data.error || !data.movie) { throw new Error((data && data.error) || "HTTP " + res.status); }
         await revealResult(data, finalWarmth, finalTempo, finalReality, finalHumor);
-      } catch (err) { stopLoadingSequence(); AudioEngine.heartbeat.stop(); console.error("Matchmaker Crash: ", err.message); showScreen('screen-error'); }
+	      } catch (err) {
+	        stopLoadingSequence();
+	        AudioEngine.heartbeat.stop();
+	        console.error("Matchmaker Crash: ", err.message);
+	        const errorEl = document.getElementById('error-message');
+	        if (errorEl) errorEl.innerText = "The app could not get a valid response from the live worker. No fallback script was used.\n\n" + (err.message || "[ERR_WORKER_RESPONSE]");
+	        showScreen('screen-error');
+	      }
     }
 
     async function revealResult(data, w, t, r, h) {
@@ -2120,8 +2127,8 @@
       
       populateFinalReveal(movie, critique, vibes, teaser, data.cast || []); 
 
-      const analysisEl = document.getElementById('custom-analysis'); analysisEl.classList.remove('cursor-blink'); analysisEl.style.whiteSpace = 'pre-wrap';
-      analysisEl.innerHTML = (data.assessment && data.assessment.trim()) ? data.assessment.trim() : '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br><span class="text-neutral-400">The machine has nothing to say. Try REROLL SCENE or come back later.</span>';
+	      const analysisEl = document.getElementById('custom-analysis'); analysisEl.classList.remove('cursor-blink'); analysisEl.style.whiteSpace = 'pre-wrap';
+	      analysisEl.innerHTML = (data.assessment && data.assessment.trim()) ? data.assessment.trim() : '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br><span class="text-neutral-400">The worker returned a movie without a real assessment. The app is not working correctly.</span>';
 
       const spreadArr = [];
       for (let i = 0; i < AppState.drawnSpread.length; i++) {
@@ -2231,12 +2238,12 @@
       const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']); const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
       const parts = cleaned.split(/\s+/).filter(Boolean); const meaningful = parts.filter(wd => !stop.has(wd)); return (meaningful[0] || parts[0] || 'SHADOW');
     }
-    function generateVibeWords(movie, w, t, r, h) {
-      let w1 = "SHADOW"; if (AppState.drawnSpread[2]) w1 = dominantWord(AppState.drawnSpread[2].card.name);
-      let w2 = "ATMOSPHERIC"; if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name; else if (movie.genres && movie.genres.length > 0 && GENRE_MAP[movie.genres[0].id]) w2 = GENRE_MAP[movie.genres[0].id].name;
-      let w3 = r > 60 ? "SURREAL" : (h > 60 ? "SATIRICAL" : (w > 60 ? "DREAD" : "INTIMATE"));
-      return [w1.replace(/[^A-Z]/g, ''), w2, w3];
-    }
+	    function generateVibeWords(movie, w, t, r, h) {
+	      let w1 = "SHADOW"; if (AppState.drawnSpread[2]) w1 = dominantWord(AppState.drawnSpread[2].card.name);
+	      let w2 = "ATMOSPHERIC"; if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name; else if (movie.genres && movie.genres.length > 0 && GENRE_MAP[movie.genres[0].id]) w2 = GENRE_MAP[movie.genres[0].id].name;
+	      let w3 = r > 60 ? "SURREAL" : (h > 60 ? "SATIRICAL" : (w > 60 ? "DREAD" : "INTIMATE"));
+	      return [w1.replace(/[^A-Z]/g, ''), w2, w3];
+	    }
 
     function getDirectorName(movie) {
       const crew = movie && movie.credits && Array.isArray(movie.credits.crew) ? movie.credits.crew : [];
