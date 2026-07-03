@@ -371,7 +371,7 @@
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
           <div class="flex space-x-2">
-            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A short surreal sci-fi movie">
+            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. I want to feel like I'm drowning...">
             <button onclick="startVoiceInput()" id="vibe-mic-btn" class="script-btn text-xs px-3 uppercase font-bold text-neutral-400 border-neutral-700 hover:text-white hover:border-white" title="Speak your mood">MIC</button>
             <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
           </div>
@@ -934,7 +934,12 @@
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        const rawCandidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        let rawCandidate = null;
+        if (data && data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+            rawCandidate = data.candidates[0].content.parts[0].text;
+        }
+
         if (!rawCandidate) throw new Error("SHAPE");
 
         let rawText = rawCandidate.trim();
@@ -1248,8 +1253,12 @@
       _loop() {
         if (!this.active) return;
         this.x += (this._rawX - this.x) * 0.12; this.y += (this._rawY - this.y) * 0.12;
-        const wheelVisible = !document.getElementById('screen-game3')?.classList.contains('hidden');
+        
+        // Removed optional chaining syntax (?.)
+        const game3El = document.getElementById('screen-game3');
+        const wheelVisible = game3El && !game3El.classList.contains('hidden');
         if (wheelVisible && typeof updateWheel === 'function') updateWheel();
+        
         requestAnimationFrame(() => this._loop());
       },
       _attach() { if (this.active) return; this.active = true; window.addEventListener('deviceorientation', e => this.handleOrientation(e), true); requestAnimationFrame(() => this._loop()); },
@@ -1261,7 +1270,14 @@
     function toggleAudio() {
       AppState.audioEnabled = !AppState.audioEnabled;
       document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
-      if (AppState.audioEnabled) { AudioEngine.tone(440, 0.05, 'square'); const loadingVisible = !document.getElementById('screen-loading')?.classList.contains('hidden'); if (loadingVisible) { AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.3); } } else { AudioEngine.heartbeat.stop(0.15); AudioEngine.wheelHum.silence(); AudioEngine.spreadScore.stop(0.3); }
+      if (AppState.audioEnabled) { 
+          AudioEngine.tone(440, 0.05, 'square'); 
+          const loadingEl = document.getElementById('screen-loading');
+          const loadingVisible = loadingEl && !loadingEl.classList.contains('hidden'); 
+          if (loadingVisible) { AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.3); } 
+      } else { 
+          AudioEngine.heartbeat.stop(0.15); AudioEngine.wheelHum.silence(); AudioEngine.spreadScore.stop(0.3); 
+      }
     }
     function playSynthBeep(freq, duration, type = 'square') { AudioEngine.tone(freq, duration, type, 0.05); }
     function playArcanaSound(type) {
@@ -1279,9 +1295,13 @@
     function triggerGlitchEffect(glitchClass) { const body = document.getElementById('app-body'); body.classList.add(glitchClass); setTimeout(() => body.classList.remove(glitchClass), 500); }
 
     function showScreen(screenId) {
-      const leavingResult = screenId !== 'screen-result' && !document.getElementById('screen-result')?.classList.contains('hidden');
+      // Removed optional chaining syntax (?.)
+      const resultEl = document.getElementById('screen-result');
+      const leavingResult = screenId !== 'screen-result' && resultEl && !resultEl.classList.contains('hidden');
       if (leavingResult) { AudioEngine.spreadScore.stop(0.6); hideLetterbox(); }
-      const leavingReview = screenId !== 'screen-spread-review' && !document.getElementById('screen-spread-review')?.classList.contains('hidden');
+      
+      const reviewEl = document.getElementById('screen-spread-review');
+      const leavingReview = screenId !== 'screen-spread-review' && reviewEl && !reviewEl.classList.contains('hidden');
       if (leavingReview && window.speechSynthesis && _speaking) { speechSynthesis.cancel(); _speaking = false; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR'; }
 
       ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
@@ -1413,11 +1433,19 @@
           body: JSON.stringify({ type: 'reading', spread: spreadDetail, fullInversion: AppState.fullInversion, manualOverride: AppState.manualOverrideText }) 
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json(); let text = data?.candidates?.[0]?.content?.parts?.[0]?.text; if (!text) throw new Error('Empty response');
+        const data = await res.json(); 
+        
+        // Removed optional chaining syntax (?.)
+        let text = null;
+        if (data && data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+            text = data.candidates[0].content.parts[0].text;
+        }
+
+        if (!text) throw new Error('Empty response');
         
         text = text.replace(/[*_`]/g, '').trim(); 
         
-        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR';
+        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ Hear';
       } catch (err) { AppState.lastReadingText = null; el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>'; }
     }
 
@@ -1472,7 +1500,6 @@
 
       const teaser = (data.teaser && data.teaser.trim()) || getOneSentencePlot(movie.overview);
       
-      // Pass the teaser plot AND the cast array to be rendered (Keeping it spoiler free)
       populateFinalReveal(movie, critique, vibes, teaser, data.cast || []); 
 
       const analysisEl = document.getElementById('custom-analysis'); analysisEl.classList.remove('cursor-blink'); analysisEl.style.whiteSpace = 'pre-wrap';
@@ -1540,7 +1567,14 @@
       }
       
       const mdirEl = document.getElementById('movie-director');
-      if (mdirEl) mdirEl.innerText = movie.credits?.crew?.find(c => c.job === 'Director' || c.job === 'Executive Producer')?.name || "AUTEUR";
+      if (mdirEl) {
+          let dirName = "AUTEUR";
+          if (movie.credits && movie.credits.crew) {
+              const dirObj = movie.credits.crew.find(c => c.job === 'Director' || c.job === 'Executive Producer');
+              if (dirObj) dirName = dirObj.name;
+          }
+          mdirEl.innerText = dirName;
+      }
       
       const mrunEl = document.getElementById('movie-runtime');
       if (mrunEl) {
@@ -1586,8 +1620,16 @@
 
       const providersContainer = document.getElementById('providers-container');
       if (providersContainer) {
-        providersContainer.innerHTML = ""; const usFlatrate = movie["watch/providers"]?.results?.US?.flatrate;
-        if (usFlatrate && usFlatrate.length > 0) { usFlatrate.slice(0, 3).forEach(p => { providersContainer.innerHTML += `<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]">${p.provider_name}</span>`; }); } else { providersContainer.innerHTML = `<span class="text-[9px] font-mono text-neutral-600 font-bold uppercase border border-neutral-800 border-dashed px-2 py-1">LOCAL CINEMA / PHYSICAL MEDIA</span>`; }
+        providersContainer.innerHTML = ""; 
+        const usFlatrate = (movie["watch/providers"] && movie["watch/providers"].results && movie["watch/providers"].results.US) ? movie["watch/providers"].results.US.flatrate : null;
+        
+        if (usFlatrate && usFlatrate.length > 0) { 
+            usFlatrate.slice(0, 3).forEach(p => { 
+                providersContainer.innerHTML += `<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]">${p.provider_name}</span>`; 
+            }); 
+        } else { 
+            providersContainer.innerHTML = `<span class="text-[9px] font-mono text-neutral-600 font-bold uppercase border border-neutral-800 border-dashed px-2 py-1">LOCAL CINEMA / PHYSICAL MEDIA</span>`; 
+        }
       }
       renderRunnerUps();
     }
@@ -1613,37 +1655,50 @@
       }).join('');
     }
 
-    // --- Cleaned up, Unified Canvas and Image Loading Logic ---
+    function loadImageCrossOrigin(url) { return new Promise((resolve, reject) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => resolve(img); img.onerror = reject; img.src = url; }); }
+    async function loadImageWithJpegFallback(url) { try { return await loadImageCrossOrigin(url); } catch (e) { if (/\.jpg$/i.test(url)) { return await loadImageCrossOrigin(url.replace(/\.jpg$/i, '.jpeg')); } if (/\.jpeg$/i.test(url)) { return await loadImageCrossOrigin(url.replace(/\.jpeg$/i, '.jpg')); } throw e; } }
 
-    function loadImageCrossOrigin(url) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
-      });
+    function normalizeTmdbImageUrl(value, size = "w500") {
+      if (!value) return null;
+      const raw = String(value).trim();
+      if (!raw) return null;
+      if (raw.startsWith("[https://image.tmdb.org](https://image.tmdb.org)")) return raw;
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (raw.startsWith("/t/p/")) return `https://image.tmdb.org${raw}`;
+      if (raw.startsWith("/")) return `https://image.tmdb.org/t/p/${size}${raw}`;
+      return `https://image.tmdb.org/t/p/${size}/${raw}`;
     }
 
-    async function loadImageWithJpegFallback(url) {
+    function getCurrentPosterUrl(size = "w500") {
+      const movie = AppState.currentMovie || {};
+      return normalizeTmdbImageUrl(
+        AppState.currentPosterUrl ||
+          movie.sharePosterUrl ||
+          movie.posterUrl ||
+          movie.poster_url ||
+          movie.poster ||
+          movie.imageUrl ||
+          movie.poster_path,
+        size
+      );
+    }
+
+    function getCanvasSafePosterUrl(size = "w500") {
+      const posterUrl = getCurrentPosterUrl(size);
+      if (!posterUrl) return null;
       try {
-        return await loadImageCrossOrigin(url);
-      } catch (e) {
-        if (/\.jpg$/i.test(url)) {
-          return await loadImageCrossOrigin(url.replace(/\.jpg$/i, '.jpeg'));
+        const parsed = new URL(posterUrl);
+        if (parsed.hostname === "image.tmdb.org") {
+          return `${WORKER_BASE_URL}?img=${encodeURIComponent(parsed.pathname)}`;
         }
-        if (/\.jpeg$/i.test(url)) {
-          return await loadImageCrossOrigin(url.replace(/\.jpeg$/i, '.jpg'));
-        }
-        throw e;
-      }
+      } catch (e) {}
+      return `${WORKER_BASE_URL}?img=${encodeURIComponent(posterUrl)}`;
     }
 
     async function buildReadingCanvasDataUrl() {
       const movie = AppState.currentMovie || {};
       const W = 1080;
       const H = 1920;
-
       const canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
@@ -1657,35 +1712,6 @@
           .replace(/[“”]/g, '"')
           .replace(/[‘’]/g, "'")
           .replace(/[^\x20-\x7E]/g, '');
-      }
-
-      function safePosterProxyUrl() {
-        const raw =
-          AppState.currentPosterUrl ||
-          movie.sharePosterUrl ||
-          movie.posterUrl ||
-          movie.poster_url ||
-          movie.poster ||
-          movie.imageUrl ||
-          movie.poster_path ||
-          null;
-
-        if (!raw) return null;
-        const value = String(raw).trim();
-
-        if (value.startsWith('[https://image.tmdb.org](https://image.tmdb.org)')) {
-          try {
-            const parsed = new URL(value);
-            return `${WORKER_BASE_URL}?img=${encodeURIComponent(parsed.pathname)}`;
-          } catch (e) {
-            return `${WORKER_BASE_URL}?img=${encodeURIComponent(value)}`;
-          }
-        }
-
-        if (/^https?:\/\//i.test(value)) return `${WORKER_BASE_URL}?img=${encodeURIComponent(value)}`;
-        if (value.startsWith('/t/p/')) return `${WORKER_BASE_URL}?img=${encodeURIComponent(value)}`;
-        if (value.startsWith('/')) return `${WORKER_BASE_URL}?img=${encodeURIComponent('/t/p/w500' + value)}`;
-        return `${WORKER_BASE_URL}?img=${encodeURIComponent('/t/p/w500/' + value)}`;
       }
 
       ctx.fillStyle = '#0A0A0A';
@@ -1710,16 +1736,17 @@
       const posterH = 690;
       const posterX = (W - posterW) / 2;
       const posterY = 170;
-      const posterUrl = safePosterProxyUrl();
+      const sharePosterUrl = getCanvasSafePosterUrl('w500');
 
-      if (posterUrl) {
+      if (sharePosterUrl) {
         try {
-          const posterImg = await loadImageCrossOrigin(posterUrl);
+          const posterImg = await loadImageCrossOrigin(sharePosterUrl);
           ctx.save();
           ctx.shadowColor = 'rgba(255,0,60,0.5)';
           ctx.shadowBlur = 40;
           ctx.drawImage(posterImg, posterX, posterY, posterW, posterH);
           ctx.restore();
+
           ctx.strokeStyle = '#FF003C';
           ctx.lineWidth = 3;
           ctx.strokeRect(posterX, posterY, posterW, posterH);
@@ -1737,20 +1764,21 @@
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 44px Georgia, serif';
       ctx.textAlign = 'center';
-
       const title = cleanCanvasText(movie.title || movie.name || 'UNKNOWN');
       ctx.fillText(title.length > 30 ? title.slice(0, 30) + '...' : title, W / 2, cursorY);
 
       cursorY += 48;
-
       const year = cleanCanvasText((movie.release_date || movie.first_air_date || '').split('-')[0]);
-      const dir = cleanCanvasText(
-        movie.credits?.crew?.find(c => c.job === 'Director' || c.job === 'Executive Producer')?.name || ''
-      );
-
+      
+      let dir = '';
+      if (movie.credits && movie.credits.crew) {
+        const dirObj = movie.credits.crew.find(c => c.job === 'Director' || c.job === 'Executive Producer');
+        if (dirObj) dir = dirObj.name;
+      }
+      
       ctx.fillStyle = '#FF003C';
       ctx.font = 'bold 22px Courier New, monospace';
-      ctx.fillText([year, dir].filter(Boolean).join('  -  '), W / 2, cursorY);
+      ctx.fillText([year, cleanCanvasText(dir)].filter(Boolean).join('  -  '), W / 2, cursorY);
 
       cursorY += 70;
       ctx.fillStyle = '#666';
@@ -1788,10 +1816,12 @@
         ctx.strokeStyle = '#444';
         ctx.lineWidth = 2;
         ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
+
         ctx.textAlign = 'center';
         ctx.fillStyle = '#FF003C';
         ctx.font = 'bold 16px Courier New, monospace';
         ctx.fillText(pos, cardX + cardThumbW / 2, cardY + cardThumbH + 30);
+
         cardX += cardThumbW + cardGap;
       }
 
@@ -1825,20 +1855,17 @@
       ctx.fillStyle = '#FF003C';
       ctx.font = 'bold 22px Courier New, monospace';
       ctx.fillText('DIAGNOSTIC PARAMETERS', W / 2, cursorY);
-      cursorY += 40;
 
+      cursorY += 40;
       ctx.fillStyle = '#ccc';
       ctx.font = '18px Courier New, monospace';
 
-      const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id]?.name).filter(Boolean).join(' + ') || 'NONE';
-      const runtimeLabel = AppState.runtimeBand === 'custom'
-        ? `<=${AppState.runtimeMax}MIN`
-        : (AppState.runtimeBand || 'any').toUpperCase();
-
+      const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id] ? GENRE_MAP[id].name : null).filter(Boolean).join(' + ') || 'NONE';
+      const runtimeLabel = AppState.runtimeBand === 'custom' ? `<=${AppState.runtimeMax}MIN` : (AppState.runtimeBand || 'any').toUpperCase();
       const metaText = cleanCanvasText(`GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}`);
       ctx.fillText(metaText, W / 2, cursorY);
-      cursorY += 35;
 
+      cursorY += 35;
       const s = AppState.sliders;
       const sliderText = cleanCanvasText(
         `WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`
@@ -1888,5 +1915,6 @@
   </script>
 </body>
 </html>
+
 
 ```
