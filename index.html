@@ -434,6 +434,7 @@
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
           <div class="flex space-x-2">
             <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A rainy neon city at 3 AM...">
+            <button onclick="startVoiceInput()" id="vibe-mic-btn" class="script-btn text-xs px-3 uppercase font-bold text-neutral-400 border-neutral-700 hover:text-white hover:border-white" title="Speak your mood">MIC</button>
             <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
           </div>
           <div id="vibe-status" class="text-[9px] text-neutral-500 mt-2 uppercase h-3"></div>
@@ -490,6 +491,9 @@
         <div class="bg-black border border-neutral-800 p-4 font-mono text-xs leading-relaxed text-neutral-300 relative mb-4">
           <div class="absolute top-2 right-2 font-mono text-[8px] text-neonRed font-bold border border-neonRed px-1 rounded-sm">PSYCHIC READING</div>
           <div id="psychic-reading-text" class="pt-4 text-justify text-neutral-200">Consulting the cards...</div>
+          <div class="mt-3 pt-2 border-t border-neutral-900 flex justify-end">
+            <button onclick="speakReading()" id="reading-speak-btn" class="script-btn text-[9px] px-3 py-1 uppercase tracking-widest text-neutral-400 border-neutral-700 hover:text-white hover:border-white">▶ Hear</button>
+          </div>
         </div>
 
         <div class="mt-4 pt-4 border-t border-neutral-900 sticky bottom-0 bg-black pb-2">
@@ -640,7 +644,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.2.0 (BOOTH)</div>
+      <div>V 9.3.0 (SENSES)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -1154,6 +1158,138 @@
         btnEl.disabled = false;
       }
     }
+
+    // ===================== PHASE 3: VOICE-TO-VIBE =====================
+    // Uses the Web Speech API to dictate a mood into the vibe field, then auto-runs the same
+    // translateVibe() pipeline. Safari support is partial and permission-gated, so every path
+    // fails soft: if recognition is unavailable or denied, we tell the user to type instead.
+    let _recognition = null;
+    let _listening = false;
+
+    function startVoiceInput() {
+      const micBtn = document.getElementById('vibe-mic-btn');
+      const statusEl = document.getElementById('vibe-status');
+      const inputEl = document.getElementById('vibe-input');
+
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        statusEl.classList.remove('text-neonRed');
+        statusEl.innerText = "[ VOICE UNSUPPORTED HERE — TYPE YOUR MOOD ]";
+        return;
+      }
+
+      // Tapping again while listening cancels.
+      if (_listening && _recognition) {
+        try { _recognition.stop(); } catch (e) {}
+        return;
+      }
+
+      _recognition = new SR();
+      _recognition.lang = 'en-US';
+      _recognition.interimResults = true;
+      _recognition.maxAlternatives = 1;
+      _recognition.continuous = false;
+
+      _recognition.onstart = () => {
+        _listening = true;
+        micBtn.innerText = '●REC';
+        micBtn.classList.add('text-neonRed', 'border-neonRed');
+        statusEl.classList.remove('text-neonRed');
+        statusEl.innerText = "[ LISTENING — SPEAK YOUR MOOD ]";
+        playSynthBeep(880, 0.08, 'sine');
+      };
+
+      _recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        inputEl.value = transcript;
+      };
+
+      _recognition.onerror = (event) => {
+        _listening = false;
+        micBtn.innerText = 'MIC';
+        micBtn.classList.remove('text-neonRed', 'border-neonRed');
+        const msg = event.error === 'not-allowed' || event.error === 'service-not-allowed'
+          ? "[ MIC BLOCKED — ALLOW ACCESS OR TYPE ]"
+          : "[ DIDN'T CATCH THAT — TRY AGAIN OR TYPE ]";
+        statusEl.classList.add('text-neonRed');
+        statusEl.innerText = msg;
+      };
+
+      _recognition.onend = () => {
+        _listening = false;
+        micBtn.innerText = 'MIC';
+        micBtn.classList.remove('text-neonRed', 'border-neonRed');
+        // If we captured anything, run the normal translate pipeline automatically.
+        if (inputEl.value.trim()) {
+          playSynthBeep(1200, 0.1, 'square');
+          translateVibe();
+        }
+      };
+
+      try {
+        _recognition.start();
+      } catch (e) {
+        statusEl.classList.add('text-neonRed');
+        statusEl.innerText = "[ VOICE FAILED TO START — TYPE INSTEAD ]";
+      }
+    }
+
+    // ===================== PHASE 3: SPOKEN READING =====================
+    // Reads the psychic reading aloud in a low, deliberate register to match "THE SYSTEM."
+    // Uses SpeechSynthesis; picks the deepest-sounding available voice and slows the rate.
+    // Fully optional — a speaker toggle sits by the reading; nothing autoplays.
+    let _speaking = false;
+
+    function _pickOracleVoice() {
+      const voices = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+      if (!voices.length) return null;
+      // Prefer deeper/male-tagged English voices; fall back to any English, then anything.
+      const preferredNames = ['Daniel', 'Google UK English Male', 'Fred', 'Arthur', 'Alex', 'Rishi'];
+      for (const name of preferredNames) {
+        const v = voices.find(v => v.name === name);
+        if (v) return v;
+      }
+      return voices.find(v => /en(-|_)/i.test(v.lang)) || voices[0];
+    }
+
+    function speakReading() {
+      const btn = document.getElementById('reading-speak-btn');
+      if (!window.speechSynthesis) {
+        if (btn) btn.innerText = 'N/A';
+        return;
+      }
+      // Toggle off if already speaking.
+      if (_speaking) {
+        speechSynthesis.cancel();
+        _speaking = false;
+        if (btn) btn.innerText = '▶ HEAR';
+        return;
+      }
+      const text = AppState.lastReadingText;
+      if (!text) return;
+
+      const utter = new SpeechSynthesisUtterance(text);
+      const voice = _pickOracleVoice();
+      if (voice) utter.voice = voice;
+      utter.rate = 0.82;   // slow, deliberate
+      utter.pitch = 0.7;   // low register
+      utter.volume = 1.0;
+
+      utter.onstart = () => { _speaking = true; if (btn) btn.innerText = '❚❚ STOP'; };
+      utter.onend = () => { _speaking = false; if (btn) btn.innerText = '▶ HEAR'; };
+      utter.onerror = () => { _speaking = false; if (btn) btn.innerText = '▶ HEAR'; };
+
+      speechSynthesis.speak(utter);
+    }
+
+    // Voices load async in some browsers; nudge them so _pickOracleVoice has data ready.
+    if (window.speechSynthesis) {
+      speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); };
+    }
+    // ==================================================================
 
     function renderHitCounter(count) {
       const paddedStr = count.toString().padStart(5, '0');
@@ -1699,6 +1835,69 @@
       }
     };
 
+    // ===================== PHASE 3: TILT PARALLAX =====================
+    // Reads DeviceOrientation and exposes a smoothed -1..1 x/y the wheel reads each frame.
+    // iOS 13+ requires requestPermission() from inside a user gesture, so we arm it on the
+    // first tap (startCalibrator) rather than at load. Silently no-ops where unsupported.
+    const TiltEngine = {
+      x: 0, y: 0,
+      _rawX: 0, _rawY: 0,
+      active: false,
+      _baseGamma: null, _baseBeta: null,
+
+      handleOrientation(e) {
+        // gamma: left/right tilt (-90..90), beta: front/back (-180..180)
+        if (e.gamma === null || e.beta === null) return;
+        // Calibrate to wherever the phone is held on first reading (neutral = current pose).
+        if (this._baseGamma === null) { this._baseGamma = e.gamma; this._baseBeta = e.beta; }
+        const dGamma = e.gamma - this._baseGamma;
+        const dBeta = e.beta - this._baseBeta;
+        // Map ~±25° of tilt to the full -1..1 range, clamp beyond that.
+        this._rawX = Math.max(-1, Math.min(1, dGamma / 25));
+        this._rawY = Math.max(-1, Math.min(1, dBeta / 25));
+      },
+
+      _loop() {
+        if (!this.active) return;
+        // Smooth toward the raw reading so parallax glides instead of jittering.
+        this.x += (this._rawX - this.x) * 0.12;
+        this.y += (this._rawY - this.y) * 0.12;
+        // Only repaint the wheel if it's the visible screen (cheap guard).
+        const wheelVisible = !document.getElementById('screen-game3')?.classList.contains('hidden');
+        if (wheelVisible && typeof updateWheel === 'function') updateWheel();
+        requestAnimationFrame(() => this._loop());
+      },
+
+      _attach() {
+        if (this.active) return;
+        this.active = true;
+        window.addEventListener('deviceorientation', e => this.handleOrientation(e), true);
+        requestAnimationFrame(() => this._loop());
+      },
+
+      // Called from a user gesture. Handles the three cases: iOS needs a permission prompt,
+      // other browsers just work, unsupported browsers no-op.
+      async enable() {
+        if (this.active) return;
+        try {
+          const DOE = window.DeviceOrientationEvent;
+          if (DOE && typeof DOE.requestPermission === 'function') {
+            const state = await DOE.requestPermission(); // must be inside a tap on iOS
+            if (state === 'granted') this._attach();
+          } else if (DOE) {
+            this._attach(); // Android / older iOS: no prompt needed
+          }
+        } catch (e) {
+          // Denied or errored — parallax just stays off, everything else works.
+        }
+      },
+
+      // Re-neutralize to the current pose (e.g. when re-entering the wheel).
+      recalibrate() { this._baseGamma = null; this._baseBeta = null; }
+    };
+    window.TiltEngine = TiltEngine;
+    // ==================================================================
+
     function toggleAudio() {
       AppState.audioEnabled = !AppState.audioEnabled;
       document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
@@ -1779,6 +1978,16 @@
         hideLetterbox();
       }
 
+      // Leaving spread review while a reading is being spoken: stop the voice.
+      const leavingReview = screenId !== 'screen-spread-review'
+        && !document.getElementById('screen-spread-review')?.classList.contains('hidden');
+      if (leavingReview && window.speechSynthesis && _speaking) {
+        speechSynthesis.cancel();
+        _speaking = false;
+        const sb = document.getElementById('reading-speak-btn');
+        if (sb) sb.innerText = '▶ HEAR';
+      }
+
       ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -1789,6 +1998,8 @@
 
     async function startCalibrator() {
       playTypewriterDing();
+      // First user gesture of the session — arm motion parallax (iOS needs the tap).
+      TiltEngine.enable();
       showScreen('screen-parameters');
       updateParameterUI('language', AppState.language);
       updateParameterUI('era', AppState.era);
@@ -1892,7 +2103,8 @@
       document.getElementById('draw-count').innerText = "0/3";
       
       initTarotWheel();
-      
+      TiltEngine.recalibrate(); // neutral = however they're holding the phone right now
+
       showScreen('screen-game3');
       await sleep(300);
       typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
@@ -2063,6 +2275,10 @@
     }
 
     function updateWheel() {
+        // TiltEngine feeds a small physical-orientation offset; 0 when unavailable.
+        const tiltX = (window.TiltEngine && TiltEngine.x) || 0; // -1..1 left/right
+        const tiltY = (window.TiltEngine && TiltEngine.y) || 0; // -1..1 fwd/back
+
         wheelCards.forEach((card, i) => {
             const el = document.getElementById(`wheel-card-${i}`);
             const offset = wheelOffset(i);
@@ -2074,7 +2290,14 @@
             let zIndex = Math.round(50 - absOffset);
             let opacity = absOffset > 3 ? 0 : 1;
 
-            el.style.transform = `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1000px) rotateY(${rotateY}deg)`;
+            // Parallax: cards further from center parallax more, so the spread has real depth
+            // when you move the phone. Center card barely moves (it's the focus).
+            const depth = 0.4 + absOffset * 0.5;
+            const tiltShiftX = tiltX * 26 * depth;
+            const tiltRotY = tiltX * 10;
+            const tiltRotX = tiltY * 8;
+
+            el.style.transform = `translateX(calc(-50% + ${translateX + tiltShiftX}px)) scale(${scale}) perspective(1000px) rotateY(${rotateY + tiltRotY}deg) rotateX(${tiltRotX}deg)`;
             el.style.zIndex = zIndex;
             el.style.opacity = opacity;
             el.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
@@ -2208,6 +2431,8 @@
         await typewriter('psychic-reading-text', text, 16);
         el.classList.remove('cursor-blink');
         AppState.lastReadingText = text; // fed into the match call so the film continues the reading's story
+        const sb = document.getElementById('reading-speak-btn');
+        if (sb) sb.innerText = '▶ HEAR';
 
       } catch (err) {
         AppState.lastReadingText = null;
