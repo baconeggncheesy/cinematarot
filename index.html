@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-black select-none">
 <head>
@@ -129,7 +130,6 @@
     .script-btn-primary:hover { box-shadow: inset 0 0 10px 0 rgba(255,0,60,0.4); }
     .script-btn-primary:active { background: #FF003C; color: #000; }
     
-    /* Cover Flow Styles */
     .tarot-card-container { perspective: 1200px; transform-style: preserve-3d; }
     .tarot-card {
       position: relative;
@@ -155,7 +155,6 @@
     .flipped .spread-indicator { opacity: 1; transform: rotateZ(0deg) !important; }
     .flipped.reversed-card .spread-indicator { transform: rotateX(180deg) rotateZ(180deg); bottom: auto; top: -20px; }
 
-    /* CRT Sensory Glitches */
     .glitch-tear { animation: glitch-tear-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
     .glitch-shake { animation: glitch-shake-anim 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
     .glitch-vertigo { animation: glitch-vertigo-anim 0.5s ease-in-out both; }
@@ -171,7 +170,6 @@
     @keyframes glitch-anim { 0% { clip: rect(15px, 9999px, 66px, 0); } 100% { clip: rect(34px, 9999px, 55px, 0); } }
     @keyframes glitch-anim2 { 0% { clip: rect(70px, 9999px, 105px, 0); } 100% { clip: rect(12px, 9999px, 85px, 0); } }
 
-    /* PROJECTION REVEAL: blur-to-focus, 2s, synced with the audio focus-sweep */
     @keyframes focus-reveal-anim {
       0%   { filter: blur(26px) brightness(0.55) saturate(0.35) contrast(1.1); opacity: 0.35; }
       55%  { filter: blur(8px) brightness(0.8) saturate(0.65) contrast(1.05); opacity: 0.85; }
@@ -179,18 +177,12 @@
     }
     .focus-reveal { animation: focus-reveal-anim 2s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-    /* ===================== PHASE 2: THE PROJECTION BOOTH ===================== */
-
-    /* FILM GRAIN — a fixed, always-on layer above the CRT scanlines but below UI.
-       Uses an inline SVG fractal-noise data URI (no image request) animated by nudging
-       the background-position each frame via a short steps() keyframe, so the grain
-       "boils" like real projected emulsion. Respects reduced-motion. */
     #film-grain {
       position: fixed;
       top: -50%; left: -50%;
       width: 200%; height: 200%;
       pointer-events: none;
-      z-index: 1000; /* above .crt::after (999), below overlays (z-40+) which sit in their own stacking context */
+      z-index: 1000; 
       opacity: 0.045;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
       animation: grain-shift 0.5s steps(3) infinite;
@@ -203,8 +195,6 @@
       100% { transform: translate(-2%, -1%); }
     }
 
-    /* CIGARETTE BURN / CUE MARK — the little circle that flashes top-right of old reels
-       right before a changeover. We flash it just before the poster reveal fires. */
     #cue-mark {
       position: fixed;
       top: 7%; right: 8%;
@@ -224,8 +214,6 @@
       100% { opacity: 0; transform: scale(1.04); }
     }
 
-    /* LETTERBOX BARS — two black bars that slide in from top & bottom to frame the
-       result in ~2.35:1, then hold. Sit above content, below fullscreen overlays. */
     #letterbox-top, #letterbox-bottom {
       position: fixed;
       left: 0; right: 0;
@@ -246,10 +234,7 @@
     @media (prefers-reduced-motion: reduce) {
       #film-grain { animation: none; }
     }
-    /* ===================== END PHASE 2 CSS ===================== */
 
-    /* Full-screen -> thumbnail poster reveal. Transform-based (not width/height) so the
-       shrink animates on the GPU compositor instead of triggering layout every frame. */
     .poster-reveal-img {
       position: fixed;
       top: 0;
@@ -282,17 +267,16 @@
     </header>
 
     <main class="flex-1 relative pb-6">
-      <!-- SCREEN 0: INTRO -->
       <section id="screen-intro" class="animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="text-center space-y-4 mb-12">
           <h1 class="font-cinzel text-4xl sm:text-5xl font-bold uppercase tracking-widest text-white border-y border-neutral-800 py-6 my-8">
             Cinema Arcana
           </h1>
-          <p class="text-xs text-neutral-500">Tarot For Movies</p>
+          <p class="text-xs text-neutral-500">Tarot For Media</p>
           <p class="text-[10px] uppercase mt-8 text-neutral-600"><span id="current-date"></span></p>
         </div>
         <div class="action text-xs leading-relaxed text-center px-4">
-          An internet-powered diagnostic scours the entire historic landscape of cinema to map your immediate subconscious vibe.<br><br>
+          An internet-powered diagnostic scours the entire historic landscape of cinema and television to map your immediate subconscious vibe.<br><br>
           Zero setup required. Fully client-contained vector search.
         </div>
         <div class="character text-xs mt-8">THE SYSTEM</div>
@@ -303,7 +287,6 @@
           </button>
         </div>
 
-        <!-- PHASE 4: DAILY HOUSE READING banner. Same spread worldwide each day. -->
         <button onclick="startHouseReading()" id="house-banner" class="mt-4 w-full border border-neutral-800 bg-darkGrey/60 hover:border-neonRed transition-colors p-3 flex items-center justify-between text-left group">
           <div>
             <div class="text-[9px] font-bold tracking-widest text-neonRed uppercase">Today's House Reading</div>
@@ -316,15 +299,22 @@
         </button>
       </section>
 
-      <!-- SCREEN 1: PARAMETERS -->
       <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. PRE-FLIGHT CALIBRATION - CONTINUOUS</div>
         <div class="action text-xs">The machine demands structural boundaries before querying the live global database.</div>
         <div class="character text-xs">THE SYSTEM</div>
         <div class="dialogue cursor-blink text-xs" id="param-dialogue"></div>
         <div class="space-y-5 mt-4">
+          <!-- NEW: Media Format Toggle -->
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">1. Cultural Origin</div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">1. Media Format</div>
+            <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="setParameter('mediaType', 'movie')" id="mediaType-movie" class="script-btn active flex justify-between"><span>FILM</span><span class="text-neutral-600">MOVIES</span></button>
+              <button onclick="setParameter('mediaType', 'tv')" id="mediaType-tv" class="script-btn flex justify-between"><span>TELEVISION</span><span class="text-neutral-600">SERIES</span></button>
+            </div>
+          </div>
+          <div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">2. Cultural Origin</div>
             <div class="grid grid-cols-3 gap-1.5 text-[9px] font-bold tracking-wider">
               <button onclick="setParameter('language', 'any')" id="lang-any" class="script-btn active">GLOBAL</button>
               <button onclick="setParameter('language', 'english')" id="lang-english" class="script-btn">ENGLISH</button>
@@ -332,7 +322,7 @@
             </div>
           </div>
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">2. Chronological Epoch</div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Chronological Epoch</div>
             <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
               <button onclick="setParameter('era', 'any')" id="era-any" class="script-btn active flex justify-between"><span>ANY ERA</span><span class="text-neutral-600">ALL</span></button>
               <button onclick="setParameter('era', 'golden')" id="era-golden" class="script-btn flex justify-between"><span>GOLDEN</span><span class="text-neutral-600">&lt;1970</span></button>
@@ -341,11 +331,11 @@
             </div>
           </div>
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Reel Length</div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">4. Length / Scope</div>
             <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
               <button onclick="setRuntime('any')" id="runtime-any" class="script-btn active flex justify-between"><span>ANY LENGTH</span><span class="text-neutral-600">ALL</span></button>
               <button onclick="setRuntime('short')" id="runtime-short" class="script-btn flex justify-between"><span>SHORT</span><span class="text-neutral-600">&lt;95</span></button>
-              <button onclick="setRuntime('feature')" id="runtime-feature" class="script-btn flex justify-between"><span>FEATURE</span><span class="text-neutral-600">95-135</span></button>
+              <button onclick="setRuntime('feature')" id="runtime-feature" class="script-btn flex justify-between"><span>STANDARD</span><span class="text-neutral-600">95-135</span></button>
               <button onclick="setRuntime('epic')" id="runtime-epic" class="script-btn flex justify-between"><span>EPIC</span><span class="text-neutral-600">135+</span></button>
             </div>
           </div>
@@ -356,7 +346,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 2: SLIDERS & VIBE TRANSLATOR -->
       <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE CORE SPECTRUM - GAME 01</div>
         <div class="action text-xs">Five mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
@@ -386,7 +375,6 @@
           </div>
         </div>
 
-        <!-- DIRECT NEURAL LINK (VIBE TRANSLATOR via CLOUDFLARE WORKER) -->
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
           <div class="flex space-x-2">
@@ -408,7 +396,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 3: CINEMA TAROT (3D COVER FLOW SPREAD) -->
       <section id="screen-game3" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE DIRECTOR'S DESK - GAME 02</div>
         <div class="action text-xs mb-2">The Cinematic Arcana hovers above the terminal. Swipe the wheel. Let intuition guide the draw.</div>
@@ -418,9 +405,7 @@
         
         <div class="text-[9px] font-bold text-neonRed text-center mb-6 tracking-widest uppercase">Draw 3 Cards: <span id="draw-count">0/3</span></div>
         
-        <!-- Cover Flow Wheel Container (touch-pan-y allows vertical scrolling!) -->
         <div class="relative w-full h-[260px] overflow-visible select-none touch-pan-y" id="coverflow-container">
-            <!-- Cards injected here via JS -->
         </div>
         
         <div class="flex justify-between items-center w-full max-w-[250px] mx-auto mt-6">
@@ -436,7 +421,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 3.5: SPREAD REVIEW -->
       <section id="screen-spread-review" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh] py-4">
         <div class="scene-heading text-xs flex justify-between items-center">
           <span id="spread-review-heading">INT. THE ANALYSIS TABLE - CONTINUOUS</span>
@@ -445,7 +429,6 @@
         <div class="action text-xs mb-6">The three drawn cards dictate the exact trajectory of the projection. Read the margins carefully.</div>
         
         <div id="review-cards-container" class="space-y-5 flex-1 overflow-y-auto pr-2 pb-6">
-            <!-- Injected via JS -->
         </div>
 
         <div class="bg-black border border-neutral-800 p-4 font-mono text-xs leading-relaxed text-neutral-300 relative mb-4">
@@ -463,7 +446,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 4: LOADING -->
       <section id="screen-loading" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">MONTAGE: SYNTHESIZING PSYCHE</div>
         <div class="action text-xs leading-loose">
@@ -479,7 +461,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 5: RESULT / PROJECTION -->
       <section id="screen-result" class="hidden flex flex-col space-y-6 relative animate-fade-in font-sans">
         <div id="ambient-bg" class="absolute -inset-x-6 -inset-y-8 bg-cover bg-center opacity-25 filter blur-3xl mix-blend-color-dodge transition-all duration-1000 z-0"></div>
         <div class="relative z-10 space-y-4">
@@ -491,7 +472,7 @@
           
           <div class="bg-darkGrey/95 border border-neutral-800 p-3 shadow-neon-sm relative flex flex-row space-x-4 items-center">
             
-            <a id="letterboxd-link" href="#" target="_blank" rel="noopener noreferrer" class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg block hover:border-neonRed transition-colors cursor-pointer" title="View on Letterboxd">
+            <a id="letterboxd-link" href="#" target="_blank" rel="noopener noreferrer" class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg block hover:border-neonRed transition-colors cursor-pointer" title="View Details">
               <img id="movie-poster" src="" alt="Cinema Poster" class="w-full h-full object-cover opacity-0 transition-opacity duration-1000" onerror="this.style.opacity='0'; document.getElementById('poster-fallback-text').style.display='flex';">
               <div id="poster-fallback-text" class="absolute inset-0 hidden items-center justify-center text-center p-2 font-cinzel text-[8px] text-neutral-400 select-none">IMAGE REEL MISSING</div>
             </a>
@@ -504,7 +485,8 @@
                 </div>
               </div>
               <div class="border-l border-neutral-700 pl-2">
-                <p class="text-[11px] text-neutral-400 italic font-sans leading-snug" id="movie-plot">"One sentence plot goes here..."</p>
+                <!-- SPOILER FREE! WE ONLY SHOW CAST HERE NOW -->
+                <p class="text-[11px] text-neutral-400 font-sans leading-snug uppercase tracking-wider" id="movie-cast">"Loading cast..."</p>
               </div>
               <div class="pt-1">
                 <div id="providers-container" class="flex flex-wrap gap-1 font-mono"></div>
@@ -537,13 +519,10 @@
         </div>
       </section>
 
-      <!-- CINEMATIC POSTER REVEAL OVERLAY: starts full-screen & blurred, animates down to the
-           real poster's slot in the result card. See showScreenWithFocusReveal(). -->
       <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black">
         <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
       </div>
 
-      <!-- VISUAL SHARE CARD OVERLAY -->
       <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
         <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
         <img id="share-image-output" class="hidden max-w-full max-h-[75vh] border border-neonRed shadow-neon" alt="Shareable tarot card">
@@ -551,7 +530,6 @@
         <button onclick="closeShareImageOverlay()" class="script-btn uppercase text-xs px-6 py-2 mt-6 border border-neutral-600">Close</button>
       </div>
 
-      <!-- SCREEN 6: ERROR -->
       <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="WRITER'S BLOCK">WRITER'S BLOCK</div>
         <div class="action text-center mt-2 text-xs leading-relaxed max-w-xs mx-auto" id="error-message">
@@ -563,7 +541,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 7: READING JOURNAL -->
       <section id="screen-journal" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
         <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
         <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
@@ -606,22 +583,18 @@
     RECEIPT COPIED TO CLIPBOARD
   </div>
 
-  <!-- PHASE 2: always-on projection-booth layers -->
   <div id="film-grain"></div>
   <div id="cue-mark"></div>
   <div id="letterbox-top"></div>
   <div id="letterbox-bottom"></div>
 
   <script>
-    const WORKER_BASE_URL = "https://arcana-proxy.cory-gallant.workers.dev"; // single source of truth for the Cloudflare Worker
-    // NOTE: TMDB_API_KEY no longer lives here. All TMDB traffic (discover, movie details,
-    // reference-film search) now happens server-side inside the worker, which holds the key
-    // as a secret. The client never sees it.
+    const WORKER_BASE_URL = "https://arcana-proxy.cory-gallant.workers.dev";
     
-    // --- APP STATE & 22-CARD REGISTRY ---
     const AppState = {
       audioEnabled: true,
       currentScreen: 'intro',
+      mediaType: 'movie', // NEW! Default is 'movie', can switch to 'tv'
       language: 'any',
       era: 'any',
       sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
@@ -629,6 +602,7 @@
       runtimeMax: null, 
       runtimeMin: null,
       runtimeBand: 'any',
+      manualOverrideText: null, // NEW! Keeps track of user inputted vibe
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
@@ -711,34 +685,15 @@
       ]
     };
 
-    // Each card gets a stable position in the deck (0-21), used by AudioEngine.cardSound()
-    // to walk a musical scale so every Major Arcana card has a distinct base pitch.
     AppState.tarotDeck.forEach((card, i) => { card.arcanaIndex = i; });
 
-    // Maps each card to a thematic sound archetype (see AudioEngine.playThemedTexture).
     const CARD_THEME_MAP = {
-      tramp: 'pluck-playful',
-      auteur: 'chime',
-      oracle: 'shimmer-glass',
-      matriarch: 'swell-warm',
-      don: 'thud-heavy',
-      monolith: 'drone-deep',
-      noir: 'sax-smooth',
-      delorean: 'zap-whoosh',
-      finalgirl: 'scream-tense',
-      driver: 'engine',
-      reel: 'ratchet',
-      standoff: 'gunshot-whistle',
-      falling: 'fire',
-      chess: 'toll-clock',
-      reflection: 'shimmer-glass',
-      hotel: 'buzz-electric',
-      tower: 'explosion',
-      escape: 'chime',
-      moon: 'boop-comic',
-      horror: 'blazing-harsh',
-      machine: 'beep-robotic',
-      rosebud: 'swell-warm',
+      tramp: 'pluck-playful', auteur: 'chime', oracle: 'shimmer-glass', matriarch: 'swell-warm',
+      don: 'thud-heavy', monolith: 'drone-deep', noir: 'sax-smooth', delorean: 'zap-whoosh',
+      finalgirl: 'scream-tense', driver: 'engine', reel: 'ratchet', standoff: 'gunshot-whistle',
+      falling: 'fire', chess: 'toll-clock', reflection: 'shimmer-glass', hotel: 'buzz-electric',
+      tower: 'explosion', escape: 'chime', moon: 'boop-comic', horror: 'blazing-harsh',
+      machine: 'beep-robotic', rosebud: 'swell-warm',
     };
 
     const GENRE_MAP = {
@@ -758,14 +713,14 @@
       10751: { w: 10, t: 40, r: 30, h: 70, name: 'FAMILY' },
       12: { w: 40, t: 85, r: 50, h: 60, name: 'ADVENTURE' },
       37: { w: 60, t: 50, r: 15, h: 30, name: 'WESTERN' },
-      10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' }
+      10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' },
+      16: { w: 20, t: 65, r: 80, h: 60, name: 'ANIMATION' } // Added common for both
     };
 
     const GENRE_NAME_TO_ID = Object.fromEntries(
       Object.entries(GENRE_MAP).map(([id, data]) => [data.name, parseInt(id)])
     );
 
-    // --- MANUAL GENRE CHIPS ---
     function renderGenreChips() {
       const container = document.getElementById('genre-chips-container');
       if (!container) return;
@@ -802,7 +757,6 @@
       }
     }
 
-    // --- LOCAL PERSISTENCE ---
     const STORAGE_KEYS = {
       seen: 'cinema_arcana_seen',
       rejected: 'cinema_arcana_rejected',
@@ -822,14 +776,8 @@
 
         const taste = JSON.parse(localStorage.getItem(STORAGE_KEYS.taste) || '{}');
         if (taste && typeof taste === 'object' && !Array.isArray(taste)) AppState.tasteAvoid = taste;
-
-        // The journal array itself is capped at 50 entries for storage size, so the SCENES
-        // counter is tracked separately and uncapped — it's the real lifetime count of
-        // projections completed on this device, not just what's still in the journal.
         AppState.sceneCount = parseInt(localStorage.getItem(STORAGE_KEYS.sceneCount) || '0', 10) || 0;
-      } catch (e) {
-        console.error("Failed to load persisted state:", e);
-      }
+      } catch (e) { }
       renderHitCounter(AppState.sceneCount || 0);
     }
 
@@ -837,21 +785,13 @@
       try {
         localStorage.setItem(STORAGE_KEYS.seen, JSON.stringify(AppState.seenMovies));
         localStorage.setItem(STORAGE_KEYS.rejected, JSON.stringify(AppState.rejectedMovies));
-      } catch (e) {
-        console.error("Failed to persist seen/rejected:", e);
-      }
+      } catch (e) { }
     }
 
-    // Taste memory: every reroll counts a strike against that film's genres. The worker
-    // uses these counts as a soft scoring penalty — discouraged, never banned.
     function recordRejectionTaste(movie) {
       if (!movie) return;
-      const gids = Array.isArray(movie.genres)
-        ? movie.genres.map(g => g.id)            // full-details shape from the worker
-        : (movie.genre_ids || []);               // discover-result shape fallback
-      gids.forEach(id => {
-        AppState.tasteAvoid[id] = (AppState.tasteAvoid[id] || 0) + 1;
-      });
+      const gids = Array.isArray(movie.genres) ? movie.genres.map(g => g.id) : (movie.genre_ids || []);
+      gids.forEach(id => { AppState.tasteAvoid[id] = (AppState.tasteAvoid[id] || 0) + 1; });
       try { localStorage.setItem(STORAGE_KEYS.taste, JSON.stringify(AppState.tasteAvoid)); } catch (e) {}
     }
 
@@ -862,9 +802,7 @@
       try {
         localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
         localStorage.setItem(STORAGE_KEYS.sceneCount, String(AppState.sceneCount));
-      } catch (e) {
-        console.error("Failed to persist journal entry:", e);
-      }
+      } catch (e) {}
       renderHitCounter(AppState.sceneCount);
     }
 
@@ -890,29 +828,21 @@
     function renderJournal() {
       const list = document.getElementById('journal-list');
       if (!list) return;
-
       if (!AppState.journal || AppState.journal.length === 0) {
         list.innerHTML = `<div class="text-center text-xs text-neutral-600 mt-12">No projections logged yet. The archive is empty.</div>`;
         return;
       }
-
       const filtered = AppState.journal.filter(entry => {
         const isSeen = entry.id && AppState.seenMovies.includes(entry.id);
         return journalTab === 'seen' ? isSeen : !isSeen;
       });
-
       if (filtered.length === 0) {
-        const emptyMsg = journalTab === 'seen'
-          ? "Nothing marked seen yet."
-          : "Nothing pending — everything recommended has been marked seen.";
+        const emptyMsg = journalTab === 'seen' ? "Nothing marked seen yet." : "Nothing pending — everything recommended has been marked seen.";
         list.innerHTML = `<div class="text-center text-xs text-neutral-600 mt-12">${emptyMsg}</div>`;
         return;
       }
-
       list.innerHTML = filtered.map(entry => {
-        const posterUrl = entry.poster
-          ? `https://image.tmdb.org/t/p/w200${entry.poster}`
-          : '';
+        const posterUrl = entry.poster ? `https://image.tmdb.org/t/p/w200${entry.poster}` : '';
         const canMarkSeen = entry.id && journalTab === 'recommended';
         return `
           <div class="flex items-center space-x-3 bg-darkGrey p-2 border border-neutral-900">
@@ -924,89 +854,39 @@
               <div class="text-[9px] text-neutral-500 mt-0.5">${entry.date}</div>
               <div class="text-[9px] text-neutral-600 truncate">${entry.spread}</div>
             </div>
-            ${canMarkSeen
-              ? `<button onclick="markJournalEntrySeen(${entry.id})" class="script-btn text-[9px] px-2 py-1.5 flex-shrink-0 text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>`
-              : journalTab === 'seen'
-                ? `<span class="text-[9px] text-green-500 flex-shrink-0 font-bold">✓</span>`
-                : ''
-            }
+            ${canMarkSeen ? `<button onclick="markJournalEntrySeen(${entry.id})" class="script-btn text-[9px] px-2 py-1.5 flex-shrink-0 text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>` : journalTab === 'seen' ? `<span class="text-[9px] text-green-500 flex-shrink-0 font-bold">✓</span>` : ''}
           </div>
         `;
       }).join('');
     }
 
-    function markJournalEntrySeen(movieId) {
-      addToSeenList(movieId);
-      playTypewriterDing();
-      renderJournal();
-    }
-
-    function requestClearHistory() {
-      document.getElementById('clear-history-confirm').classList.remove('hidden');
-      playSynthBeep(300, 0.05, 'square');
-    }
-
-    function cancelClearHistory() {
-      document.getElementById('clear-history-confirm').classList.add('hidden');
-    }
-
+    function markJournalEntrySeen(movieId) { addToSeenList(movieId); playTypewriterDing(); renderJournal(); }
+    function requestClearHistory() { document.getElementById('clear-history-confirm').classList.remove('hidden'); playSynthBeep(300, 0.05, 'square'); }
+    function cancelClearHistory() { document.getElementById('clear-history-confirm').classList.add('hidden'); }
     function confirmClearHistory() {
-      AppState.journal = [];
-      AppState.seenMovies = [];
-      AppState.rejectedMovies = [];
-      AppState.tasteAvoid = {};
-      AppState.sceneCount = 0;
+      AppState.journal = []; AppState.seenMovies = []; AppState.rejectedMovies = []; AppState.tasteAvoid = {}; AppState.sceneCount = 0;
       try {
-        localStorage.removeItem(STORAGE_KEYS.journal);
-        localStorage.removeItem(STORAGE_KEYS.seen);
-        localStorage.removeItem(STORAGE_KEYS.rejected);
-        localStorage.removeItem(STORAGE_KEYS.sceneCount);
+        localStorage.removeItem(STORAGE_KEYS.journal); localStorage.removeItem(STORAGE_KEYS.seen);
+        localStorage.removeItem(STORAGE_KEYS.rejected); localStorage.removeItem(STORAGE_KEYS.sceneCount);
         localStorage.removeItem(STORAGE_KEYS.taste);
-      } catch (e) {
-        console.error("Failed to clear persisted history:", e);
-      }
-      renderHitCounter(0);
-      document.getElementById('clear-history-confirm').classList.add('hidden');
-      triggerGlitchEffect('glitch-shake');
-      playTypewriterDing();
-      journalTab = 'recommended';
-      setJournalTab('recommended');
+      } catch (e) {}
+      renderHitCounter(0); document.getElementById('clear-history-confirm').classList.add('hidden');
+      triggerGlitchEffect('glitch-shake'); playTypewriterDing(); journalTab = 'recommended'; setJournalTab('recommended');
     }
 
     window.onload = function() {
-      loadPersistedState();
-      renderGenreChips();
+      loadPersistedState(); renderGenreChips();
       document.getElementById('current-date').innerText = new Date().toLocaleDateString();
       renderHouseBanner();
       typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
     };
 
-    // Text now pops in whole, no character-by-character animation anywhere in the app.
-    async function typewriter(elementId, text) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      el.innerHTML = text;
-    }
+    async function typewriter(elementId, text) { const el = document.getElementById(elementId); if (el) el.innerHTML = text; }
 
-    // ===================== PHASE 4: DAILY HOUSE READING =====================
-    // One shared three-card spread everyone in the world gets on the same UTC calendar day.
-    // Deterministic: a hash of the date string seeds a tiny PRNG that picks 3 distinct cards
-    // and their reversals. No backend — the date IS the seed, so every device computes the
-    // identical spread. Your sliders + seen/rejected history still personalize the FILM, so
-    // it's the same omen but a different movie per person (the Wordle mechanic).
-
-    function _houseDateKey(d = new Date()) {
-      // UTC so "today" is globally consistent regardless of timezone.
-      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-    }
-
-    // xmur3 string hash → seed; mulberry32 → deterministic PRNG. Small, well-known, stable.
+    function _houseDateKey(d = new Date()) { return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`; }
     function _seededRng(str) {
       let h = 1779033703 ^ str.length;
-      for (let i = 0; i < str.length; i++) {
-        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-        h = (h << 13) | (h >>> 19);
-      }
+      for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
       let a = (h ^= h >>> 16) >>> 0;
       return function () {
         a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -1015,59 +895,30 @@
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
     }
-
-    // Returns the deterministic spread for a given date as [{card, isReversed, position}, ...]
     function computeHouseSpread(dateKey = _houseDateKey()) {
       const rng = _seededRng('cinema-arcana-house::' + dateKey);
       const deck = [...AppState.tarotDeck];
-      // Fisher–Yates with the seeded RNG, then take the first three.
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
       }
-      return deck.slice(0, 3).map((card, i) => ({
-        card,
-        isReversed: rng() >= 0.5,
-        position: i
-      }));
+      return deck.slice(0, 3).map((card, i) => ({ card, isReversed: rng() >= 0.5, position: i }));
     }
-
     function renderHouseBanner() {
       const dateEl = document.getElementById('house-date');
       const glyphsEl = document.getElementById('house-glyphs');
       if (!dateEl || !glyphsEl) return;
-
       const spread = computeHouseSpread();
-      const today = new Date();
-      dateEl.innerText = today.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase()
-        + ' · SAME CARDS FOR EVERYONE';
-
-      // Show the three card numerals as glyphs (revealed cards, since the House is public).
-      glyphsEl.innerHTML = spread.map(d =>
-        `<span class="w-5 h-7 flex items-center justify-center border border-neutral-700 bg-black text-[8px] font-bold text-neonRed ${d.isReversed ? 'rotate-180' : ''}">${d.card.num}</span>`
-      ).join('');
+      dateEl.innerText = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase() + ' · SAME CARDS FOR EVERYONE';
+      glyphsEl.innerHTML = spread.map(d => `<span class="w-5 h-7 flex items-center justify-center border border-neutral-700 bg-black text-[8px] font-bold text-neonRed ${d.isReversed ? 'rotate-180' : ''}">${d.card.num}</span>`).join('');
     }
-
-    // Entry point: load the House spread as the active draw and jump into the reading flow,
-    // skipping the wheel (the cards are pre-drawn by fate, not by the user).
     async function startHouseReading() {
-      playTypewriterDing();
-      TiltEngine.enable(); // first gesture — arm parallax for later, harmless here
-
-      AppState.drawnSpread = computeHouseSpread();
-      AppState.fullInversion = AppState.drawnSpread.every(d => d.isReversed);
-      AppState.isHouseReading = true;
-
-      // Play the three card draw-sounds in sequence for a sense of the spread being dealt.
-      AppState.drawnSpread.forEach((d, i) => {
-        setTimeout(() => AudioEngine.cardSound(d.card, d.isReversed), i * 260);
-      });
-
+      playTypewriterDing(); TiltEngine.enable();
+      AppState.drawnSpread = computeHouseSpread(); AppState.fullInversion = AppState.drawnSpread.every(d => d.isReversed); AppState.isHouseReading = true;
+      AppState.drawnSpread.forEach((d, i) => { setTimeout(() => AudioEngine.cardSound(d.card, d.isReversed), i * 260); });
       await goToSpreadReview();
     }
-    // ========================================================================
 
-    // --- SECURE CLOUDFLARE WORKER TRANSLATOR ---
     async function translateVibe() {
       const inputEl = document.getElementById('vibe-input');
       const statusEl = document.getElementById('vibe-status');
@@ -1075,1357 +926,477 @@
       const text = inputEl.value.trim();
 
       if (!text) return;
+      AppState.manualOverrideText = text; // Track the override text
 
-      statusEl.classList.remove('text-neonRed');
-      statusEl.innerText = "Transmitting to ghost...";
-      btnEl.innerText = "WAIT";
-      btnEl.disabled = true;
+      statusEl.classList.remove('text-neonRed'); statusEl.innerText = "Transmitting to ghost...";
+      btnEl.innerText = "WAIT"; btnEl.disabled = true;
       playSynthBeep(600, 0.1, 'sine');
 
-      const WORKER_URL = WORKER_BASE_URL;
-
       try {
-        let response;
-        try {
-          response = await fetch(WORKER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mood: text })
-          });
-        } catch (netErr) {
-          throw new Error("NET/CORS: " + netErr.message);
-        }
+        const response = await fetch(WORKER_BASE_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mood: text, mediaType: AppState.mediaType }) // Passing media type
+        });
 
-        if (!response.ok) {
-          let bodyText = "";
-          try { bodyText = await response.text(); } catch (e) {}
-          throw new Error(`HTTP ${response.status}: ${bodyText.slice(0, 80)}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-
         const rawCandidate = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawCandidate) {
-          throw new Error("SHAPE: " + JSON.stringify(data).slice(0, 100));
-        }
+        if (!rawCandidate) throw new Error("SHAPE");
 
         let rawText = rawCandidate.trim();
         if (rawText.startsWith('```json')) rawText = rawText.substring(7);
         if (rawText.startsWith('```')) rawText = rawText.substring(3);
         if (rawText.endsWith('```')) rawText = rawText.substring(0, rawText.length - 3);
 
-        let coordinates;
-        try {
-          coordinates = JSON.parse(rawText.trim());
-        } catch (parseErr) {
-          throw new Error("PARSE: " + rawText.slice(0, 60));
-        }
+        let coordinates = JSON.parse(rawText.trim());
 
         const axes = ['warmth', 'tempo', 'reality', 'obscurity', 'humor'];
         axes.forEach(axis => {
           if (coordinates[axis] !== undefined) {
             const slider = document.getElementById(`slider-${axis}`);
-            if (slider) {
-              slider.value = coordinates[axis];
-              updateSliderVal(axis); 
-            }
+            if (slider) { slider.value = coordinates[axis]; updateSliderVal(axis); }
           }
         });
 
-        let detectedGenres = [];
-        if (Array.isArray(coordinates.genres)) {
-          detectedGenres = coordinates.genres
-            .map(name => GENRE_NAME_TO_ID[String(name).toUpperCase()])
-            .filter(id => id !== undefined);
-        }
-
-        AppState.runtimeMax = null;
-        AppState.runtimeMin = null;
+        let detectedGenres = Array.isArray(coordinates.genres) ? coordinates.genres.map(name => GENRE_NAME_TO_ID[String(name).toUpperCase()]).filter(id => id !== undefined) : [];
+        AppState.runtimeMax = null; AppState.runtimeMin = null;
         if (typeof coordinates.runtimeMax === 'number' && coordinates.runtimeMax > 0) {
           AppState.runtimeMax = Math.max(40, Math.min(240, Math.round(coordinates.runtimeMax)));
         }
-        // A spoken time constraint overrides whatever band was tapped on the previous
-        // screen — deselect all band buttons so the UI doesn't lie about the ceiling.
         AppState.runtimeBand = AppState.runtimeMax ? 'custom' : 'any';
         updateRuntimeUI();
 
-        // The worker already resolved any referenced film (e.g. "more like Parasite")
-        // against TMDB server-side and folded the result into this same response.
-        const referenceGenres = Array.isArray(coordinates.referenceGenreIds)
-          ? coordinates.referenceGenreIds.filter(id => GENRE_MAP[id])
-          : [];
-        const referenceTitleFound = coordinates.referenceTitle || null;
-
+        const referenceGenres = Array.isArray(coordinates.referenceGenreIds) ? coordinates.referenceGenreIds.filter(id => GENRE_MAP[id]) : [];
         const mergedGenres = [...new Set([...detectedGenres, ...referenceGenres])].slice(0, 3);
         AppState.vibeGenreIds = mergedGenres;
         renderGenreChips();
 
-        const statusParts = [];
-        if (mergedGenres.length > 0) {
-          statusParts.push(`GENRE: ${mergedGenres.map(id => GENRE_MAP[id].name).join('+')}`);
-        }
-        if (AppState.runtimeMax) {
-          statusParts.push(`≤${AppState.runtimeMax}MIN`);
-        }
-        if (referenceTitleFound) {
-          statusParts.push(`LIKE: ${referenceTitleFound.toUpperCase()}`);
-        }
-        statusEl.innerText = statusParts.length > 0
-          ? `[ CALIBRATED — ${statusParts.join(' / ')} ]`
-          : "[ MARGINS CALIBRATED BY SYSTEM ]";
-
-        playSynthBeep(1200, 0.2, 'square');
-        triggerGlitchEffect('glitch-tear');
-
+        statusEl.innerText = "[ CALIBRATED BY SYSTEM ]";
+        playSynthBeep(1200, 0.2, 'square'); triggerGlitchEffect('glitch-tear');
       } catch (err) {
-        console.error("Vibe Translator Error:", err);
         statusEl.innerText = "[ FAILED: " + err.message.slice(0, 50) + " ]";
-        statusEl.classList.add('text-neonRed');
-        triggerGlitchEffect('glitch-shake');
+        statusEl.classList.add('text-neonRed'); triggerGlitchEffect('glitch-shake');
       } finally {
-        btnEl.innerText = "SYNC";
-        btnEl.disabled = false;
+        btnEl.innerText = "SYNC"; btnEl.disabled = false;
       }
     }
 
-    // ===================== PHASE 3: VOICE-TO-VIBE =====================
-    // Uses the Web Speech API to dictate a mood into the vibe field, then auto-runs the same
-    // translateVibe() pipeline. Safari support is partial and permission-gated, so every path
-    // fails soft: if recognition is unavailable or denied, we tell the user to type instead.
-    let _recognition = null;
-    let _listening = false;
-
+    let _recognition = null, _listening = false;
     function startVoiceInput() {
-      const micBtn = document.getElementById('vibe-mic-btn');
-      const statusEl = document.getElementById('vibe-status');
-      const inputEl = document.getElementById('vibe-input');
-
+      const micBtn = document.getElementById('vibe-mic-btn'), statusEl = document.getElementById('vibe-status'), inputEl = document.getElementById('vibe-input');
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        statusEl.classList.remove('text-neonRed');
-        statusEl.innerText = "[ VOICE UNSUPPORTED HERE — TYPE YOUR MOOD ]";
-        return;
-      }
-
-      // Tapping again while listening cancels.
-      if (_listening && _recognition) {
-        try { _recognition.stop(); } catch (e) {}
-        return;
-      }
-
-      _recognition = new SR();
-      _recognition.lang = 'en-US';
-      _recognition.interimResults = true;
-      _recognition.maxAlternatives = 1;
-      _recognition.continuous = false;
-
-      _recognition.onstart = () => {
-        _listening = true;
-        micBtn.innerText = '●REC';
-        micBtn.classList.add('text-neonRed', 'border-neonRed');
-        statusEl.classList.remove('text-neonRed');
-        statusEl.innerText = "[ LISTENING — SPEAK YOUR MOOD ]";
-        playSynthBeep(880, 0.08, 'sine');
-      };
-
-      _recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        inputEl.value = transcript;
-      };
-
-      _recognition.onerror = (event) => {
-        _listening = false;
-        micBtn.innerText = 'MIC';
-        micBtn.classList.remove('text-neonRed', 'border-neonRed');
-        const msg = event.error === 'not-allowed' || event.error === 'service-not-allowed'
-          ? "[ MIC BLOCKED — ALLOW ACCESS OR TYPE ]"
-          : "[ DIDN'T CATCH THAT — TRY AGAIN OR TYPE ]";
-        statusEl.classList.add('text-neonRed');
-        statusEl.innerText = msg;
-      };
-
-      _recognition.onend = () => {
-        _listening = false;
-        micBtn.innerText = 'MIC';
-        micBtn.classList.remove('text-neonRed', 'border-neonRed');
-        // If we captured anything, run the normal translate pipeline automatically.
-        if (inputEl.value.trim()) {
-          playSynthBeep(1200, 0.1, 'square');
-          translateVibe();
-        }
-      };
-
-      try {
-        _recognition.start();
-      } catch (e) {
-        statusEl.classList.add('text-neonRed');
-        statusEl.innerText = "[ VOICE FAILED TO START — TYPE INSTEAD ]";
-      }
+      if (!SR) { statusEl.classList.remove('text-neonRed'); statusEl.innerText = "[ VOICE UNSUPPORTED HERE — TYPE YOUR MOOD ]"; return; }
+      if (_listening && _recognition) { try { _recognition.stop(); } catch (e) {} return; }
+      _recognition = new SR(); _recognition.lang = 'en-US'; _recognition.interimResults = true; _recognition.maxAlternatives = 1; _recognition.continuous = false;
+      _recognition.onstart = () => { _listening = true; micBtn.innerText = '●REC'; micBtn.classList.add('text-neonRed', 'border-neonRed'); statusEl.classList.remove('text-neonRed'); statusEl.innerText = "[ LISTENING — SPEAK YOUR MOOD ]"; playSynthBeep(880, 0.08, 'sine'); };
+      _recognition.onresult = (event) => { let transcript = ''; for (let i = 0; i < event.results.length; i++) transcript += event.results[i][0].transcript; inputEl.value = transcript; };
+      _recognition.onerror = (event) => { _listening = false; micBtn.innerText = 'MIC'; micBtn.classList.remove('text-neonRed', 'border-neonRed'); statusEl.classList.add('text-neonRed'); statusEl.innerText = "[ MIC ERR — TYPE ]"; };
+      _recognition.onend = () => { _listening = false; micBtn.innerText = 'MIC'; micBtn.classList.remove('text-neonRed', 'border-neonRed'); if (inputEl.value.trim()) { playSynthBeep(1200, 0.1, 'square'); translateVibe(); } };
+      try { _recognition.start(); } catch (e) { statusEl.classList.add('text-neonRed'); statusEl.innerText = "[ VOICE FAILED ]"; }
     }
 
-    // ===================== PHASE 3: SPOKEN READING =====================
-    // Reads the psychic reading aloud in a low, deliberate register to match "THE SYSTEM."
-    // Uses SpeechSynthesis; picks the deepest-sounding available voice and slows the rate.
-    // Fully optional — a speaker toggle sits by the reading; nothing autoplays.
     let _speaking = false;
-
     function _pickOracleVoice() {
       const voices = window.speechSynthesis ? speechSynthesis.getVoices() : [];
       if (!voices.length) return null;
-      // Prefer deeper/male-tagged English voices; fall back to any English, then anything.
       const preferredNames = ['Daniel', 'Google UK English Male', 'Fred', 'Arthur', 'Alex', 'Rishi'];
-      for (const name of preferredNames) {
-        const v = voices.find(v => v.name === name);
-        if (v) return v;
-      }
+      for (const name of preferredNames) { const v = voices.find(v => v.name === name); if (v) return v; }
       return voices.find(v => /en(-|_)/i.test(v.lang)) || voices[0];
     }
-
     function speakReading() {
       const btn = document.getElementById('reading-speak-btn');
-      if (!window.speechSynthesis) {
-        if (btn) btn.innerText = 'N/A';
-        return;
-      }
-      // Toggle off if already speaking.
-      if (_speaking) {
-        speechSynthesis.cancel();
-        _speaking = false;
-        if (btn) btn.innerText = '▶ HEAR';
-        return;
-      }
-      const text = AppState.lastReadingText;
-      if (!text) return;
-
+      if (!window.speechSynthesis) { if (btn) btn.innerText = 'N/A'; return; }
+      if (_speaking) { speechSynthesis.cancel(); _speaking = false; if (btn) btn.innerText = '▶ HEAR'; return; }
+      const text = AppState.lastReadingText; if (!text) return;
       const utter = new SpeechSynthesisUtterance(text);
-      const voice = _pickOracleVoice();
-      if (voice) utter.voice = voice;
-      utter.rate = 0.82;   // slow, deliberate
-      utter.pitch = 0.7;   // low register
-      utter.volume = 1.0;
-
+      const voice = _pickOracleVoice(); if (voice) utter.voice = voice;
+      utter.rate = 0.82; utter.pitch = 0.7; utter.volume = 1.0;
       utter.onstart = () => { _speaking = true; if (btn) btn.innerText = '❚❚ STOP'; };
       utter.onend = () => { _speaking = false; if (btn) btn.innerText = '▶ HEAR'; };
       utter.onerror = () => { _speaking = false; if (btn) btn.innerText = '▶ HEAR'; };
-
       speechSynthesis.speak(utter);
     }
-
-    // Voices load async in some browsers; nudge them so _pickOracleVoice has data ready.
-    if (window.speechSynthesis) {
-      speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); };
-    }
-    // ==================================================================
+    if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); };
 
     function renderHitCounter(count) {
       const paddedStr = count.toString().padStart(5, '0');
       const container = document.getElementById('retro-counter');
-      if (container) {
-        container.innerHTML = paddedStr.split('').map(digit => 
-          `<span class="inline-block px-1 border border-neutral-700 bg-neutral-900 text-neonRed font-bold shadow-sm">${digit}</span>`
-        ).join('');
-      }
+      if (container) container.innerHTML = paddedStr.split('').map(digit => `<span class="inline-block px-1 border border-neutral-700 bg-neutral-900 text-neonRed font-bold shadow-sm">${digit}</span>`).join('');
     }
 
-    // ============================================================================
-    // AUDIO ENGINE — "a living machine"
-    // Everything funnels through one master bus: masterGain -> masterFilter (lowpass) -> speakers.
-    // ============================================================================
     const AudioEngine = {
-      ctx: null,
-      master: null,
-      filter: null,
-      noiseBuffer: null,
-      _idleHumStarted: false,
-
+      ctx: null, master: null, filter: null, noiseBuffer: null,
       init() {
-        if (this.ctx) {
-          if (this.ctx.state === 'suspended') this.ctx.resume();
-          return;
-        }
+        if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        this.master = this.ctx.createGain();
-        this.master.gain.value = 0.9;
-        this.filter = this.ctx.createBiquadFilter();
-        this.filter.type = 'lowpass';
-        this.filter.frequency.value = 19000;
-        this.filter.Q.value = 0.7;
-        this.master.connect(this.filter);
-        this.filter.connect(this.ctx.destination);
-        this._buildNoiseBuffer();
-        this.idleHum.start();
+        this.master = this.ctx.createGain(); this.master.gain.value = 0.9;
+        this.filter = this.ctx.createBiquadFilter(); this.filter.type = 'lowpass'; this.filter.frequency.value = 19000; this.filter.Q.value = 0.7;
+        this.master.connect(this.filter); this.filter.connect(this.ctx.destination);
+        this._buildNoiseBuffer(); this.idleHum.start();
       },
-
       _buildNoiseBuffer() {
-        const len = this.ctx.sampleRate * 2;
-        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+        const len = this.ctx.sampleRate * 2; const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const data = buf.getChannelData(0); for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
         this.noiseBuffer = buf;
       },
-
       tone(freq, duration, type = 'square', gainAmt = 0.05) {
         if (!AppState.audioEnabled) return;
         try {
-          this.init();
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-          gain.gain.setValueAtTime(gainAmt, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(this.master);
-          osc.start();
-          osc.stop(this.ctx.currentTime + duration);
+          this.init(); const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+          osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainAmt, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain); gain.connect(this.master); osc.start(); osc.stop(this.ctx.currentTime + duration);
         } catch (e) {}
       },
-
       muffle(cutoffHz = 380, rampSec = 0.5) {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        this.filter.frequency.cancelScheduledValues(now);
-        this.filter.frequency.setValueAtTime(this.filter.frequency.value, now);
+        if (!this.ctx) return; const now = this.ctx.currentTime;
+        this.filter.frequency.cancelScheduledValues(now); this.filter.frequency.setValueAtTime(this.filter.frequency.value, now);
         this.filter.frequency.linearRampToValueAtTime(cutoffHz, now + rampSec);
       },
-
       focusSweep(durationSec = 2) {
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        this.filter.frequency.cancelScheduledValues(now);
-        this.filter.frequency.setValueAtTime(Math.max(60, this.filter.frequency.value), now);
+        if (!this.ctx) return; const now = this.ctx.currentTime;
+        this.filter.frequency.cancelScheduledValues(now); this.filter.frequency.setValueAtTime(Math.max(60, this.filter.frequency.value), now);
         this.filter.frequency.exponentialRampToValueAtTime(19000, now + durationSec);
       },
-
       idleHum: {
-        playing: false,
-        osc: null, osc2: null, gain: null,
+        playing: false, osc: null, osc2: null, gain: null,
         start() {
           if (this.playing) return;
           const ctx = AudioEngine.ctx;
-          this.osc = ctx.createOscillator();
-          this.osc.type = 'sine';
-          this.osc.frequency.value = 59;
-          this.osc2 = ctx.createOscillator();
-          this.osc2.type = 'sine';
-          this.osc2.frequency.value = 118;
-          this.gain = ctx.createGain();
-          this.gain.gain.value = 0.0;
-          const now = ctx.currentTime;
-          this.gain.gain.linearRampToValueAtTime(0.006, now + 3);
-          this.osc.connect(this.gain);
-          this.osc2.connect(this.gain);
-          this.gain.connect(AudioEngine.master);
-          this.osc.start();
-          this.osc2.start();
-          this.playing = true;
+          this.osc = ctx.createOscillator(); this.osc.type = 'sine'; this.osc.frequency.value = 59;
+          this.osc2 = ctx.createOscillator(); this.osc2.type = 'sine'; this.osc2.frequency.value = 118;
+          this.gain = ctx.createGain(); this.gain.gain.value = 0.0;
+          const now = ctx.currentTime; this.gain.gain.linearRampToValueAtTime(0.006, now + 3);
+          this.osc.connect(this.gain); this.osc2.connect(this.gain); this.gain.connect(AudioEngine.master);
+          this.osc.start(); this.osc2.start(); this.playing = true;
         }
       },
-
       heartbeat: {
-        playing: false,
-        osc: null, lfo: null, lfoGain: null, gain: null,
+        playing: false, osc: null, lfo: null, lfoGain: null, gain: null,
         start() {
-          if (!AppState.audioEnabled || this.playing) return;
-          AudioEngine.init();
-          const ctx = AudioEngine.ctx;
-          this.playing = true;
-          this.osc = ctx.createOscillator();
-          this.osc.type = 'sine';
-          this.osc.frequency.value = 44;
-          this.gain = ctx.createGain();
-          this.gain.gain.value = 0.0001;
-          this.lfo = ctx.createOscillator();
-          this.lfo.type = 'sine';
-          this.lfo.frequency.value = 1.13;
-          this.lfoGain = ctx.createGain();
-          this.lfoGain.gain.value = 0.05;
-          this.lfo.connect(this.lfoGain);
-          this.lfoGain.connect(this.gain.gain);
-          this.osc.connect(this.gain);
-          this.gain.connect(AudioEngine.master);
+          if (!AppState.audioEnabled || this.playing) return; AudioEngine.init();
+          const ctx = AudioEngine.ctx; this.playing = true;
+          this.osc = ctx.createOscillator(); this.osc.type = 'sine'; this.osc.frequency.value = 44;
+          this.gain = ctx.createGain(); this.gain.gain.value = 0.0001;
+          this.lfo = ctx.createOscillator(); this.lfo.type = 'sine'; this.lfo.frequency.value = 1.13;
+          this.lfoGain = ctx.createGain(); this.lfoGain.gain.value = 0.05;
+          this.lfo.connect(this.lfoGain); this.lfoGain.connect(this.gain.gain);
+          this.osc.connect(this.gain); this.gain.connect(AudioEngine.master);
           const now = ctx.currentTime;
-          this.gain.gain.setValueAtTime(0.0001, now);
-          this.gain.gain.linearRampToValueAtTime(0.1, now + 1.1);
-          this.osc.start();
-          this.lfo.start();
+          this.gain.gain.setValueAtTime(0.0001, now); this.gain.gain.linearRampToValueAtTime(0.1, now + 1.1);
+          this.osc.start(); this.lfo.start();
         },
         stop(fadeSec = 0.5) {
           if (!this.playing || !AudioEngine.ctx) return;
-          const ctx = AudioEngine.ctx;
-          const now = ctx.currentTime;
-          this.gain.gain.cancelScheduledValues(now);
-          this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+          const ctx = AudioEngine.ctx; const now = ctx.currentTime;
+          this.gain.gain.cancelScheduledValues(now); this.gain.gain.setValueAtTime(this.gain.gain.value, now);
           this.gain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
-          const osc = this.osc, lfo = this.lfo;
-          setTimeout(() => { try { osc.stop(); lfo.stop(); } catch (e) {} }, fadeSec * 1000 + 100);
+          const osc = this.osc, lfo = this.lfo; setTimeout(() => { try { osc.stop(); lfo.stop(); } catch (e) {} }, fadeSec * 1000 + 100);
           this.playing = false;
         }
       },
-
       wheelHum: {
-        active: false,
-        osc: null, filter: null, gain: null,
+        active: false, osc: null, filter: null, gain: null,
         ensure() {
-          if (this.active || !AppState.audioEnabled) return;
-          AudioEngine.init();
+          if (this.active || !AppState.audioEnabled) return; AudioEngine.init();
           const ctx = AudioEngine.ctx;
-          this.osc = ctx.createOscillator();
-          this.osc.type = 'sawtooth';
-          this.osc.frequency.value = 55;
-          this.filter = ctx.createBiquadFilter();
-          this.filter.type = 'lowpass';
-          this.filter.frequency.value = 250;
-          this.gain = ctx.createGain();
-          this.gain.gain.value = 0.0001;
-          this.osc.connect(this.filter);
-          this.filter.connect(this.gain);
-          this.gain.connect(AudioEngine.master);
-          this.osc.start();
-          this.active = true;
+          this.osc = ctx.createOscillator(); this.osc.type = 'sawtooth'; this.osc.frequency.value = 55;
+          this.filter = ctx.createBiquadFilter(); this.filter.type = 'lowpass'; this.filter.frequency.value = 250;
+          this.gain = ctx.createGain(); this.gain.gain.value = 0.0001;
+          this.osc.connect(this.filter); this.filter.connect(this.gain); this.gain.connect(AudioEngine.master);
+          this.osc.start(); this.active = true;
         },
         update(velocityAbs) {
-          if (!AppState.audioEnabled) { this.silence(); return; }
-          this.ensure();
-          if (!this.active) return;
-          const ctx = AudioEngine.ctx;
-          const now = ctx.currentTime;
-          const v = Math.min(1.5, velocityAbs);
-          const targetFreq = 50 + v * 260;
-          const targetFilterFreq = 220 + v * 3400;
-          const targetGain = v < 0.02 ? 0.0001 : Math.min(0.11, 0.015 + v * 0.09);
-          this.osc.frequency.setTargetAtTime(targetFreq, now, 0.05);
-          this.filter.frequency.setTargetAtTime(targetFilterFreq, now, 0.05);
-          this.gain.gain.setTargetAtTime(targetGain, now, 0.08);
+          if (!AppState.audioEnabled) { this.silence(); return; } this.ensure(); if (!this.active) return;
+          const ctx = AudioEngine.ctx; const now = ctx.currentTime; const v = Math.min(1.5, velocityAbs);
+          const targetFreq = 50 + v * 260; const targetFilterFreq = 220 + v * 3400; const targetGain = v < 0.02 ? 0.0001 : Math.min(0.11, 0.015 + v * 0.09);
+          this.osc.frequency.setTargetAtTime(targetFreq, now, 0.05); this.filter.frequency.setTargetAtTime(targetFilterFreq, now, 0.05); this.gain.gain.setTargetAtTime(targetGain, now, 0.08);
         },
-        silence() {
-          if (!this.active || !AudioEngine.ctx) return;
-          this.gain.gain.setTargetAtTime(0.0001, AudioEngine.ctx.currentTime, 0.15);
-        }
+        silence() { if (!this.active || !AudioEngine.ctx) return; this.gain.gain.setTargetAtTime(0.0001, AudioEngine.ctx.currentTime, 0.15); }
       },
-
       _noiseTransient(t, { filterType = 'bandpass', freq = 2000, Q = 1, gain = 0.08, decay = 0.08, duration = 0.12 } = {}) {
-        const ctx = this.ctx;
-        const src = ctx.createBufferSource();
-        src.buffer = this.noiseBuffer;
-        const filt = ctx.createBiquadFilter();
-        filt.type = filterType; filt.frequency.value = freq; filt.Q.value = Q;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(gain, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
-        src.connect(filt); filt.connect(g); g.connect(this.master);
-        src.start(t); src.stop(t + duration);
+        const ctx = this.ctx; const src = ctx.createBufferSource(); src.buffer = this.noiseBuffer;
+        const filt = ctx.createBiquadFilter(); filt.type = filterType; filt.frequency.value = freq; filt.Q.value = Q;
+        const g = ctx.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        src.connect(filt); filt.connect(g); g.connect(this.master); src.start(t); src.stop(t + duration);
       },
       _noiseBed(t, dur, { filterType = 'bandpass', freq = 500, Q = 0.6, peakGain = 0.08, attack = 0.15 } = {}) {
-        const ctx = this.ctx;
-        const src = ctx.createBufferSource();
-        src.buffer = this.noiseBuffer; src.loop = true;
-        const filt = ctx.createBiquadFilter();
-        filt.type = filterType; filt.frequency.value = freq; filt.Q.value = Q;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(peakGain, t + attack);
-        g.gain.linearRampToValueAtTime(0.0001, t + dur);
-        src.connect(filt); filt.connect(g); g.connect(this.master);
-        src.start(t); src.stop(t + dur);
+        const ctx = this.ctx; const src = ctx.createBufferSource(); src.buffer = this.noiseBuffer; src.loop = true;
+        const filt = ctx.createBiquadFilter(); filt.type = filterType; filt.frequency.value = freq; filt.Q.value = Q;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peakGain, t + attack); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+        src.connect(filt); filt.connect(g); g.connect(this.master); src.start(t); src.stop(t + dur);
       },
       _toneBlip(t, { freq = 440, type = 'sine', gain = 0.15, decay = 0.15 } = {}) {
-        const ctx = this.ctx;
-        const osc = ctx.createOscillator();
-        osc.type = type; osc.frequency.setValueAtTime(Math.max(20, freq), t);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(gain, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + decay);
-        osc.connect(g); g.connect(this.master);
-        osc.start(t); osc.stop(t + decay + 0.02);
+        const ctx = this.ctx; const osc = ctx.createOscillator(); osc.type = type; osc.frequency.setValueAtTime(Math.max(20, freq), t);
+        const g = ctx.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        osc.connect(g); g.connect(this.master); osc.start(t); osc.stop(t + decay + 0.02);
       },
       _freqSweep(t, dur, { startFreq = 200, endFreq = 800, type = 'sawtooth', gain = 0.12 } = {}) {
-        const ctx = this.ctx;
-        const osc = ctx.createOscillator();
-        osc.type = type;
-        osc.frequency.setValueAtTime(Math.max(20, startFreq), t);
-        osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t + dur);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(gain, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-        osc.connect(g); g.connect(this.master);
-        osc.start(t); osc.stop(t + dur + 0.02);
+        const ctx = this.ctx; const osc = ctx.createOscillator(); osc.type = type; osc.frequency.setValueAtTime(Math.max(20, startFreq), t); osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t + dur);
+        const g = ctx.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.connect(g); g.connect(this.master); osc.start(t); osc.stop(t + dur + 0.02);
       },
 
       playThemedTexture(themeKey, freq, dur, now) {
         switch (themeKey) {
-          case 'fire': {
-            this._noiseBed(now, dur, { filterType: 'bandpass', freq: 420, Q: 0.5, peakGain: 0.09, attack: 0.1 });
-            const crackles = 7 + Math.floor(Math.random() * 6);
-            for (let i = 0; i < crackles; i++) {
-              const t = now + Math.random() * dur * 0.85;
-              this._noiseTransient(t, { filterType: 'highpass', freq: 1800 + Math.random() * 4500, Q: 1.2, gain: 0.05 + Math.random() * 0.08, decay: 0.02 + Math.random() * 0.05, duration: 0.1 });
-            }
-            break;
-          }
-          case 'explosion': {
-            this._noiseTransient(now, { filterType: 'lowpass', freq: 1000, Q: 0.4, gain: 0.3, decay: 0.55, duration: 0.65 });
-            this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.3, decay: 0.45 });
-            for (let i = 0; i < 5; i++) {
-              const t = now + 0.05 + Math.random() * 0.35;
-              this._noiseTransient(t, { filterType: 'highpass', freq: 2500 + Math.random() * 3000, Q: 1, gain: 0.04 + Math.random() * 0.05, decay: 0.05, duration: 0.08 });
-            }
-            break;
-          }
-          case 'engine': {
-            this._noiseBed(now, dur, { filterType: 'lowpass', freq: 180, Q: 0.8, peakGain: 0.1, attack: 0.08 });
-            this._toneBlip(now, { freq: freq * 0.5, type: 'sawtooth', gain: 0.14, decay: dur * 0.9 });
-            break;
-          }
-          case 'gunshot-whistle': {
-            this._noiseTransient(now, { filterType: 'highpass', freq: 1000, Q: 0.7, gain: 0.3, decay: 0.08, duration: 0.1 });
-            this._freqSweep(now + 0.05, Math.max(0.3, dur - 0.05), { startFreq: freq * 2.2, endFreq: freq * 0.9, type: 'sine', gain: 0.09 });
-            break;
-          }
-          case 'ratchet': {
-            const clicks = 6;
-            for (let i = 0; i < clicks; i++) {
-              this._noiseTransient(now + i * (dur / clicks), { filterType: 'highpass', freq: 3500, Q: 2, gain: 0.08, decay: 0.02, duration: 0.04 });
-            }
-            break;
-          }
-          case 'zap-whoosh': {
-            this._freqSweep(now, dur * 0.6, { startFreq: freq * 0.5, endFreq: freq * 3, type: 'sawtooth', gain: 0.14 });
-            this._noiseTransient(now + dur * 0.15, { filterType: 'highpass', freq: 4000, Q: 0.8, gain: 0.08, decay: 0.12, duration: 0.15 });
-            break;
-          }
-          case 'chime': {
-            [1, 1.5, 2.01].forEach((ratio, i) => this._toneBlip(now + i * 0.02, { freq: freq * ratio, type: 'sine', gain: 0.13 / (i + 1), decay: dur * 0.8 }));
-            break;
-          }
-          case 'drone-deep': {
-            this._noiseBed(now, dur, { filterType: 'lowpass', freq: 120, Q: 0.3, peakGain: 0.09, attack: 0.2 });
-            this._toneBlip(now, { freq: freq * 0.25, type: 'sine', gain: 0.2, decay: dur });
-            break;
-          }
-          case 'buzz-electric': {
-            this._toneBlip(now, { freq, type: 'square', gain: 0.1, decay: dur * 0.7 });
-            this._noiseTransient(now, { filterType: 'bandpass', freq: 2000, Q: 3, gain: 0.04, decay: dur * 0.6, duration: dur });
-            break;
-          }
-          case 'thud-heavy': {
-            this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.26, decay: 0.3 });
-            this._noiseTransient(now, { filterType: 'lowpass', freq: 400, Q: 0.5, gain: 0.1, decay: 0.15, duration: 0.2 });
-            break;
-          }
-          case 'shimmer-glass': {
-            [1, 2.02, 3.01].forEach((ratio, i) => this._toneBlip(now + i * 0.015, { freq: freq * ratio, type: 'sine', gain: 0.1 / (i + 1), decay: dur }));
-            break;
-          }
-          case 'beep-robotic': {
-            for (let i = 0; i < 3; i++) {
-              this._toneBlip(now + i * 0.12, { freq: freq * (1 + i * 0.15), type: 'square', gain: 0.11, decay: 0.07 });
-            }
-            break;
-          }
-          case 'scream-tense': {
-            this._freqSweep(now, dur * 0.5, { startFreq: freq * 1.5, endFreq: freq * 3.2, type: 'sawtooth', gain: 0.09 });
-            break;
-          }
-          case 'boop-comic': {
-            this._freqSweep(now, 0.25, { startFreq: freq * 1.4, endFreq: freq * 0.7, type: 'triangle', gain: 0.16 });
-            break;
-          }
-          case 'blazing-harsh': {
-            this._noiseTransient(now, { filterType: 'highpass', freq: 2500, Q: 0.6, gain: 0.16, decay: dur * 0.7, duration: dur });
-            this._toneBlip(now, { freq, type: 'sawtooth', gain: 0.12, decay: dur * 0.6 });
-            break;
-          }
-          case 'toll-clock': {
-            this._noiseTransient(now, { filterType: 'highpass', freq: 4500, Q: 3, gain: 0.06, decay: 0.02, duration: 0.03 });
-            this._toneBlip(now + 0.02, { freq: freq * 0.5, type: 'sine', gain: 0.18, decay: dur * 0.9 });
-            break;
-          }
-          case 'pluck-playful': {
-            this._toneBlip(now, { freq, type: 'triangle', gain: 0.15, decay: 0.18 });
-            this._toneBlip(now + 0.09, { freq: freq * 1.25, type: 'triangle', gain: 0.1, decay: 0.15 });
-            break;
-          }
-          case 'swell-warm': {
-            this._noiseBed(now, dur, { filterType: 'lowpass', freq: 900, Q: 0.4, peakGain: 0.05, attack: dur * 0.4 });
-            this._toneBlip(now, { freq, type: 'sine', gain: 0.14, decay: dur });
-            break;
-          }
-          case 'sax-smooth': {
-            this._toneBlip(now, { freq, type: 'sine', gain: 0.16, decay: dur * 0.9 });
-            this._toneBlip(now, { freq: freq * 1.005, type: 'triangle', gain: 0.08, decay: dur * 0.9 });
-            break;
-          }
-          default:
-            this._toneBlip(now, { freq, type: 'sine', gain: 0.15, decay: dur * 0.7 });
+          case 'fire': this._noiseBed(now, dur, { filterType: 'bandpass', freq: 420, Q: 0.5, peakGain: 0.09, attack: 0.1 }); for (let i = 0; i < 7 + Math.floor(Math.random() * 6); i++) { this._noiseTransient(now + Math.random() * dur * 0.85, { filterType: 'highpass', freq: 1800 + Math.random() * 4500, Q: 1.2, gain: 0.05 + Math.random() * 0.08, decay: 0.02 + Math.random() * 0.05, duration: 0.1 }); } break;
+          case 'explosion': this._noiseTransient(now, { filterType: 'lowpass', freq: 1000, Q: 0.4, gain: 0.3, decay: 0.55, duration: 0.65 }); this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.3, decay: 0.45 }); break;
+          case 'engine': this._noiseBed(now, dur, { filterType: 'lowpass', freq: 180, Q: 0.8, peakGain: 0.1, attack: 0.08 }); this._toneBlip(now, { freq: freq * 0.5, type: 'sawtooth', gain: 0.14, decay: dur * 0.9 }); break;
+          case 'gunshot-whistle': this._noiseTransient(now, { filterType: 'highpass', freq: 1000, Q: 0.7, gain: 0.3, decay: 0.08, duration: 0.1 }); this._freqSweep(now + 0.05, Math.max(0.3, dur - 0.05), { startFreq: freq * 2.2, endFreq: freq * 0.9, type: 'sine', gain: 0.09 }); break;
+          case 'ratchet': for (let i = 0; i < 6; i++) { this._noiseTransient(now + i * (dur / 6), { filterType: 'highpass', freq: 3500, Q: 2, gain: 0.08, decay: 0.02, duration: 0.04 }); } break;
+          case 'zap-whoosh': this._freqSweep(now, dur * 0.6, { startFreq: freq * 0.5, endFreq: freq * 3, type: 'sawtooth', gain: 0.14 }); this._noiseTransient(now + dur * 0.15, { filterType: 'highpass', freq: 4000, Q: 0.8, gain: 0.08, decay: 0.12, duration: 0.15 }); break;
+          case 'chime': [1, 1.5, 2.01].forEach((ratio, i) => this._toneBlip(now + i * 0.02, { freq: freq * ratio, type: 'sine', gain: 0.13 / (i + 1), decay: dur * 0.8 })); break;
+          case 'drone-deep': this._noiseBed(now, dur, { filterType: 'lowpass', freq: 120, Q: 0.3, peakGain: 0.09, attack: 0.2 }); this._toneBlip(now, { freq: freq * 0.25, type: 'sine', gain: 0.2, decay: dur }); break;
+          case 'buzz-electric': this._toneBlip(now, { freq, type: 'square', gain: 0.1, decay: dur * 0.7 }); this._noiseTransient(now, { filterType: 'bandpass', freq: 2000, Q: 3, gain: 0.04, decay: dur * 0.6, duration: dur }); break;
+          case 'thud-heavy': this._toneBlip(now, { freq: freq * 0.4, type: 'sine', gain: 0.26, decay: 0.3 }); this._noiseTransient(now, { filterType: 'lowpass', freq: 400, Q: 0.5, gain: 0.1, decay: 0.15, duration: 0.2 }); break;
+          case 'shimmer-glass': [1, 2.02, 3.01].forEach((ratio, i) => this._toneBlip(now + i * 0.015, { freq: freq * ratio, type: 'sine', gain: 0.1 / (i + 1), decay: dur })); break;
+          case 'beep-robotic': for (let i = 0; i < 3; i++) { this._toneBlip(now + i * 0.12, { freq: freq * (1 + i * 0.15), type: 'square', gain: 0.11, decay: 0.07 }); } break;
+          case 'scream-tense': this._freqSweep(now, dur * 0.5, { startFreq: freq * 1.5, endFreq: freq * 3.2, type: 'sawtooth', gain: 0.09 }); break;
+          case 'boop-comic': this._freqSweep(now, 0.25, { startFreq: freq * 1.4, endFreq: freq * 0.7, type: 'triangle', gain: 0.16 }); break;
+          case 'blazing-harsh': this._noiseTransient(now, { filterType: 'highpass', freq: 2500, Q: 0.6, gain: 0.16, decay: dur * 0.7, duration: dur }); this._toneBlip(now, { freq, type: 'sawtooth', gain: 0.12, decay: dur * 0.6 }); break;
+          case 'toll-clock': this._noiseTransient(now, { filterType: 'highpass', freq: 4500, Q: 3, gain: 0.06, decay: 0.02, duration: 0.03 }); this._toneBlip(now + 0.02, { freq: freq * 0.5, type: 'sine', gain: 0.18, decay: dur * 0.9 }); break;
+          case 'pluck-playful': this._toneBlip(now, { freq, type: 'triangle', gain: 0.15, decay: 0.18 }); this._toneBlip(now + 0.09, { freq: freq * 1.25, type: 'triangle', gain: 0.1, decay: 0.15 }); break;
+          case 'swell-warm': this._noiseBed(now, dur, { filterType: 'lowpass', freq: 900, Q: 0.4, peakGain: 0.05, attack: dur * 0.4 }); this._toneBlip(now, { freq, type: 'sine', gain: 0.14, decay: dur }); break;
+          case 'sax-smooth': this._toneBlip(now, { freq, type: 'sine', gain: 0.16, decay: dur * 0.9 }); this._toneBlip(now, { freq: freq * 1.005, type: 'triangle', gain: 0.08, decay: dur * 0.9 }); break;
+          default: this._toneBlip(now, { freq, type: 'sine', gain: 0.15, decay: dur * 0.7 });
         }
       },
 
       cardSound(card, isReversed) {
         if (!AppState.audioEnabled) return;
         try {
-          this.init();
-          const ctx = this.ctx;
-          const now = ctx.currentTime;
+          this.init(); const ctx = this.ctx; const now = ctx.currentTime;
           const idx = typeof card.arcanaIndex === 'number' ? card.arcanaIndex : 0;
           const stats = isReversed ? card.reversed.shift : card.upright.shift;
-
-          const dread = Math.min(1, Math.abs(stats.w) / 50);
-          const kinetic = Math.min(1, Math.abs(stats.t) / 50);
-          const surreal = Math.min(1, Math.abs(stats.r) / 50);
-          const leansDread = stats.w >= 0;
+          const dread = Math.min(1, Math.abs(stats.w) / 50); const kinetic = Math.min(1, Math.abs(stats.t) / 50); const surreal = Math.min(1, Math.abs(stats.r) / 50); const leansDread = stats.w >= 0;
 
           const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10];
           const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
-          let freq = 110 * Math.pow(2, semis / 12);
-          if (isReversed) freq *= 0.667;
-
+          let freq = 110 * Math.pow(2, semis / 12); if (isReversed) freq *= 0.667;
           const dur = 0.6 + (1 - kinetic) * 1.3;
 
           const themeKey = CARD_THEME_MAP[card.id] || 'chime';
           this.playThemedTexture(themeKey, freq, dur, now);
 
           const filterCutoff = leansDread ? (500 + (1 - dread) * 2200) : (2200 + (1 - dread) * 3000);
-          const osc = ctx.createOscillator();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now);
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'lowpass';
-          filter.frequency.value = filterCutoff;
-          const gain = ctx.createGain();
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-          osc.connect(filter); filter.connect(gain); gain.connect(this.master);
-          osc.start(now); osc.stop(now + dur);
+          const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now);
+          const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = filterCutoff;
+          const gain = ctx.createGain(); gain.gain.setValueAtTime(0.0001, now); gain.gain.linearRampToValueAtTime(0.08, now + 0.03); gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+          osc.connect(filter); filter.connect(gain); gain.connect(this.master); osc.start(now); osc.stop(now + dur);
 
           if (surreal > 0.35) {
-            const lfo = ctx.createOscillator();
-            lfo.type = 'sine';
-            lfo.frequency.value = 4 + surreal * 5;
-            const lfoGain = ctx.createGain();
-            lfoGain.gain.value = freq * 0.025 * surreal;
-            lfo.connect(lfoGain);
-            lfoGain.connect(osc.frequency);
-            lfo.start(now);
-            lfo.stop(now + dur);
+            const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 4 + surreal * 5;
+            const lfoGain = ctx.createGain(); lfoGain.gain.value = freq * 0.025 * surreal;
+            lfo.connect(lfoGain); lfoGain.connect(osc.frequency); lfo.start(now); lfo.stop(now + dur);
           }
-
-          if (isReversed && this.noiseBuffer) {
-            this._noiseTransient(now, { filterType: 'bandpass', freq: Math.min(9000, freq * 2.2), Q: 5, gain: 0.07, decay: 0.16, duration: 0.16 });
-          }
+          if (isReversed && this.noiseBuffer) this._noiseTransient(now, { filterType: 'bandpass', freq: Math.min(9000, freq * 2.2), Q: 5, gain: 0.07, decay: 0.16, duration: 0.16 });
         } catch (e) {}
       },
 
-      // --- PHASE 2/4: FILM-TUNED AMBIENT SPREAD SCORE ---
-      // A persistent evolving pad built from the THREE drawn cards (pitch from each card's
-      // arcana scale position, brightness from its dread stat, slow LFO drift). On top of
-      // that harmonic foundation, the FILM's tone tags (from Gemini) color the whole thing —
-      // so the same spread scores differently for a warm film vs a menacing one, and every
-      // result page sounds distinct and on-tone. No tags = the pure spread pad.
       spreadScore: {
-        playing: false,
-        voices: [], bus: null, extras: [],
-
-        // Each tag nudges shared pad parameters and/or adds a texture layer. Values are
-        // deltas/multipliers applied cumulatively, so 3-4 tags blend into one character.
+        playing: false, voices: [], bus: null, extras: [],
         _tagProfile(tags) {
-          const p = {
-            filterMul: 1,      // multiplies the base lowpass cutoff (bright vs dark)
-            detuneAdd: 0,      // extra detune spread (thickness/unease)
-            gainMul: 1,        // overall level trim
-            subGain: 0,        // adds a low sub-oscillator (weight)
-            shimmer: 0,        // adds high partial shimmer (air/dreaminess)
-            tick: 0,           // adds a slow rhythmic tick (mechanical)
-            waverHz: 0,        // adds slow pitch waver depth (fragile/feverish)
-          };
-          const bump = {
-            smoky:        { filterMul: 0.7, detuneAdd: 4, gainMul: 1.05 },
-            nocturnal:    { filterMul: 0.65, subGain: 0.05 },
-            warm:         { filterMul: 1.15, gainMul: 1.05 },
-            cold:         { filterMul: 1.3, detuneAdd: 3, gainMul: 0.95 },
-            vast:         { shimmer: 0.06, subGain: 0.04, filterMul: 1.1 },
-            claustrophobic:{ filterMul: 0.55, gainMul: 0.95 },
-            mechanical:   { tick: 1, detuneAdd: 2 },
-            organic:      { filterMul: 1.05, waverHz: 0.4 },
-            aching:       { detuneAdd: 5, waverHz: 0.6, filterMul: 0.85 },
-            serene:       { filterMul: 1.2, gainMul: 0.95 },
-            feverish:     { detuneAdd: 8, waverHz: 1.1, filterMul: 1.15 },
-            hypnotic:     { tick: 0.6, shimmer: 0.03 },
-            playful:      { filterMul: 1.25, shimmer: 0.04, gainMul: 0.95 },
-            menacing:     { filterMul: 0.6, subGain: 0.06, detuneAdd: 4 },
-            fragile:      { waverHz: 0.9, gainMul: 0.9, filterMul: 1.1 },
-            grand:        { subGain: 0.05, shimmer: 0.05, gainMul: 1.05 },
-            gritty:       { detuneAdd: 6, filterMul: 0.9 },
-            dreamy:       { shimmer: 0.07, waverHz: 0.5, filterMul: 1.1 },
-          };
-          (tags || []).forEach(tag => {
-            const b = bump[tag];
-            if (!b) return;
-            if (b.filterMul !== undefined) p.filterMul *= b.filterMul;
-            if (b.detuneAdd) p.detuneAdd += b.detuneAdd;
-            if (b.gainMul !== undefined) p.gainMul *= b.gainMul;
-            if (b.subGain) p.subGain = Math.max(p.subGain, b.subGain);
-            if (b.shimmer) p.shimmer = Math.max(p.shimmer, b.shimmer);
-            if (b.tick) p.tick = Math.max(p.tick, b.tick);
-            if (b.waverHz) p.waverHz = Math.max(p.waverHz, b.waverHz);
-          });
+          const p = { filterMul: 1, detuneAdd: 0, gainMul: 1, subGain: 0, shimmer: 0, tick: 0, waverHz: 0, };
+          const bump = { smoky: { filterMul: 0.7, detuneAdd: 4, gainMul: 1.05 }, nocturnal: { filterMul: 0.65, subGain: 0.05 }, warm: { filterMul: 1.15, gainMul: 1.05 }, cold: { filterMul: 1.3, detuneAdd: 3, gainMul: 0.95 }, vast: { shimmer: 0.06, subGain: 0.04, filterMul: 1.1 }, claustrophobic:{ filterMul: 0.55, gainMul: 0.95 }, mechanical: { tick: 1, detuneAdd: 2 }, organic: { filterMul: 1.05, waverHz: 0.4 }, aching: { detuneAdd: 5, waverHz: 0.6, filterMul: 0.85 }, serene: { filterMul: 1.2, gainMul: 0.95 }, feverish: { detuneAdd: 8, waverHz: 1.1, filterMul: 1.15 }, hypnotic: { tick: 0.6, shimmer: 0.03 }, playful: { filterMul: 1.25, shimmer: 0.04, gainMul: 0.95 }, menacing: { filterMul: 0.6, subGain: 0.06, detuneAdd: 4 }, fragile: { waverHz: 0.9, gainMul: 0.9, filterMul: 1.1 }, grand: { subGain: 0.05, shimmer: 0.05, gainMul: 1.05 }, gritty: { detuneAdd: 6, filterMul: 0.9 }, dreamy: { shimmer: 0.07, waverHz: 0.5, filterMul: 1.1 }, };
+          (tags || []).forEach(tag => { const b = bump[tag]; if (!b) return; if (b.filterMul !== undefined) p.filterMul *= b.filterMul; if (b.detuneAdd) p.detuneAdd += b.detuneAdd; if (b.gainMul !== undefined) p.gainMul *= b.gainMul; if (b.subGain) p.subGain = Math.max(p.subGain, b.subGain); if (b.shimmer) p.shimmer = Math.max(p.shimmer, b.shimmer); if (b.tick) p.tick = Math.max(p.tick, b.tick); if (b.waverHz) p.waverHz = Math.max(p.waverHz, b.waverHz); });
           return p;
         },
-
-        start(drawnSpread, toneTags) {
+        start(drawnSpread, toneTags, finalTempo) {
           if (!AppState.audioEnabled || this.playing || !Array.isArray(drawnSpread) || drawnSpread.length === 0) return;
-          AudioEngine.init();
-          const ctx = AudioEngine.ctx;
-          const now = ctx.currentTime;
-          this.playing = true;
-          this.voices = [];
-          this.extras = [];
+          AudioEngine.init(); const ctx = AudioEngine.ctx; const now = ctx.currentTime;
+          this.playing = true; this.voices = []; this.extras = [];
 
           const prof = this._tagProfile(toneTags);
-
-          this.bus = ctx.createGain();
-          this.bus.gain.setValueAtTime(0.0001, now);
-          this.bus.gain.linearRampToValueAtTime(0.13 * prof.gainMul, now + 2.5); // slow swell in
-          this.bus.connect(AudioEngine.master);
-
+          this.bus = ctx.createGain(); this.bus.gain.setValueAtTime(0.0001, now); this.bus.gain.linearRampToValueAtTime(0.13 * prof.gainMul, now + 2.5); this.bus.connect(AudioEngine.master);
           const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10];
 
           drawnSpread.forEach((draw, i) => {
-            const card = draw.card;
-            const idx = typeof card.arcanaIndex === 'number' ? card.arcanaIndex : i;
+            const card = draw.card; const idx = typeof card.arcanaIndex === 'number' ? card.arcanaIndex : i;
             const stats = draw.isReversed ? card.reversed.shift : card.upright.shift;
             const dread = Math.min(1, Math.abs(stats.w) / 50);
-
             const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
-            let freq = 55 * Math.pow(2, semis / 12);
-            if (draw.isReversed) freq *= 0.667;
+            let freq = 55 * Math.pow(2, semis / 12); if (draw.isReversed) freq *= 0.667;
 
-            const osc = ctx.createOscillator();
-            osc.type = i === 1 ? 'triangle' : 'sine';
-            osc.frequency.value = freq;
+            const osc = ctx.createOscillator(); osc.type = i === 1 ? 'triangle' : 'sine'; osc.frequency.value = freq; osc.detune.value = (i - 1) * (6 + prof.detuneAdd);
+            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = Math.max(120, Math.min(6000, (300 + (1 - dread) * 1400) * prof.filterMul));
+            const vGain = ctx.createGain(); vGain.gain.value = 0.33;
+            const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.05 + i * 0.03 + Math.random() * 0.02;
+            const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.14; lfo.connect(lfoGain); lfoGain.connect(vGain.gain);
 
-            // Base detune between voices + tag-driven extra spread.
-            osc.detune.value = (i - 1) * (6 + prof.detuneAdd);
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            // Dread darkens; tags scale the whole cutoff (warm=open, menacing=closed).
-            filter.frequency.value = Math.max(120, Math.min(6000, (300 + (1 - dread) * 1400) * prof.filterMul));
-
-            const vGain = ctx.createGain();
-            vGain.gain.value = 0.33;
-
-            const lfo = ctx.createOscillator();
-            lfo.type = 'sine';
-            lfo.frequency.value = 0.05 + i * 0.03 + Math.random() * 0.02;
-            const lfoGain = ctx.createGain();
-            lfoGain.gain.value = 0.14;
-            lfo.connect(lfoGain); lfoGain.connect(vGain.gain);
-
-            // Tag-driven pitch waver (fragile/feverish/aching) — a slow vibrato on the voice.
-            if (prof.waverHz > 0) {
-              const waver = ctx.createOscillator();
-              waver.type = 'sine';
-              waver.frequency.value = prof.waverHz;
-              const waverGain = ctx.createGain();
-              waverGain.gain.value = freq * 0.012;
-              waver.connect(waverGain); waverGain.connect(osc.frequency);
-              waver.start(now);
-              this.extras.push({ osc: waver });
-            }
-
-            osc.connect(filter); filter.connect(vGain); vGain.connect(this.bus);
-            osc.start(now); lfo.start(now);
-            this.voices.push({ osc, lfo });
+            if (prof.waverHz > 0) { const waver = ctx.createOscillator(); waver.type = 'sine'; waver.frequency.value = prof.waverHz; const waverGain = ctx.createGain(); waverGain.gain.value = freq * 0.012; waver.connect(waverGain); waverGain.connect(osc.frequency); waver.start(now); this.extras.push({ osc: waver }); }
+            osc.connect(filter); filter.connect(vGain); vGain.connect(this.bus); osc.start(now); lfo.start(now); this.voices.push({ osc, lfo });
           });
 
-          // --- Tag-driven texture layers, all routed through the same bus ---
+          if (prof.subGain > 0) { const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = 36; const subGain = ctx.createGain(); subGain.gain.setValueAtTime(0.0001, now); subGain.gain.linearRampToValueAtTime(prof.subGain, now + 3); sub.connect(subGain); subGain.connect(this.bus); sub.start(now); this.extras.push({ osc: sub }); }
+          if (prof.shimmer > 0) { const shim = ctx.createOscillator(); shim.type = 'sine'; shim.frequency.value = 1760; const shimFilter = ctx.createBiquadFilter(); shimFilter.type = 'bandpass'; shimFilter.frequency.value = 1760; shimFilter.Q.value = 3; const shimGain = ctx.createGain(); shimGain.gain.setValueAtTime(0.0001, now); shimGain.gain.linearRampToValueAtTime(prof.shimmer, now + 3.5); const shimLfo = ctx.createOscillator(); shimLfo.type = 'sine'; shimLfo.frequency.value = 0.18; const shimLfoGain = ctx.createGain(); shimLfoGain.gain.value = prof.shimmer * 0.7; shimLfo.connect(shimLfoGain); shimLfoGain.connect(shimGain.gain); shim.connect(shimFilter); shimFilter.connect(shimGain); shimGain.connect(this.bus); shim.start(now); shimLfo.start(now); this.extras.push({ osc: shim }, { osc: shimLfo }); }
+          
+          // NEW: Dynamic Arpeggiator / Pulse mapped to the TEMPO slider
+          if (finalTempo !== undefined) {
+             const isKinetic = finalTempo > 55;
+             const isDreadful = AppState.sliders.warmth > 60;
+             const pulsePeriod = isKinetic ? 0.15 : 0.8; // Fast arpeggio or slow heartbeat
+             const volMult = isKinetic ? 0.04 : 0.08;
 
-          // SUB: low weight for nocturnal/menacing/grand/vast.
-          if (prof.subGain > 0) {
-            const sub = ctx.createOscillator();
-            sub.type = 'sine';
-            sub.frequency.value = 36;
-            const subGain = ctx.createGain();
-            subGain.gain.setValueAtTime(0.0001, now);
-            subGain.gain.linearRampToValueAtTime(prof.subGain, now + 3);
-            sub.connect(subGain); subGain.connect(this.bus);
-            sub.start(now);
-            this.extras.push({ osc: sub });
+             const doPulse = () => {
+                if (!this.playing) return;
+                const t = ctx.currentTime;
+                // High tempo = synth pluck, Low tempo = filtered thump
+                if (isKinetic) {
+                  const f = 220 * (isDreadful ? 1 : 1.5) * (Math.random() > 0.5 ? 1 : 1.25);
+                  AudioEngine._toneBlip(t, { freq: f, type: 'sawtooth', gain: volMult, decay: 0.15 });
+                  AudioEngine._noiseTransient(t, { filterType: 'highpass', freq: 4000, Q: 1, gain: 0.02, decay: 0.05, duration: 0.05 });
+                } else {
+                  AudioEngine._noiseTransient(t, { filterType: 'lowpass', freq: 150, Q: 0.5, gain: volMult, decay: 0.2, duration: 0.3 });
+                }
+             };
+             const pulseTimer = setInterval(doPulse, pulsePeriod * 1000);
+             this.extras.push({ timer: pulseTimer });
           }
-
-          // SHIMMER: airy high partial for vast/dreamy/grand/playful.
-          if (prof.shimmer > 0) {
-            const shim = ctx.createOscillator();
-            shim.type = 'sine';
-            shim.frequency.value = 1760; // high A, sits above the pad
-            const shimFilter = ctx.createBiquadFilter();
-            shimFilter.type = 'bandpass'; shimFilter.frequency.value = 1760; shimFilter.Q.value = 3;
-            const shimGain = ctx.createGain();
-            shimGain.gain.setValueAtTime(0.0001, now);
-            shimGain.gain.linearRampToValueAtTime(prof.shimmer, now + 3.5);
-            // slow tremolo so it glints
-            const shimLfo = ctx.createOscillator();
-            shimLfo.type = 'sine'; shimLfo.frequency.value = 0.18;
-            const shimLfoGain = ctx.createGain(); shimLfoGain.gain.value = prof.shimmer * 0.7;
-            shimLfo.connect(shimLfoGain); shimLfoGain.connect(shimGain.gain);
-            shim.connect(shimFilter); shimFilter.connect(shimGain); shimGain.connect(this.bus);
-            shim.start(now); shimLfo.start(now);
-            this.extras.push({ osc: shim }, { osc: shimLfo });
-          }
-
-          // TICK: a slow mechanical pulse for mechanical/hypnotic. Scheduled as a repeating
-          // interval of soft filtered noise clicks; tracked so stop() clears it.
-          if (prof.tick > 0) {
-            const period = 1.05; // seconds between ticks — a slow, clocklike pulse
-            const doTick = () => {
-              if (!this.playing) return;
-              const t = ctx.currentTime;
-              const src = ctx.createBufferSource();
-              src.buffer = AudioEngine.noiseBuffer;
-              const f = ctx.createBiquadFilter();
-              f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 8;
-              const g = ctx.createGain();
-              g.gain.setValueAtTime(0.05 * prof.tick, t);
-              g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-              src.connect(f); f.connect(g); g.connect(this.bus);
-              src.start(t); src.stop(t + 0.08);
-            };
-            const tickTimer = setInterval(doTick, period * 1000);
-            this.extras.push({ timer: tickTimer });
-          }
+          
+          if (prof.tick > 0) { const period = 1.05; const doTick = () => { if (!this.playing) return; const t = ctx.currentTime; const src = ctx.createBufferSource(); src.buffer = AudioEngine.noiseBuffer; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 8; const g = ctx.createGain(); g.gain.setValueAtTime(0.05 * prof.tick, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.06); src.connect(f); f.connect(g); g.connect(this.bus); src.start(t); src.stop(t + 0.08); }; const tickTimer = setInterval(doTick, period * 1000); this.extras.push({ timer: tickTimer }); }
         },
-
         stop(fadeSec = 1.5) {
-          if (!this.playing || !AudioEngine.ctx) return;
-          const ctx = AudioEngine.ctx;
-          const t = ctx.currentTime;
-          this.bus.gain.cancelScheduledValues(t);
-          this.bus.gain.setValueAtTime(this.bus.gain.value, t);
-          this.bus.gain.linearRampToValueAtTime(0.0001, t + fadeSec);
-          const voices = this.voices;
-          const extras = this.extras;
-          // Clear any tick interval immediately so it stops scheduling new clicks.
-          extras.forEach(e => { if (e.timer) clearInterval(e.timer); });
-          setTimeout(() => {
-            voices.forEach(v => { try { v.osc.stop(); v.lfo.stop(); } catch (e) {} });
-            extras.forEach(e => { if (e.osc) { try { e.osc.stop(); } catch (er) {} } });
-          }, fadeSec * 1000 + 100);
-          this.voices = [];
-          this.extras = [];
-          this.playing = false;
+          if (!this.playing || !AudioEngine.ctx) return; const ctx = AudioEngine.ctx; const t = ctx.currentTime;
+          this.bus.gain.cancelScheduledValues(t); this.bus.gain.setValueAtTime(this.bus.gain.value, t); this.bus.gain.linearRampToValueAtTime(0.0001, t + fadeSec);
+          const voices = this.voices; const extras = this.extras; extras.forEach(e => { if (e.timer) clearInterval(e.timer); });
+          setTimeout(() => { voices.forEach(v => { try { v.osc.stop(); v.lfo.stop(); } catch (e) {} }); extras.forEach(e => { if (e.osc) { try { e.osc.stop(); } catch (er) {} } }); }, fadeSec * 1000 + 100);
+          this.voices = []; this.extras = []; this.playing = false;
         }
       }
     };
 
-    // ===================== PHASE 3: TILT PARALLAX =====================
-    // Reads DeviceOrientation and exposes a smoothed -1..1 x/y the wheel reads each frame.
-    // iOS 13+ requires requestPermission() from inside a user gesture, so we arm it on the
-    // first tap (startCalibrator) rather than at load. Silently no-ops where unsupported.
     const TiltEngine = {
-      x: 0, y: 0,
-      _rawX: 0, _rawY: 0,
-      active: false,
-      _baseGamma: null, _baseBeta: null,
-
+      x: 0, y: 0, _rawX: 0, _rawY: 0, active: false, _baseGamma: null, _baseBeta: null,
       handleOrientation(e) {
-        // gamma: left/right tilt (-90..90), beta: front/back (-180..180)
         if (e.gamma === null || e.beta === null) return;
-        // Calibrate to wherever the phone is held on first reading (neutral = current pose).
         if (this._baseGamma === null) { this._baseGamma = e.gamma; this._baseBeta = e.beta; }
-        const dGamma = e.gamma - this._baseGamma;
-        const dBeta = e.beta - this._baseBeta;
-        // Map ~±25° of tilt to the full -1..1 range, clamp beyond that.
-        this._rawX = Math.max(-1, Math.min(1, dGamma / 25));
-        this._rawY = Math.max(-1, Math.min(1, dBeta / 25));
+        const dGamma = e.gamma - this._baseGamma; const dBeta = e.beta - this._baseBeta;
+        this._rawX = Math.max(-1, Math.min(1, dGamma / 25)); this._rawY = Math.max(-1, Math.min(1, dBeta / 25));
       },
-
       _loop() {
         if (!this.active) return;
-        // Smooth toward the raw reading so parallax glides instead of jittering.
-        this.x += (this._rawX - this.x) * 0.12;
-        this.y += (this._rawY - this.y) * 0.12;
-        // Only repaint the wheel if it's the visible screen (cheap guard).
+        this.x += (this._rawX - this.x) * 0.12; this.y += (this._rawY - this.y) * 0.12;
         const wheelVisible = !document.getElementById('screen-game3')?.classList.contains('hidden');
         if (wheelVisible && typeof updateWheel === 'function') updateWheel();
         requestAnimationFrame(() => this._loop());
       },
-
-      _attach() {
-        if (this.active) return;
-        this.active = true;
-        window.addEventListener('deviceorientation', e => this.handleOrientation(e), true);
-        requestAnimationFrame(() => this._loop());
-      },
-
-      // Called from a user gesture. Handles the three cases: iOS needs a permission prompt,
-      // other browsers just work, unsupported browsers no-op.
-      async enable() {
-        if (this.active) return;
-        try {
-          const DOE = window.DeviceOrientationEvent;
-          if (DOE && typeof DOE.requestPermission === 'function') {
-            const state = await DOE.requestPermission(); // must be inside a tap on iOS
-            if (state === 'granted') this._attach();
-          } else if (DOE) {
-            this._attach(); // Android / older iOS: no prompt needed
-          }
-        } catch (e) {
-          // Denied or errored — parallax just stays off, everything else works.
-        }
-      },
-
-      // Re-neutralize to the current pose (e.g. when re-entering the wheel).
+      _attach() { if (this.active) return; this.active = true; window.addEventListener('deviceorientation', e => this.handleOrientation(e), true); requestAnimationFrame(() => this._loop()); },
+      async enable() { if (this.active) return; try { const DOE = window.DeviceOrientationEvent; if (DOE && typeof DOE.requestPermission === 'function') { const state = await DOE.requestPermission(); if (state === 'granted') this._attach(); } else if (DOE) { this._attach(); } } catch (e) { } },
       recalibrate() { this._baseGamma = null; this._baseBeta = null; }
     };
     window.TiltEngine = TiltEngine;
-    // ==================================================================
 
     function toggleAudio() {
       AppState.audioEnabled = !AppState.audioEnabled;
       document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
-      if (AppState.audioEnabled) {
-        AudioEngine.tone(440, 0.05, 'square');
-        const loadingVisible = !document.getElementById('screen-loading')?.classList.contains('hidden');
-        if (loadingVisible) {
-          AudioEngine.heartbeat.start();
-          AudioEngine.muffle(380, 0.3);
-        }
-      } else {
-        AudioEngine.heartbeat.stop(0.15);
-        AudioEngine.wheelHum.silence();
-        AudioEngine.spreadScore.stop(0.3);
-      }
+      if (AppState.audioEnabled) { AudioEngine.tone(440, 0.05, 'square'); const loadingVisible = !document.getElementById('screen-loading')?.classList.contains('hidden'); if (loadingVisible) { AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.3); } } else { AudioEngine.heartbeat.stop(0.15); AudioEngine.wheelHum.silence(); AudioEngine.spreadScore.stop(0.3); }
     }
-
-    function playSynthBeep(freq, duration, type = 'square') {
-      AudioEngine.tone(freq, duration, type, 0.05);
-    }
-
+    function playSynthBeep(freq, duration, type = 'square') { AudioEngine.tone(freq, duration, type, 0.05); }
     function playArcanaSound(type) {
-      if (!AppState.audioEnabled) return;
-      AudioEngine.init();
-      const ctx = AudioEngine.ctx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(AudioEngine.master);
-      const now = ctx.currentTime;
+      if (!AppState.audioEnabled) return; AudioEngine.init(); const ctx = AudioEngine.ctx; const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(AudioEngine.master); const now = ctx.currentTime;
       switch(type) {
-        case 'freq-heavy':
-          osc.type = 'sine'; osc.frequency.setValueAtTime(40, now);
-          osc.frequency.exponentialRampToValueAtTime(20, now + 1);
-          gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1);
-          osc.start(now); osc.stop(now + 1); break;
-        case 'freq-bell':
-          osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
-          osc.frequency.exponentialRampToValueAtTime(150, now + 2);
-          gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 2);
-          osc.start(now); osc.stop(now + 2); break;
-        case 'freq-static':
-          osc.type = 'square'; osc.frequency.setValueAtTime(100, now);
-          osc.frequency.linearRampToValueAtTime(1000, now + 0.1);
-          gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-          osc.start(now); osc.stop(now + 0.2); break;
-        case 'freq-harmonic':
-          osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
-          osc.frequency.linearRampToValueAtTime(800, now + 1.5);
-          gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
-          osc.start(now); osc.stop(now + 1.5); break;
-        case 'freq-tramp':
-          osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
-          gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-          osc.start(now); osc.stop(now + 0.1); break;
-        default:
-          playSynthBeep(200, 0.5, 'sine');
+        case 'freq-heavy': osc.type = 'sine'; osc.frequency.setValueAtTime(40, now); osc.frequency.exponentialRampToValueAtTime(20, now + 1); gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1); osc.start(now); osc.stop(now + 1); break;
+        case 'freq-bell': osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(150, now + 2); gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 2); osc.start(now); osc.stop(now + 2); break;
+        case 'freq-static': osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2); break;
+        case 'freq-harmonic': osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(800, now + 1.5); gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5); osc.start(now); osc.stop(now + 1.5); break;
+        case 'freq-tramp': osc.type = 'square'; osc.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); break;
+        default: playSynthBeep(200, 0.5, 'sine');
       }
     }
-
-    function playTypewriterDing() {
-      playSynthBeep(1200, 0.1, 'sine');
-      setTimeout(() => playSynthBeep(1500, 0.1, 'sine'), 50);
-    }
-
-    function triggerGlitchEffect(glitchClass) {
-      const body = document.getElementById('app-body');
-      body.classList.add(glitchClass);
-      setTimeout(() => body.classList.remove(glitchClass), 500);
-    }
+    function playTypewriterDing() { playSynthBeep(1200, 0.1, 'sine'); setTimeout(() => playSynthBeep(1500, 0.1, 'sine'), 50); }
+    function triggerGlitchEffect(glitchClass) { const body = document.getElementById('app-body'); body.classList.add(glitchClass); setTimeout(() => body.classList.remove(glitchClass), 500); }
 
     function showScreen(screenId) {
-      // Leaving the result screen: kill the ambient spread-score and clear any letterbox.
-      const leavingResult = screenId !== 'screen-result'
-        && !document.getElementById('screen-result')?.classList.contains('hidden');
-      if (leavingResult) {
-        AudioEngine.spreadScore.stop(0.6);
-        hideLetterbox();
-      }
+      const leavingResult = screenId !== 'screen-result' && !document.getElementById('screen-result')?.classList.contains('hidden');
+      if (leavingResult) { AudioEngine.spreadScore.stop(0.6); hideLetterbox(); }
+      const leavingReview = screenId !== 'screen-spread-review' && !document.getElementById('screen-spread-review')?.classList.contains('hidden');
+      if (leavingReview && window.speechSynthesis && _speaking) { speechSynthesis.cancel(); _speaking = false; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR'; }
 
-      // Leaving spread review while a reading is being spoken: stop the voice.
-      const leavingReview = screenId !== 'screen-spread-review'
-        && !document.getElementById('screen-spread-review')?.classList.contains('hidden');
-      if (leavingReview && window.speechSynthesis && _speaking) {
-        speechSynthesis.cancel();
-        _speaking = false;
-        const sb = document.getElementById('reading-speak-btn');
-        if (sb) sb.innerText = '▶ HEAR';
-      }
-
-      ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-      });
-      const target = document.getElementById(screenId);
-      if (target) target.classList.remove('hidden');
+      ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+      const target = document.getElementById(screenId); if (target) target.classList.remove('hidden');
     }
 
-    async function startCalibrator() {
-      playTypewriterDing();
-      // First user gesture of the session — arm motion parallax (iOS needs the tap).
-      TiltEngine.enable();
-      showScreen('screen-parameters');
-      updateParameterUI('language', AppState.language);
-      updateParameterUI('era', AppState.era);
-      updateRuntimeUI();
-      await sleep(300);
-      typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script.");
-    }
+    async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateParameterUI('mediaType', AppState.mediaType); updateRuntimeUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
 
-    function setParameter(key, value) {
-      AppState[key] = value;
-      playSynthBeep(400, 0.05, 'square');
-      updateParameterUI(key, value);
-    }
-
-    // Reel Length bands. EPIC is a floor with no ceiling — that's why the app now
-    // tracks runtimeMin AND runtimeMax instead of the old max-only field.
-    const RUNTIME_BANDS = {
-      any:     { min: null, max: null },
-      short:   { min: null, max: 95 },
-      feature: { min: 95,   max: 135 },
-      epic:    { min: 135,  max: null },
-    };
-
-    function updateRuntimeUI() {
-      ['any', 'short', 'feature', 'epic'].forEach(k => {
-        const el = document.getElementById(`runtime-${k}`);
-        if (el) el.classList.toggle('active', k === AppState.runtimeBand);
-      });
-    }
-
-    function setRuntime(band) {
-      const b = RUNTIME_BANDS[band] || RUNTIME_BANDS.any;
-      AppState.runtimeBand = RUNTIME_BANDS[band] ? band : 'any';
-      AppState.runtimeMin = b.min;
-      AppState.runtimeMax = b.max;
-      playSynthBeep(300, 0.05, 'square');
-      updateRuntimeUI();
-    }
+    function setParameter(key, value) { AppState[key] = value; playSynthBeep(400, 0.05, 'square'); updateParameterUI(key, value); }
+    
+    const RUNTIME_BANDS = { any: { min: null, max: null }, short: { min: null, max: 95 }, feature: { min: 95, max: 135 }, epic: { min: 135, max: null }, };
+    function updateRuntimeUI() { ['any', 'short', 'feature', 'epic'].forEach(k => { const el = document.getElementById(`runtime-${k}`); if (el) el.classList.toggle('active', k === AppState.runtimeBand); }); }
+    function setRuntime(band) { const b = RUNTIME_BANDS[band] || RUNTIME_BANDS.any; AppState.runtimeBand = RUNTIME_BANDS[band] ? band : 'any'; AppState.runtimeMin = b.min; AppState.runtimeMax = b.max; playSynthBeep(300, 0.05, 'square'); updateRuntimeUI(); }
 
     function updateParameterUI(key, val) {
-      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'] };
-      const idPrefixes = { language: 'lang', era: 'era' };
+      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'], mediaType: ['movie', 'tv'] };
+      const idPrefixes = { language: 'lang', era: 'era', mediaType: 'mediaType' };
       const prefix = idPrefixes[key] || key;
       if (!ids[key]) return;
-      ids[key].forEach(item => {
-        const btn = document.getElementById(`${prefix}-${item}`);
-        if (btn) {
-          if (item === val) btn.classList.add('active');
-          else btn.classList.remove('active');
-        }
-      });
+      ids[key].forEach(item => { const btn = document.getElementById(`${prefix}-${item}`); if (btn) { if (item === val) btn.classList.add('active'); else btn.classList.remove('active'); } });
     }
 
-    async function goToGame1() {
-      playTypewriterDing();
-      showScreen('screen-game1');
-      await sleep(300);
-      typewriter('slider-dialogue', "Adjust the margins of your mind. How do you want to feel?");
-    }
-
-    function updateSliderVal(sliderType) {
-      const val = document.getElementById(`slider-${sliderType}`).value;
-      document.getElementById(`val-${sliderType}`).innerText = val;
-      AppState.sliders[sliderType] = parseInt(val);
-      playSynthBeep(200 + parseInt(val) * 5, 0.02, 'square');
-    }
+    async function goToGame1() { playTypewriterDing(); showScreen('screen-game1'); await sleep(300); typewriter('slider-dialogue', "Adjust the margins of your mind. How do you want to feel?"); }
+    function updateSliderVal(sliderType) { const val = document.getElementById(`slider-${sliderType}`).value; document.getElementById(`val-${sliderType}`).innerText = val; AppState.sliders[sliderType] = parseInt(val); playSynthBeep(200 + parseInt(val) * 5, 0.02, 'square'); }
 
     function tryJpegFallback(img, fallbackText = 'TAROT') {
       const currentSrc = img.getAttribute('src') || '';
-      if (!img.dataset.triedJpeg && currentSrc.toLowerCase().endsWith('.jpg')) {
-        img.dataset.triedJpeg = 'true';
-        img.src = currentSrc.replace(/\.jpg$/i, '.jpeg');
-        return;
-      }
-      img.onerror = null;
-      img.src = `https://via.placeholder.com/150x210/0A0A0A/FF003C?text=${encodeURIComponent(fallbackText)}`;
+      if (!img.dataset.triedJpeg && currentSrc.toLowerCase().endsWith('.jpg')) { img.dataset.triedJpeg = 'true'; img.src = currentSrc.replace(/\.jpg$/i, '.jpeg'); return; }
+      img.onerror = null; img.src = `https://via.placeholder.com/150x210/0A0A0A/FF003C?text=${encodeURIComponent(fallbackText)}`;
     }
 
-    // --- COVER FLOW WHEEL LOGIC (100% JS PHYSICS REWRITE) ---
-    let wheelIndex = 0; 
-    let wheelCards = [];
-
-    const WHEEL_CARD_SPACING = 65; 
-
-    let wheelDragActive = false;
-    let isSwipingWheel = false;
-    let wheelTouchStartX = 0;
-    let wheelTouchStartY = 0;
-    let wheelDragStartIndex = 0;
-    let wheelVelocityTracker = [];
-    let wheelVelocity = 0; 
-    let wheelRAF = null;
-    let wheelTargetIndex = 0;
-    let isSettling = false;
+    let wheelIndex = 0; let wheelCards = []; const WHEEL_CARD_SPACING = 65; 
+    let wheelDragActive = false; let isSwipingWheel = false; let wheelTouchStartX = 0; let wheelTouchStartY = 0; let wheelDragStartIndex = 0; let wheelVelocityTracker = []; let wheelVelocity = 0; let wheelRAF = null; let wheelTargetIndex = 0; let isSettling = false;
 
     async function goToTarotGame() {
-      playTypewriterDing();
-      AppState.drawnSpread = [];
-      AppState.fullInversion = false;
-      AppState.isHouseReading = false;
-      document.getElementById('tarot-proceed-btn').classList.add('hidden');
-      document.getElementById('draw-count').innerText = "0/3";
-      
-      initTarotWheel();
-      TiltEngine.recalibrate(); // neutral = however they're holding the phone right now
-
-      showScreen('screen-game3');
-      await sleep(300);
-      typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
+      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; AppState.isHouseReading = false;
+      document.getElementById('tarot-proceed-btn').classList.add('hidden'); document.getElementById('draw-count').innerText = "0/3";
+      initTarotWheel(); TiltEngine.recalibrate(); showScreen('screen-game3'); await sleep(300); typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
     }
 
     function initTarotWheel() {
-        const container = document.getElementById('coverflow-container');
-        container.innerHTML = '';
-        wheelCards = [...AppState.tarotDeck].sort(() => 0.5 - Math.random());
-        wheelIndex = Math.floor(wheelCards.length / 2); 
-
+        const container = document.getElementById('coverflow-container'); container.innerHTML = '';
+        wheelCards = [...AppState.tarotDeck].sort(() => 0.5 - Math.random()); wheelIndex = Math.floor(wheelCards.length / 2); 
         wheelCards.forEach((card, i) => {
-            const el = document.createElement('div');
-            el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] tarot-card-container';
-            el.id = `wheel-card-${i}`;
-            
+            const el = document.createElement('div'); el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] tarot-card-container'; el.id = `wheel-card-${i}`;
             el.onclick = () => { if (wheelOffset(i) === 0) drawCenteredCard(); else spinTo(i); };
-
-            el.innerHTML = `
-                <div class="tarot-card w-full h-full shadow-lg">
-                    <div class="tarot-card-back rounded-sm border border-neutral-700 bg-black overflow-hidden">
-                        <img src="assets/card-back.jpeg" class="w-full h-full object-cover" onerror="tryJpegFallback(this, 'TAROT')">
-                    </div>
-                    <div class="tarot-card-front shadow-neon-sm border border-neonRed bg-black overflow-hidden">
-                        <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${card.num}')">
-                        <div class="spread-indicator bg-black pb-1" id="ind-${card.id}"></div>
-                    </div>
-                </div>
-            `;
+            el.innerHTML = `<div class="tarot-card w-full h-full shadow-lg"><div class="tarot-card-back rounded-sm border border-neutral-700 bg-black overflow-hidden"><img src="assets/card-back.jpeg" class="w-full h-full object-cover" onerror="tryJpegFallback(this, 'TAROT')"></div><div class="tarot-card-front shadow-neon-sm border border-neonRed bg-black overflow-hidden"><img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${card.num}')"><div class="spread-indicator bg-black pb-1" id="ind-${card.id}"></div></div></div>`;
             container.appendChild(el);
         });
 
-        container.addEventListener('touchstart', e => {
-            wheelDragActive = true;
-            isSettling = false;
-            isSwipingWheel = false;
-            if (wheelRAF !== null) { cancelAnimationFrame(wheelRAF); wheelRAF = null; }
-            
-            wheelTouchStartX = e.touches[0].clientX;
-            wheelTouchStartY = e.touches[0].clientY;
-            wheelDragStartIndex = wheelIndex;
-            wheelVelocityTracker = [{ x: wheelTouchStartX, t: performance.now() }];
-            wheelVelocity = 0;
-        }, {passive: true});
-
-        container.addEventListener('touchmove', e => {
-            if (!wheelDragActive) return;
-            
-            const currentX = e.touches[0].clientX;
-            const currentY = e.touches[0].clientY;
-            const now = performance.now();
-            
-            if (!isSwipingWheel) {
-                const dx = Math.abs(currentX - wheelTouchStartX);
-                const dy = Math.abs(currentY - wheelTouchStartY);
-                if (dy > dx && dy > 5) {
-                    wheelDragActive = false;
-                    return;
-                }
-                if (dx > 5) isSwipingWheel = true;
-            }
-
-            if (isSwipingWheel) {
-                if (e.cancelable) e.preventDefault();
-                const prevPoint = wheelVelocityTracker[wheelVelocityTracker.length - 1];
-                wheelVelocityTracker.push({ x: currentX, t: now });
-                if (wheelVelocityTracker.length > 5) wheelVelocityTracker.shift();
-
-                const deltaFromStart = currentX - wheelTouchStartX;
-                wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING);
-                updateWheel();
-
-                if (prevPoint) {
-                    const dt = Math.max(1, now - prevPoint.t);
-                    const instVelocity = Math.abs((currentX - prevPoint.x) / dt) * 16 / WHEEL_CARD_SPACING;
-                    AudioEngine.wheelHum.update(instVelocity);
-                }
-            }
-        }, {passive: false});
-
-        container.addEventListener('touchend', e => {
-            if (!wheelDragActive) return;
-            wheelDragActive = false;
-
-            if (isSwipingWheel) {
-                const now = performance.now();
-                const validPoints = wheelVelocityTracker.filter(p => now - p.t < 150);
-                const oldest = validPoints[0] || wheelVelocityTracker[0];
-                
-                const dt = Math.max(1, now - oldest.t);
-                const dx = e.changedTouches[0].clientX - oldest.x;
-                
-                wheelVelocity = -(dx / dt) * 16 / WHEEL_CARD_SPACING; 
-                wheelVelocity = Math.max(-1.5, Math.min(1.5, wheelVelocity));
-            } else {
-                wheelVelocity = 0;
-            }
-            
-            isSettling = false; 
-            if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics);
-        }, {passive: true});
-
+        container.addEventListener('touchstart', e => { wheelDragActive = true; isSettling = false; isSwipingWheel = false; if (wheelRAF !== null) { cancelAnimationFrame(wheelRAF); wheelRAF = null; } wheelTouchStartX = e.touches[0].clientX; wheelTouchStartY = e.touches[0].clientY; wheelDragStartIndex = wheelIndex; wheelVelocityTracker = [{ x: wheelTouchStartX, t: performance.now() }]; wheelVelocity = 0; }, {passive: true});
+        container.addEventListener('touchmove', e => { if (!wheelDragActive) return; const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY; const now = performance.now(); if (!isSwipingWheel) { const dx = Math.abs(currentX - wheelTouchStartX); const dy = Math.abs(currentY - wheelTouchStartY); if (dy > dx && dy > 5) { wheelDragActive = false; return; } if (dx > 5) isSwipingWheel = true; } if (isSwipingWheel) { if (e.cancelable) e.preventDefault(); const prevPoint = wheelVelocityTracker[wheelVelocityTracker.length - 1]; wheelVelocityTracker.push({ x: currentX, t: now }); if (wheelVelocityTracker.length > 5) wheelVelocityTracker.shift(); const deltaFromStart = currentX - wheelTouchStartX; wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING); updateWheel(); if (prevPoint) { const dt = Math.max(1, now - prevPoint.t); const instVelocity = Math.abs((currentX - prevPoint.x) / dt) * 16 / WHEEL_CARD_SPACING; AudioEngine.wheelHum.update(instVelocity); } } }, {passive: false});
+        container.addEventListener('touchend', e => { if (!wheelDragActive) return; wheelDragActive = false; if (isSwipingWheel) { const now = performance.now(); const validPoints = wheelVelocityTracker.filter(p => now - p.t < 150); const oldest = validPoints[0] || wheelVelocityTracker[0]; const dt = Math.max(1, now - oldest.t); const dx = e.changedTouches[0].clientX - oldest.x; wheelVelocity = -(dx / dt) * 16 / WHEEL_CARD_SPACING; wheelVelocity = Math.max(-1.5, Math.min(1.5, wheelVelocity)); } else { wheelVelocity = 0; } isSettling = false; if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); }, {passive: true});
         updateWheel();
     }
 
     function runPhysics() {
-        if (wheelDragActive) {
-            AudioEngine.wheelHum.update(Math.abs(wheelVelocity));
-            wheelRAF = requestAnimationFrame(runPhysics);
-            return;
-        }
-
-        if (!isSettling) {
-            wheelVelocity *= 0.94;
-            wheelIndex += wheelVelocity;
-
-            if (Math.abs(wheelVelocity) < 0.05) {
-                isSettling = true;
-                wheelTargetIndex = Math.round(wheelIndex);
-            }
-        } else {
-            const diff = wheelTargetIndex - wheelIndex;
-            wheelVelocity = diff * 0.15;
-            wheelIndex += wheelVelocity;
-
-            if (Math.abs(diff) < 0.005) {
-                wheelIndex = wheelTargetIndex;
-                wheelVelocity = 0;
-                updateWheel();
-                AudioEngine.wheelHum.silence();
-                wheelRAF = null; 
-                
-                const tone = ((Math.round(wheelIndex) % 12) + 12) % 12;
-                playSynthBeep(320 + tone * 12, 0.02, 'triangle');
-                return; 
-            }
-        }
-
-        AudioEngine.wheelHum.update(Math.abs(wheelVelocity));
-        updateWheel();
-        wheelRAF = requestAnimationFrame(runPhysics);
+        if (wheelDragActive) { AudioEngine.wheelHum.update(Math.abs(wheelVelocity)); wheelRAF = requestAnimationFrame(runPhysics); return; }
+        if (!isSettling) { wheelVelocity *= 0.94; wheelIndex += wheelVelocity; if (Math.abs(wheelVelocity) < 0.05) { isSettling = true; wheelTargetIndex = Math.round(wheelIndex); } } else { const diff = wheelTargetIndex - wheelIndex; wheelVelocity = diff * 0.15; wheelIndex += wheelVelocity; if (Math.abs(diff) < 0.005) { wheelIndex = wheelTargetIndex; wheelVelocity = 0; updateWheel(); AudioEngine.wheelHum.silence(); wheelRAF = null; const tone = ((Math.round(wheelIndex) % 12) + 12) % 12; playSynthBeep(320 + tone * 12, 0.02, 'triangle'); return; } }
+        AudioEngine.wheelHum.update(Math.abs(wheelVelocity)); updateWheel(); wheelRAF = requestAnimationFrame(runPhysics);
     }
-
-    function wheelOffset(i) {
-        const N = wheelCards.length;
-        if (N === 0) return 0;
-        let diff = (i - wheelIndex) % N;
-        if (diff > N / 2) diff -= N;
-        else if (diff < -N / 2) diff += N;
-        return diff;
-    }
-
-    function spinTo(index) {
-        wheelTargetIndex = Math.round(wheelIndex) + Math.round(wheelOffset(index));
-        isSettling = true;
-        AudioEngine.wheelHum.update(0.5);
-        if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics);
-        playSynthBeep(400, 0.02, 'triangle');
-    }
-
-    function spinWheel(dir) {
-        wheelTargetIndex = Math.round(wheelIndex) + dir;
-        isSettling = true;
-        AudioEngine.wheelHum.update(0.5);
-        if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics);
-        const tone = ((Math.abs(wheelTargetIndex) % 12) + 12) % 12;
-        playSynthBeep(320 + tone * 12, 0.02, 'triangle');
-    }
-
+    function wheelOffset(i) { const N = wheelCards.length; if (N === 0) return 0; let diff = (i - wheelIndex) % N; if (diff > N / 2) diff -= N; else if (diff < -N / 2) diff += N; return diff; }
+    function spinTo(index) { wheelTargetIndex = Math.round(wheelIndex) + Math.round(wheelOffset(index)); isSettling = true; AudioEngine.wheelHum.update(0.5); if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); playSynthBeep(400, 0.02, 'triangle'); }
+    function spinWheel(dir) { wheelTargetIndex = Math.round(wheelIndex) + dir; isSettling = true; AudioEngine.wheelHum.update(0.5); if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); const tone = ((Math.abs(wheelTargetIndex) % 12) + 12) % 12; playSynthBeep(320 + tone * 12, 0.02, 'triangle'); }
+    
     function updateWheel() {
-        // TiltEngine feeds a small physical-orientation offset; 0 when unavailable.
-        const tiltX = (window.TiltEngine && TiltEngine.x) || 0; // -1..1 left/right
-        const tiltY = (window.TiltEngine && TiltEngine.y) || 0; // -1..1 fwd/back
-
+        const tiltX = (window.TiltEngine && TiltEngine.x) || 0; const tiltY = (window.TiltEngine && TiltEngine.y) || 0;
         wheelCards.forEach((card, i) => {
-            const el = document.getElementById(`wheel-card-${i}`);
-            const offset = wheelOffset(i);
-            const absOffset = Math.abs(offset);
-
-            let translateX = offset * WHEEL_CARD_SPACING;
-            let scale = Math.max(0.5, 1 - (absOffset * 0.15));
-            let rotateY = Math.abs(offset) < 0.01 ? 0 : (offset > 0 ? -45 : 45);
-            let zIndex = Math.round(50 - absOffset);
-            let opacity = absOffset > 3 ? 0 : 1;
-
-            // Parallax: cards further from center parallax more, so the spread has real depth
-            // when you move the phone. Center card barely moves (it's the focus).
-            const depth = 0.4 + absOffset * 0.5;
-            const tiltShiftX = tiltX * 26 * depth;
-            const tiltRotY = tiltX * 10;
-            const tiltRotX = tiltY * 8;
-
+            const el = document.getElementById(`wheel-card-${i}`); const offset = wheelOffset(i); const absOffset = Math.abs(offset);
+            let translateX = offset * WHEEL_CARD_SPACING; let scale = Math.max(0.5, 1 - (absOffset * 0.15)); let rotateY = Math.abs(offset) < 0.01 ? 0 : (offset > 0 ? -45 : 45); let zIndex = Math.round(50 - absOffset); let opacity = absOffset > 3 ? 0 : 1;
+            const depth = 0.4 + absOffset * 0.5; const tiltShiftX = tiltX * 26 * depth; const tiltRotY = tiltX * 10; const tiltRotX = tiltY * 8;
             el.style.transform = `translateX(calc(-50% + ${translateX + tiltShiftX}px)) scale(${scale}) perspective(1000px) rotateY(${rotateY + tiltRotY}deg) rotateX(${tiltRotX}deg)`;
-            el.style.zIndex = zIndex;
-            el.style.opacity = opacity;
-            el.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
+            el.style.zIndex = zIndex; el.style.opacity = opacity; el.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
         });
     }
 
     async function drawCenteredCard() {
         if (AppState.drawnSpread.length >= 3) return;
-
-        wheelDragActive = false;
-        wheelVelocity = 0;
-        const cleanIndex = Math.round(wheelIndex);
-        wheelTargetIndex = cleanIndex;
-        wheelIndex = cleanIndex;
-        if (wheelRAF) { cancelAnimationFrame(wheelRAF); wheelRAF = null; }
-        updateWheel(); 
-
-        const N = wheelCards.length;
-        const realIndex = ((cleanIndex % N) + N) % N;
-        const card = wheelCards[realIndex];
-        const el = document.getElementById(`wheel-card-${realIndex}`).querySelector('.tarot-card');
-        
+        wheelDragActive = false; wheelVelocity = 0; const cleanIndex = Math.round(wheelIndex); wheelTargetIndex = cleanIndex; wheelIndex = cleanIndex; if (wheelRAF) { cancelAnimationFrame(wheelRAF); wheelRAF = null; } updateWheel(); 
+        const N = wheelCards.length; const realIndex = ((cleanIndex % N) + N) % N; const card = wheelCards[realIndex]; const el = document.getElementById(`wheel-card-${realIndex}`).querySelector('.tarot-card');
         if(el.classList.contains('flipped')) return; 
 
-        const isReversed = Math.random() >= 0.5;
-        AppState.drawnSpread.push({ card, isReversed, position: AppState.drawnSpread.length });
-        
-        const ind = document.getElementById(`ind-${card.id}`);
-        const posName = AppState.drawnSpread.length === 1 ? "PAST" : AppState.drawnSpread.length === 2 ? "PRESENT" : "FUTURE";
+        const isReversed = Math.random() >= 0.5; AppState.drawnSpread.push({ card, isReversed, position: AppState.drawnSpread.length });
+        const ind = document.getElementById(`ind-${card.id}`); const posName = AppState.drawnSpread.length === 1 ? "PAST" : AppState.drawnSpread.length === 2 ? "PRESENT" : "FUTURE";
         ind.innerText = `${posName} ${isReversed ? '(REV)' : ''}`;
-
-        el.classList.add('flipped');
-        if (isReversed) el.classList.add('reversed-card');
-        
-        el.parentElement.style.filter = "brightness(1.2)";
-        AudioEngine.wheelHum.silence();
-        
-        AudioEngine.cardSound(card, isReversed);
-        triggerGlitchEffect(card.glitch);
-        
+        el.classList.add('flipped'); if (isReversed) el.classList.add('reversed-card'); el.parentElement.style.filter = "brightness(1.2)"; AudioEngine.wheelHum.silence();
+        AudioEngine.cardSound(card, isReversed); triggerGlitchEffect(card.glitch);
         document.getElementById('draw-count').innerText = `${AppState.drawnSpread.length}/3`;
         
         const logicObj = isReversed ? card.reversed : card.upright;
@@ -2434,42 +1405,19 @@
         if (AppState.drawnSpread.length === 3) {
             document.querySelectorAll('.tarot-card:not(.flipped)').forEach(c => c.parentElement.style.opacity = '0.2');
             document.getElementById('tarot-proceed-btn').classList.remove('hidden');
-
             AppState.fullInversion = AppState.drawnSpread.every(d => d.isReversed);
-            if (AppState.fullInversion) {
-                triggerGlitchEffect('glitch-vertigo');
-                playArcanaSound('freq-heavy');
-                await sleep(300);
-                await typewriter('tarot-dialogue', "[ FULL INVERSION — every card fell against you. This spread is a rare omen. ]", 20);
-            }
+            if (AppState.fullInversion) { triggerGlitchEffect('glitch-vertigo'); playArcanaSound('freq-heavy'); await sleep(300); await typewriter('tarot-dialogue', "[ FULL INVERSION — every card fell against you. This spread is a rare omen. ]", 20); }
         }
     }
 
-    // --- SPREAD REVIEW LOGIC ---
     async function goToSpreadReview() {
-        playTypewriterDing();
-        
-        const container = document.getElementById('review-cards-container');
-        container.innerHTML = '';
-
-        if (AppState.fullInversion) {
-            container.innerHTML += `
-                <div class="border border-neonRed bg-neonRed/10 p-3 text-center animate-fade-in glitch-text" data-text="FULL INVERSION">
-                    <div class="text-neonRed font-bold text-xs tracking-widest uppercase">⚠ Full Inversion ⚠</div>
-                    <div class="text-[9px] text-neutral-400 mt-1">All three cards fell reversed. A 1-in-8 omen — read the spread with caution.</div>
-                </div>
-            `;
-        }
-
+        playTypewriterDing(); const container = document.getElementById('review-cards-container'); container.innerHTML = '';
+        if (AppState.fullInversion) { container.innerHTML += `<div class="border border-neonRed bg-neonRed/10 p-3 text-center animate-fade-in glitch-text" data-text="FULL INVERSION"><div class="text-neonRed font-bold text-xs tracking-widest uppercase">⚠ Full Inversion ⚠</div><div class="text-[9px] text-neutral-400 mt-1">All three cards fell reversed. A 1-in-8 omen — read the spread with caution.</div></div>`; }
         AppState.drawnSpread.forEach((draw, i) => {
-            const posName = i === 0 ? "PAST" : i === 1 ? "PRESENT" : "FUTURE";
-            const logicObj = draw.isReversed ? draw.card.reversed : draw.card.upright;
-            
+            const posName = i === 0 ? "PAST" : i === 1 ? "PRESENT" : "FUTURE"; const logicObj = draw.isReversed ? draw.card.reversed : draw.card.upright;
             container.innerHTML += `
                 <div class="flex items-center space-x-4 bg-darkGrey p-2 border border-neutral-900 shadow-sm animate-fade-in" style="animation-delay: ${i*0.2}s">
-                    <div class="w-[60px] aspect-[2/3] flex-shrink-0 border border-neutral-700 bg-black overflow-hidden relative">
-                        <img src="${draw.card.image}" class="w-full h-full object-cover ${draw.isReversed ? 'rotate-180' : ''}" onerror="tryJpegFallback(this, '${draw.card.num}')">
-                    </div>
+                    <div class="w-[60px] aspect-[2/3] flex-shrink-0 border border-neutral-700 bg-black overflow-hidden relative"><img src="${draw.card.image}" class="w-full h-full object-cover ${draw.isReversed ? 'rotate-180' : ''}" onerror="tryJpegFallback(this, '${draw.card.num}')"></div>
                     <div class="flex-1 font-mono text-xs text-neutral-300">
                         <div class="text-neonRed font-bold tracking-widest text-[10px] mb-1">[ ${posName} ]</div>
                         <div class="font-bold text-white uppercase leading-tight">${draw.card.name}</div>
@@ -2479,392 +1427,152 @@
                 </div>
             `;
         });
-
-        AudioEngine.wheelHum.silence();
-        // Show the HOUSE badge only for the daily shared reading.
-        const houseBadge = document.getElementById('house-badge');
-        if (houseBadge) houseBadge.classList.toggle('hidden', !AppState.isHouseReading);
-        showScreen('screen-spread-review');
-        await renderPsychicReading();
+        AudioEngine.wheelHum.silence(); const houseBadge = document.getElementById('house-badge'); if (houseBadge) houseBadge.classList.toggle('hidden', !AppState.isHouseReading);
+        showScreen('screen-spread-review'); await renderPsychicReading();
     }
 
     async function renderPsychicReading() {
-      const el = document.getElementById('psychic-reading-text');
-      if (!el) return;
-      el.innerText = 'Consulting the cards...';
-
-      const spreadDetail = AppState.drawnSpread.map((draw, i) => {
-        const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future';
-        return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
-      }).join(', ');
-
+      const el = document.getElementById('psychic-reading-text'); if (!el) return; el.innerText = 'Consulting the cards...';
+      const spreadDetail = AppState.drawnSpread.map((draw, i) => { const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future'; return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`; }).join(', ');
       try {
-        const res = await fetch(WORKER_BASE_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'reading',
-            spread: spreadDetail,
-            fullInversion: AppState.fullInversion
-          })
-        });
-
+        const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'reading', spread: spreadDetail, fullInversion: AppState.fullInversion }) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error('Empty response');
-
-        text = text.trim();
-        if (text.startsWith('```')) text = text.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
-
-        el.classList.add('cursor-blink');
-        await typewriter('psychic-reading-text', text, 16);
-        el.classList.remove('cursor-blink');
-        AppState.lastReadingText = text; // fed into the match call so the film continues the reading's story
-        const sb = document.getElementById('reading-speak-btn');
-        if (sb) sb.innerText = '▶ HEAR';
-
-      } catch (err) {
-        AppState.lastReadingText = null;
-        console.error('Psychic reading failed:', err);
-        el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>';
-      }
+        const data = await res.json(); let text = data?.candidates?.[0]?.content?.parts?.[0]?.text; if (!text) throw new Error('Empty response');
+        text = text.trim(); if (text.startsWith('```')) text = text.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
+        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR';
+      } catch (err) { AppState.lastReadingText = null; el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>'; }
     }
 
-    // --- LOADING MONTAGE ---
     let progressInterval = null;
-
     function startLoadingSequence() {
-      const logs = [
-        "Formatting margins...",
-        "Evaluating structural boundaries...",
-        "Applying 3-Card Spread vector shifts...",
-        "Checking Reversal inversions...",
-        "Establishing secure uplink...",
-        "Cross-referencing the archive...",
-        "Compiling definitive match..."
-      ];
-
-      let step = 0;
-      const term = document.getElementById('loading-terminal');
-      const pct = document.getElementById('loading-pct');
-      pct.innerText = "0%";
-      term.innerText = logs[0];
-      term.classList.remove('cursor-blink');
-
+      const logs = [ "Formatting margins...", "Evaluating structural boundaries...", "Applying 3-Card Spread vector shifts...", "Checking Reversal inversions...", "Establishing secure uplink...", "Cross-referencing the archive...", "Compiling definitive match..." ];
+      let step = 0; const term = document.getElementById('loading-terminal'); const pct = document.getElementById('loading-pct'); pct.innerText = "0%"; term.innerText = logs[0]; term.classList.remove('cursor-blink');
       progressInterval = setInterval(() => {
-        const currentPct = parseInt(pct.innerText);
-        if (currentPct >= 100) return;
-        const next = Math.min(100, currentPct + Math.floor(Math.random() * 6) + 2);
-        pct.innerText = `${next}%`;
-        if (next < 100) {
-          if (Math.random() > 0.6 && step < logs.length - 1) {
-            step++;
-            term.innerText = logs[step];
-            playSynthBeep(700, 0.02, 'square');
-          }
-        } else {
-          term.innerText = "[ DECRYPTING SUBCONSCIOUS TRUTHS... ]";
-          term.classList.add('cursor-blink');
-          playSynthBeep(220, 0.06, 'sine');
-        }
+        const currentPct = parseInt(pct.innerText); if (currentPct >= 100) return; const next = Math.min(100, currentPct + Math.floor(Math.random() * 6) + 2); pct.innerText = `${next}%`;
+        if (next < 100) { if (Math.random() > 0.6 && step < logs.length - 1) { step++; term.innerText = logs[step]; playSynthBeep(700, 0.02, 'square'); } } else { term.innerText = "[ DECRYPTING SUBCONSCIOUS TRUTHS... ]"; term.classList.add('cursor-blink'); playSynthBeep(220, 0.06, 'sine'); }
       }, 180);
     }
-
-    function stopLoadingSequence() {
-      if (progressInterval) clearInterval(progressInterval);
-      progressInterval = null;
-      const term = document.getElementById('loading-terminal');
-      if (term) term.classList.remove('cursor-blink');
-    }
+    function stopLoadingSequence() { if (progressInterval) clearInterval(progressInterval); progressInterval = null; const term = document.getElementById('loading-terminal'); if (term) term.classList.remove('cursor-blink'); }
 
     async function initiateSubconsciousMatching() {
-      showScreen('screen-loading');
-      AudioEngine.heartbeat.start();
-      AudioEngine.muffle(380, 0.6);
-      startLoadingSequence();
-
+      showScreen('screen-loading'); AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.6); startLoadingSequence();
       try {
-        const TAROT_INFLUENCE = 0.3;
-        const MAX_TAROT_SHIFT = 20;
-        const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
-
+        const TAROT_INFLUENCE = 0.3; const MAX_TAROT_SHIFT = 20; const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
         let tw = 0, tt = 0, tr = 0, th = 0;
-        AppState.drawnSpread.forEach(draw => {
-          const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
-          tw += s.w * TAROT_INFLUENCE;
-          tt += s.t * TAROT_INFLUENCE;
-          tr += s.r * TAROT_INFLUENCE;
-          th += s.h * TAROT_INFLUENCE;
-        });
+        AppState.drawnSpread.forEach(draw => { const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift; tw += s.w * TAROT_INFLUENCE; tt += s.t * TAROT_INFLUENCE; tr += s.r * TAROT_INFLUENCE; th += s.h * TAROT_INFLUENCE; });
         tw = clampShift(tw); tt = clampShift(tt); tr = clampShift(tr); th = clampShift(th);
-
-        const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw));
-        const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt));
-        const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr));
-        const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th));
-        const finalObscurity = AppState.sliders.obscurity;
-
-        const spreadSummary = AppState.drawnSpread.map((draw, i) => {
-          const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
-          return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Rev)' : ''}`;
-        }).join(', ');
+        const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw)); const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt)); const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr)); const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th)); const finalObscurity = AppState.sliders.obscurity;
+        const spreadSummary = AppState.drawnSpread.map((draw, i) => { const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future"; return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Rev)' : ''}`; }).join(', ');
 
         const payload = {
-          type: 'match',
-          sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
-          language: AppState.language,
-          era: AppState.era,
-          runtimeMin: AppState.runtimeMin,
-          runtimeMax: AppState.runtimeMax,
-          vibeGenreIds: AppState.vibeGenreIds,
-          seenMovies: AppState.seenMovies,
-          rejectedMovies: AppState.rejectedMovies,
-          spread: spreadSummary,
-          readingText: AppState.lastReadingText,
-          tasteAvoid: AppState.tasteAvoid,
+          type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
+          mediaType: AppState.mediaType, // NEW! Let the worker know to query TV vs Film
+          language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
+          vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
+          spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
           drawnCards: AppState.drawnSpread.map(d => ({ id: d.card.id, reversed: d.isReversed }))
         };
-
-        const res = await fetch(WORKER_BASE_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
+        const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json().catch(() => null);
-        if (!res.ok || !data || data.error || !data.movie) {
-          throw new Error((data && data.error) || `HTTP ${res.status}`);
-        }
-
+        if (!res.ok || !data || data.error || !data.movie) { throw new Error((data && data.error) || `HTTP ${res.status}`); }
         await revealResult(data, finalWarmth, finalTempo, finalReality, finalHumor);
-
-      } catch (err) {
-        stopLoadingSequence();
-        AudioEngine.heartbeat.stop();
-        console.error("Matchmaker Crash: ", err.message);
-        showScreen('screen-error');
-      }
-    }
-
-    function getOneSentencePlot(overview) {
-      if (!overview) return "A cinematic journey unfolds in the dark.";
-      const match = overview.match(/^.*?[.!?](?:\s|$)/);
-      return match ? match[0].trim() : overview.substring(0, 100) + '...';
+      } catch (err) { stopLoadingSequence(); AudioEngine.heartbeat.stop(); console.error("Matchmaker Crash: ", err.message); showScreen('screen-error'); }
     }
 
     async function revealResult(data, w, t, r, h) {
-      stopLoadingSequence();
-      document.getElementById('loading-pct').innerText = "100%";
+      stopLoadingSequence(); document.getElementById('loading-pct').innerText = "100%";
+      const movie = data.movie; AppState.currentMovie = movie; AppState.runnerUps = data.runnerUps || [];
+      const vibes = generateVibeWords(movie, w, t, r, h); const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
 
-      const movie = data.movie;
-      AppState.currentMovie = movie;
-      AppState.runnerUps = data.runnerUps || [];
+      populateFinalReveal(movie, critique, vibes, data.cast || []); // Passes cast down instead of plot
 
-      const vibes = generateVibeWords(movie, w, t, r, h);
-      const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
+      const analysisEl = document.getElementById('custom-analysis'); analysisEl.classList.remove('cursor-blink'); analysisEl.style.whiteSpace = 'pre-wrap';
+      analysisEl.innerHTML = (data.assessment && data.assessment.trim()) ? data.assessment.trim() : '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br><span class="text-neutral-400">The machine has nothing to say. Try REROLL SCENE or come back later.</span>';
 
-      const teaser = (data.teaser && data.teaser.trim()) || getOneSentencePlot(movie.overview);
-      populateFinalReveal(movie, critique, vibes, teaser);
+      const spreadSummary = AppState.drawnSpread.map((draw, i) => { const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future"; return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Rev)' : ''}`; }).join(', ');
+      addJournalEntry({ id: movie.id || null, title: movie.title || movie.name || 'Untitled', year: (movie.release_date || movie.first_air_date || '').split('-')[0], poster: movie.poster_path || null, spread: spreadSummary, date: new Date().toLocaleDateString() });
 
-      const analysisEl = document.getElementById('custom-analysis');
-      analysisEl.classList.remove('cursor-blink');
-      analysisEl.style.whiteSpace = 'pre-wrap';
-      analysisEl.innerHTML = (data.assessment && data.assessment.trim())
-        ? data.assessment.trim()
-        : '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br>' +
-          '<span class="text-neutral-400">The machine has nothing to say. Try REROLL SCENE or come back later.</span>';
-
-      const spreadSummary = AppState.drawnSpread.map((draw, i) => {
-        const pos = i === 0 ? "Past" : i === 1 ? "Present" : "Future";
-        return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Rev)' : ''}`;
-      }).join(', ');
-
-      addJournalEntry({
-        id: movie.id || null,
-        title: movie.title || 'Untitled',
-        year: movie.release_date ? movie.release_date.split('-')[0] : '',
-        poster: movie.poster_path || null,
-        spread: spreadSummary,
-        date: new Date().toLocaleDateString()
-      });
-
-      // The film's tone tags (from Gemini) color the ambient score so every result page
-      // sounds different and on-tone. Empty array = fall back to the pure spread pad.
       AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
-
-      // Straight to the projection: cue mark flashes, letterbox bars frame the picture,
-      // poster reveals. The heartbeat fades as the picture comes up.
-      AudioEngine.heartbeat.stop(0.4);
-      flashCueMark();
-      showLetterbox();
-      showScreenWithFocusReveal('screen-result');
-
-      // Once the poster reveal has settled, bring up the film-tuned ambient score and
-      // retract the letterbox so the full card is usable.
-      setTimeout(() => {
-        AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags);
-        hideLetterbox();
-      }, REVEAL_DURATION * 1000);
+      AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
+      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags, t); hideLetterbox(); }, REVEAL_DURATION * 1000); // Now passing tempo
     }
 
-    // ===================== PHASE 2 VISUAL DRIVERS =====================
-
-    function flashCueMark() {
-      const cue = document.getElementById('cue-mark');
-      if (!cue) return;
-      cue.classList.remove('flash');
-      void cue.offsetWidth; // restart the animation
-      cue.classList.add('flash');
-    }
-
-    function showLetterbox() {
-      const top = document.getElementById('letterbox-top');
-      const bot = document.getElementById('letterbox-bottom');
-      [top, bot].forEach(el => { if (el) { el.classList.remove('out'); el.classList.add('in'); } });
-    }
-
-    function hideLetterbox() {
-      const top = document.getElementById('letterbox-top');
-      const bot = document.getElementById('letterbox-bottom');
-      [top, bot].forEach(el => {
-        if (!el) return;
-        el.classList.remove('in');
-        el.classList.add('out');
-        setTimeout(() => { el.classList.remove('out'); }, 650);
-      });
-    }
-    // =====================================================================
+    function flashCueMark() { const cue = document.getElementById('cue-mark'); if (!cue) return; cue.classList.remove('flash'); void cue.offsetWidth; cue.classList.add('flash'); }
+    function showLetterbox() { const top = document.getElementById('letterbox-top'); const bot = document.getElementById('letterbox-bottom'); [top, bot].forEach(el => { if (el) { el.classList.remove('out'); el.classList.add('in'); } }); }
+    function hideLetterbox() { const top = document.getElementById('letterbox-top'); const bot = document.getElementById('letterbox-bottom'); [top, bot].forEach(el => { if (!el) return; el.classList.remove('in'); el.classList.add('out'); setTimeout(() => { el.classList.remove('out'); }, 650); }); }
 
     const REVEAL_DURATION = 3.4;
-
     function showScreenWithFocusReveal(screenId) {
       showScreen(screenId);
+      const overlay = document.getElementById('poster-reveal-overlay'); const overlayImg = document.getElementById('poster-reveal-img'); const realPoster = document.getElementById('movie-poster');
+      const movie = AppState.currentMovie; const posterUrl = movie && movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : null;
+      AudioEngine.focusSweep(REVEAL_DURATION); playTypewriterDing();
 
-      const overlay = document.getElementById('poster-reveal-overlay');
-      const overlayImg = document.getElementById('poster-reveal-img');
-      const realPoster = document.getElementById('movie-poster');
-      const movie = AppState.currentMovie;
-      const posterUrl = movie && movie.poster_path
-        ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
-        : null;
+      if (!overlay || !overlayImg || !realPoster || !posterUrl) { const el = document.getElementById(screenId); if (el) { el.classList.remove('focus-reveal'); void el.offsetWidth; el.classList.add('focus-reveal'); } return; }
+      realPoster.style.opacity = '1'; const fallbackText = document.getElementById('poster-fallback-text'); if (fallbackText) fallbackText.style.display = 'none';
+      const vw = window.innerWidth; const vh = window.innerHeight;
+      overlayImg.src = posterUrl; overlay.classList.remove('hidden'); overlayImg.style.transition = 'none'; overlayImg.style.objectPosition = 'center center'; overlayImg.style.width = `${vw}px`; overlayImg.style.height = `${vh}px`; overlayImg.style.top = '0px'; overlayImg.style.left = '0px'; overlayImg.style.transform = 'translate(0px, 0px) scale(1, 1)'; overlayImg.style.filter = 'blur(26px) brightness(0.55) saturate(0.35)';
 
-      AudioEngine.focusSweep(REVEAL_DURATION);
-      playTypewriterDing();
-
-      if (!overlay || !overlayImg || !realPoster || !posterUrl) {
-        const el = document.getElementById(screenId);
-        if (el) { el.classList.remove('focus-reveal'); void el.offsetWidth; el.classList.add('focus-reveal'); }
-        return;
-      }
-
-      realPoster.style.opacity = '1';
-      const fallbackText = document.getElementById('poster-fallback-text');
-      if (fallbackText) fallbackText.style.display = 'none';
-
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-
-      overlayImg.src = posterUrl;
-      overlay.classList.remove('hidden');
-      overlayImg.style.transition = 'none';
-      overlayImg.style.objectPosition = 'center center';
-      overlayImg.style.width = `${vw}px`;
-      overlayImg.style.height = `${vh}px`;
-      overlayImg.style.top = '0px';
-      overlayImg.style.left = '0px';
-      overlayImg.style.transform = 'translate(0px, 0px) scale(1, 1)';
-      overlayImg.style.filter = 'blur(26px) brightness(0.55) saturate(0.35)';
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const targetRect = realPoster.getBoundingClientRect();
-          const fullRect = overlayImg.getBoundingClientRect();
-          if (!targetRect.width || !fullRect.width) {
-            overlay.classList.add('hidden');
-            return;
-          }
-          const scaleX = targetRect.width / fullRect.width;
-          const scaleY = targetRect.height / fullRect.height;
-          const translateX = targetRect.left - fullRect.left;
-          const translateY = targetRect.top - fullRect.top;
-
+      requestAnimationFrame(() => { requestAnimationFrame(() => {
+          const targetRect = realPoster.getBoundingClientRect(); const fullRect = overlayImg.getBoundingClientRect();
+          if (!targetRect.width || !fullRect.width) { overlay.classList.add('hidden'); return; }
+          const scaleX = targetRect.width / fullRect.width; const scaleY = targetRect.height / fullRect.height; const translateX = targetRect.left - fullRect.left; const translateY = targetRect.top - fullRect.top;
           overlayImg.style.transition = `transform ${REVEAL_DURATION}s cubic-bezier(0.22, 1, 0.36, 1), filter ${REVEAL_DURATION}s cubic-bezier(0.22, 1, 0.36, 1)`;
-          overlayImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
-          overlayImg.style.filter = 'blur(0) brightness(1) saturate(1)';
-        });
-      });
-
+          overlayImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`; overlayImg.style.filter = 'blur(0) brightness(1) saturate(1)';
+        }); });
       setTimeout(() => { overlay.classList.add('hidden'); }, REVEAL_DURATION * 1000 + 100);
     }
 
-    function addToSeenList(movieId) {
-      if (!movieId) return;
-      if (!AppState.seenMovies.includes(movieId)) {
-        AppState.seenMovies.push(movieId);
-        persistSeenRejected();
-      }
-    }
-
-    function markMovieAsSeen() {
-      if (AppState.currentMovie && AppState.currentMovie.id) {
-        addToSeenList(AppState.currentMovie.id);
-        initiateSubconsciousMatching();
-      }
-    }
-
-    function rerollCurrentSpectrum() {
-      if (AppState.currentMovie && AppState.currentMovie.id) {
-        AppState.rejectedMovies.push(AppState.currentMovie.id);
-        recordRejectionTaste(AppState.currentMovie);
-        persistSeenRejected();
-        initiateSubconsciousMatching();
-      }
-    }
+    function addToSeenList(movieId) { if (!movieId) return; if (!AppState.seenMovies.includes(movieId)) { AppState.seenMovies.push(movieId); persistSeenRejected(); } }
+    function markMovieAsSeen() { if (AppState.currentMovie && AppState.currentMovie.id) { addToSeenList(AppState.currentMovie.id); initiateSubconsciousMatching(); } }
+    function rerollCurrentSpectrum() { if (AppState.currentMovie && AppState.currentMovie.id) { AppState.rejectedMovies.push(AppState.currentMovie.id); recordRejectionTaste(AppState.currentMovie); persistSeenRejected(); initiateSubconsciousMatching(); } }
 
     function dominantWord(name) {
-      const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']);
-      const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
-      const parts = cleaned.split(/\s+/).filter(Boolean);
-      const meaningful = parts.filter(wd => !stop.has(wd));
-      return (meaningful[0] || parts[0] || 'SHADOW');
+      const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']); const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
+      const parts = cleaned.split(/\s+/).filter(Boolean); const meaningful = parts.filter(wd => !stop.has(wd)); return (meaningful[0] || parts[0] || 'SHADOW');
     }
-
     function generateVibeWords(movie, w, t, r, h) {
-      let w1 = "SHADOW";
-      if (AppState.drawnSpread[2]) w1 = dominantWord(AppState.drawnSpread[2].card.name);
-      let w2 = "ATMOSPHERIC";
-      if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name;
-      else if (movie.genres && movie.genres.length > 0 && GENRE_MAP[movie.genres[0].id]) w2 = GENRE_MAP[movie.genres[0].id].name;
+      let w1 = "SHADOW"; if (AppState.drawnSpread[2]) w1 = dominantWord(AppState.drawnSpread[2].card.name);
+      let w2 = "ATMOSPHERIC"; if (movie.genre_ids && movie.genre_ids.length > 0 && GENRE_MAP[movie.genre_ids[0]]) w2 = GENRE_MAP[movie.genre_ids[0]].name; else if (movie.genres && movie.genres.length > 0 && GENRE_MAP[movie.genres[0].id]) w2 = GENRE_MAP[movie.genres[0].id].name;
       let w3 = r > 60 ? "SURREAL" : (h > 60 ? "SATIRICAL" : (w > 60 ? "DREAD" : "INTIMATE"));
       return [w1.replace(/[^A-Z]/g, ''), w2, w3];
     }
 
-    function populateFinalReveal(movie, critique, vibes, plot) {
-      const vtagEl = document.getElementById('vibe-tagline');
-      if (vtagEl) vtagEl.innerText = `"${critique.vibeTagline}"`;
+    function populateFinalReveal(movie, critique, vibes, cast) {
+      const vtagEl = document.getElementById('vibe-tagline'); if (vtagEl) vtagEl.innerText = `"${critique.vibeTagline}"`;
       
       const mtitleEl = document.getElementById('movie-title');
-      if (mtitleEl) mtitleEl.innerText = movie.title || "UNKNOWN";
+      if (mtitleEl) mtitleEl.innerText = movie.title || movie.name || "UNKNOWN";
       
       const myearEl = document.getElementById('movie-year');
-      if (myearEl) myearEl.innerText = movie.release_date ? movie.release_date.split('-')[0] : "----";
+      if (myearEl) {
+          const date = movie.release_date || movie.first_air_date || '';
+          myearEl.innerText = date ? date.split('-')[0] : "----";
+      }
       
       const mdirEl = document.getElementById('movie-director');
-      if (mdirEl) mdirEl.innerText = movie.credits?.crew?.find(c => c.job === 'Director')?.name || "AUTEUR";
+      if (mdirEl) mdirEl.innerText = movie.credits?.crew?.find(c => c.job === 'Director' || c.job === 'Executive Producer')?.name || "AUTEUR";
       
       const mrunEl = document.getElementById('movie-runtime');
-      if (mrunEl) mrunEl.innerText = movie.runtime ? `${movie.runtime} MIN` : '--- MIN';
+      if (mrunEl) {
+          const runtime = movie.runtime || (movie.episode_run_time && movie.episode_run_time[0]);
+          mrunEl.innerText = runtime ? `${runtime} MIN` : '--- MIN';
+      }
 
       const mratingEl = document.getElementById('movie-rating');
       if (mratingEl) mratingEl.innerText = movie.vote_average ? movie.vote_average.toFixed(1) : '--';
 
       const letterboxdLink = document.getElementById('letterboxd-link');
-      if (letterboxdLink && movie.id) letterboxdLink.href = `https://letterboxd.com/tmdb/${movie.id}`;
+      if (letterboxdLink && movie.id) letterboxdLink.href = AppState.mediaType === 'tv' ? `https://www.themoviedb.org/tv/${movie.id}` : `https://letterboxd.com/tmdb/${movie.id}`;
       
-      const mplotEl = document.getElementById('movie-plot');
-      if (mplotEl) mplotEl.innerText = `"${plot}"`;
+      const mcastEl = document.getElementById('movie-cast');
+      if (mcastEl) {
+        if (cast && cast.length > 0) {
+            mcastEl.innerText = `STARRING: ${cast.join(', ')}`;
+        } else {
+            mcastEl.innerText = "NO CAST DATA AVAILABLE";
+        }
+      }
       
       const vibeC = document.getElementById('vibe-words-container');
       if (vibeC) vibeC.innerHTML = vibes.map(v => `<span class="px-2 py-0.5 border border-neonRed text-neonRed text-[9px] uppercase font-bold tracking-widest shadow-neon-sm">${v}</span>`).join('');
@@ -2873,327 +1581,158 @@
       const ambientBg = document.getElementById('ambient-bg');
       const fallbackText = document.getElementById('poster-fallback-text');
       
-      if (posterImg) posterImg.style.opacity = "0";
-      if (fallbackText) fallbackText.style.display = "flex";
+      if (posterImg) posterImg.style.opacity = "0"; if (fallbackText) fallbackText.style.display = "flex";
       
       if (movie.poster_path && posterImg) {
         posterImg.src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
         posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; };
       } else {
-         if(posterImg && AppState.drawnSpread[2]) {
-             posterImg.src = AppState.drawnSpread[2].card.image;
-             posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; };
-         }
+         if(posterImg && AppState.drawnSpread[2]) { posterImg.src = AppState.drawnSpread[2].card.image; posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; }; }
       }
       
-      if (movie.backdrop_path && ambientBg) {
-        ambientBg.style.backgroundImage = `url('https://image.tmdb.org/t/p/original${movie.backdrop_path}')`;
-      } else if (ambientBg) {
-        ambientBg.style.backgroundImage = "none";
-      }
+      if (movie.backdrop_path && ambientBg) { ambientBg.style.backgroundImage = `url('https://image.tmdb.org/t/p/original${movie.backdrop_path}')`; } else if (ambientBg) { ambientBg.style.backgroundImage = "none"; }
 
       const providersContainer = document.getElementById('providers-container');
       if (providersContainer) {
-        providersContainer.innerHTML = "";
-        const usFlatrate = movie["watch/providers"]?.results?.US?.flatrate;
-        if (usFlatrate && usFlatrate.length > 0) {
-          usFlatrate.slice(0, 3).forEach(p => {
-            providersContainer.innerHTML += `<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]">${p.provider_name}</span>`;
-          });
-        } else {
-          providersContainer.innerHTML = `<span class="text-[9px] font-mono text-neutral-600 font-bold uppercase border border-neutral-800 border-dashed px-2 py-1">LOCAL CINEMA / PHYSICAL MEDIA</span>`;
-        }
+        providersContainer.innerHTML = ""; const usFlatrate = movie["watch/providers"]?.results?.US?.flatrate;
+        if (usFlatrate && usFlatrate.length > 0) { usFlatrate.slice(0, 3).forEach(p => { providersContainer.innerHTML += `<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]">${p.provider_name}</span>`; }); } else { providersContainer.innerHTML = `<span class="text-[9px] font-mono text-neutral-600 font-bold uppercase border border-neutral-800 border-dashed px-2 py-1">LOCAL CINEMA / PHYSICAL MEDIA</span>`; }
       }
-
       renderRunnerUps();
     }
 
     function renderRunnerUps() {
-      const container = document.getElementById('runner-ups-container');
-      const list = document.getElementById('runner-ups-list');
+      const container = document.getElementById('runner-ups-container'); const list = document.getElementById('runner-ups-list');
       if (!container || !list) return;
-
-      if (!AppState.runnerUps || AppState.runnerUps.length === 0) {
-        container.classList.add('hidden');
-        return;
-      }
-
+      if (!AppState.runnerUps || AppState.runnerUps.length === 0) { container.classList.add('hidden'); return; }
       container.classList.remove('hidden');
       list.innerHTML = AppState.runnerUps.map(movie => {
-        const posterUrl = movie.poster_path
-          ? `https://image.tmdb.org/t/p/w200${movie.poster_path}`
-          : '';
-        const year = movie.release_date ? movie.release_date.split('-')[0] : '';
+        const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : '';
+        const year = (movie.release_date || movie.first_air_date || '').split('-')[0];
+        const title = movie.title || movie.name || 'Untitled';
         return `
           <div class="flex-1 min-w-0">
             <div class="aspect-[2/3] bg-neutral-900 border border-neutral-800 overflow-hidden mb-1">
               ${posterUrl ? `<img src="${posterUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
             </div>
-            <div class="text-[8px] text-neutral-400 truncate">${movie.title || 'Untitled'}</div>
+            <div class="text-[8px] text-neutral-400 truncate">${title}</div>
             <div class="text-[8px] text-neutral-600">${year}</div>
           </div>
         `;
       }).join('');
     }
 
-    // --- VISUAL SHARE CARD (canvas-rendered) ---
-    function loadImageCrossOrigin(url) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; 
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
-      });
-    }
-
-    async function loadImageWithJpegFallback(url) {
-      try {
-        return await loadImageCrossOrigin(url);
-      } catch (e) {
-        if (/\.jpg$/i.test(url)) {
-          return await loadImageCrossOrigin(url.replace(/\.jpg$/i, '.jpeg'));
-        }
-        if (/\.jpeg$/i.test(url)) {
-          return await loadImageCrossOrigin(url.replace(/\.jpeg$/i, '.jpg'));
-        }
-        throw e;
-      }
-    }
+    function loadImageCrossOrigin(url) { return new Promise((resolve, reject) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => resolve(img); img.onerror = reject; img.src = url; }); }
+    async function loadImageWithJpegFallback(url) { try { return await loadImageCrossOrigin(url); } catch (e) { if (/\.jpg$/i.test(url)) { return await loadImageCrossOrigin(url.replace(/\.jpg$/i, '.jpeg')); } if (/\.jpeg$/i.test(url)) { return await loadImageCrossOrigin(url.replace(/\.jpeg$/i, '.jpg')); } throw e; } }
 
     async function buildReadingCanvasDataUrl() {
       const movie = AppState.currentMovie || {};
-      const W = 1080, H = 1920;
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
+      const W = 1080, H = 1920; const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H; const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0A0A0A'; ctx.fillRect(0, 0, W, H);
+      const grad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, W); grad.addColorStop(0, 'rgba(255,0,60,0.18)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H * 0.6);
 
-      ctx.fillStyle = '#0A0A0A';
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#FF003C'; ctx.font = 'bold 32px Courier New, monospace'; ctx.textAlign = 'center'; ctx.fillText('CINEMA ARCANA', W/2, 100);
+      ctx.fillStyle = '#666'; ctx.font = '20px Courier New, monospace'; ctx.fillText('TAROT FOR MEDIA', W/2, 135);
 
-      const grad = ctx.createRadialGradient(W/2, 0, 0, W/2, 0, W);
-      grad.addColorStop(0, 'rgba(255,0,60,0.18)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H * 0.6);
-
-      ctx.fillStyle = '#FF003C';
-      ctx.font = 'bold 32px Courier New, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('CINEMA ARCANA', W/2, 100);
-      ctx.fillStyle = '#666';
-      ctx.font = '20px Courier New, monospace';
-      ctx.fillText('TAROT FOR MOVIES', W/2, 135);
-
-      const posterW = 460, posterH = 690;
-      const posterX = (W - posterW) / 2;
-      const posterY = 170;
+      const posterW = 460, posterH = 690; const posterX = (W - posterW) / 2; const posterY = 170;
       if (movie.poster_path) {
         try {
           const proxiedUrl = `${WORKER_BASE_URL}?img=${encodeURIComponent('/t/p/w500' + movie.poster_path)}`;
           const posterImg = await loadImageCrossOrigin(proxiedUrl);
-          ctx.save();
-          ctx.shadowColor = 'rgba(255,0,60,0.5)';
-          ctx.shadowBlur = 40;
-          ctx.drawImage(posterImg, posterX, posterY, posterW, posterH);
-          ctx.restore();
-          ctx.strokeStyle = '#FF003C';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(posterX, posterY, posterW, posterH);
-        } catch (e) {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(posterX, posterY, posterW, posterH);
-        }
-      } else {
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(posterX, posterY, posterW, posterH);
-      }
+          ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.5)'; ctx.shadowBlur = 40; ctx.drawImage(posterImg, posterX, posterY, posterW, posterH); ctx.restore();
+          ctx.strokeStyle = '#FF003C'; ctx.lineWidth = 3; ctx.strokeRect(posterX, posterY, posterW, posterH);
+        } catch (e) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(posterX, posterY, posterW, posterH); }
+      } else { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(posterX, posterY, posterW, posterH); }
 
       let cursorY = posterY + posterH + 70;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 44px Georgia, serif';
-      ctx.textAlign = 'center';
-      const title = movie.title || 'UNKNOWN';
+      ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 44px Georgia, serif'; ctx.textAlign = 'center';
+      const title = movie.title || movie.name || 'UNKNOWN';
       ctx.fillText(title.length > 30 ? title.slice(0, 30) + '…' : title, W/2, cursorY);
 
       cursorY += 48;
-      const year = movie.release_date ? movie.release_date.split('-')[0] : '';
-      const dir = movie.credits?.crew?.find(c => c.job === 'Director')?.name || '';
-      ctx.fillStyle = '#FF003C';
-      ctx.font = 'bold 22px Courier New, monospace';
-      ctx.fillText([year, dir].filter(Boolean).join('  •  '), W/2, cursorY);
+      const year = (movie.release_date || movie.first_air_date || '').split('-')[0];
+      const dir = movie.credits?.crew?.find(c => c.job === 'Director' || c.job === 'Executive Producer')?.name || '';
+      ctx.fillStyle = '#FF003C'; ctx.font = 'bold 22px Courier New, monospace'; ctx.fillText([year, dir].filter(Boolean).join('  •  '), W/2, cursorY);
 
-      cursorY += 70;
-      ctx.fillStyle = '#666';
-      ctx.font = '20px Courier New, monospace';
-      ctx.fillText('THE SPREAD', W/2, cursorY);
-
+      cursorY += 70; ctx.fillStyle = '#666'; ctx.font = '20px Courier New, monospace'; ctx.fillText('THE SPREAD', W/2, cursorY);
       cursorY += 40;
-      const cardThumbW = 150, cardThumbH = 225, cardGap = 40;
-      const totalCardsW = (cardThumbW * 3) + (cardGap * 2);
-      let cardX = (W - totalCardsW) / 2;
-      const cardY = cursorY;
+      const cardThumbW = 150, cardThumbH = 225, cardGap = 40; const totalCardsW = (cardThumbW * 3) + (cardGap * 2); let cardX = (W - totalCardsW) / 2; const cardY = cursorY;
 
       for (let i = 0; i < AppState.drawnSpread.length; i++) {
-        const draw = AppState.drawnSpread[i];
-        const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
-
+        const draw = AppState.drawnSpread[i]; const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
         try {
           const cardImg = await loadImageWithJpegFallback(draw.card.image);
           ctx.save();
-          if (draw.isReversed) {
-            ctx.translate(cardX + cardThumbW/2, cardY + cardThumbH/2);
-            ctx.rotate(Math.PI);
-            ctx.drawImage(cardImg, -cardThumbW/2, -cardThumbH/2, cardThumbW, cardThumbH);
-          } else {
-            ctx.drawImage(cardImg, cardX, cardY, cardThumbW, cardThumbH);
-          }
+          if (draw.isReversed) { ctx.translate(cardX + cardThumbW/2, cardY + cardThumbH/2); ctx.rotate(Math.PI); ctx.drawImage(cardImg, -cardThumbW/2, -cardThumbH/2, cardThumbW, cardThumbH); } else { ctx.drawImage(cardImg, cardX, cardY, cardThumbW, cardThumbH); }
           ctx.restore();
-        } catch (e) {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH);
-        }
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
-
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 16px Courier New, monospace';
-        ctx.fillText(pos, cardX + cardThumbW/2, cardY + cardThumbH + 30);
-
+        } catch (e) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH); }
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#FF003C'; ctx.font = 'bold 16px Courier New, monospace'; ctx.fillText(pos, cardX + cardThumbW/2, cardY + cardThumbH + 30);
         cardX += cardThumbW + cardGap;
       }
 
-      cursorY = cardY + cardThumbH + 60;
-      ctx.textAlign = 'left';
+      cursorY = cardY + cardThumbH + 60; ctx.textAlign = 'left';
       AppState.drawnSpread.forEach((draw, i) => {
         const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 20px Courier New, monospace';
-        ctx.fillText(`[${pos}]`, 120, cursorY);
-        ctx.fillStyle = '#ccc';
-        ctx.font = '20px Courier New, monospace';
+        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 20px Courier New, monospace'; ctx.fillText(`[${pos}]`, 120, cursorY);
+        ctx.fillStyle = '#ccc'; ctx.font = '20px Courier New, monospace';
         const cardLabel = `${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`;
-        ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '…' : cardLabel, 270, cursorY);
-        cursorY += 40;
+        ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '…' : cardLabel, 270, cursorY); cursorY += 40;
       });
 
-      if (AppState.fullInversion) {
-        cursorY += 20;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 24px Courier New, monospace';
-        ctx.fillText('⚠ FULL INVERSION — RARE OMEN ⚠', W/2, cursorY);
-        cursorY += 20; 
-      }
+      if (AppState.fullInversion) { cursorY += 20; ctx.textAlign = 'center'; ctx.fillStyle = '#FF003C'; ctx.font = 'bold 24px Courier New, monospace'; ctx.fillText('⚠ FULL INVERSION — RARE OMEN ⚠', W/2, cursorY); cursorY += 20; }
 
-      // --- DIAGNOSTIC PARAMETERS ---
-      cursorY += 60;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#FF003C';
-      ctx.font = 'bold 22px Courier New, monospace';
-      ctx.fillText('DIAGNOSTIC PARAMETERS', W/2, cursorY);
-      
-      cursorY += 40;
-      ctx.fillStyle = '#ccc';
-      ctx.font = '18px Courier New, monospace';
-      
+      cursorY += 60; ctx.textAlign = 'center'; ctx.fillStyle = '#FF003C'; ctx.font = 'bold 22px Courier New, monospace'; ctx.fillText('DIAGNOSTIC PARAMETERS', W/2, cursorY);
+      cursorY += 40; ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
       const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id]?.name).join(' + ') || 'NONE';
-      const runtimeLabel = AppState.runtimeBand === 'custom'
-        ? `≤${AppState.runtimeMax}MIN`
-        : (AppState.runtimeBand || 'any').toUpperCase();
-      const metaText = `GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}`;
+      const runtimeLabel = AppState.runtimeBand === 'custom' ? `≤${AppState.runtimeMax}MIN` : (AppState.runtimeBand || 'any').toUpperCase();
+      const metaText = `GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}  |  FMT: ${AppState.mediaType.toUpperCase()}`;
       ctx.fillText(metaText, W/2, cursorY);
       
       cursorY += 35;
       const s = AppState.sliders;
       const sliderText = `WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`;
       ctx.fillText(sliderText, W/2, cursorY);
-      // --- END DIAGNOSTIC PARAMETERS ---
+      
+      // NEW: Drawing the manual override text on the canvas
+      if (AppState.manualOverrideText) {
+          cursorY += 40;
+          ctx.fillStyle = '#FF003C';
+          ctx.font = 'italic 18px Courier New, monospace';
+          ctx.fillText(`OVERRIDE: "${AppState.manualOverrideText.toUpperCase()}"`, W/2, cursorY);
+      }
 
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#444';
-      ctx.font = '18px Courier New, monospace';
-      ctx.fillText('cinema-arcana · ' + new Date().toLocaleDateString(), W/2, H - 60);
-
+      ctx.textAlign = 'center'; ctx.fillStyle = '#444'; ctx.font = '18px Courier New, monospace'; ctx.fillText('cinema-arcana · ' + new Date().toLocaleDateString(), W/2, H - 60);
       return canvas.toDataURL('image/png');
     }
 
     function showShareOverlayFallback(dataUrl, failed) {
-      const overlay = document.getElementById('share-image-overlay');
-      const loadingEl = document.getElementById('share-image-loading');
-      const outputImg = document.getElementById('share-image-output');
-      const hintEl = document.getElementById('share-image-hint');
-
+      const overlay = document.getElementById('share-image-overlay'); const loadingEl = document.getElementById('share-image-loading'); const outputImg = document.getElementById('share-image-output'); const hintEl = document.getElementById('share-image-hint');
       overlay.classList.remove('hidden');
-
-      if (failed) {
-        loadingEl.classList.remove('hidden');
-        loadingEl.innerText = '[ FAILED TO RENDER — TRY AGAIN ]';
-        outputImg.classList.add('hidden');
-        hintEl.classList.add('hidden');
-        return;
-      }
-
-      outputImg.src = dataUrl;
-      outputImg.onload = () => {
-        loadingEl.classList.add('hidden');
-        outputImg.classList.remove('hidden');
-        hintEl.classList.remove('hidden');
-      };
+      if (failed) { loadingEl.classList.remove('hidden'); loadingEl.innerText = '[ FAILED TO RENDER — TRY AGAIN ]'; outputImg.classList.add('hidden'); hintEl.classList.add('hidden'); return; }
+      outputImg.src = dataUrl; outputImg.onload = () => { loadingEl.classList.add('hidden'); outputImg.classList.remove('hidden'); hintEl.classList.remove('hidden'); };
     }
 
     async function shareReadingImage() {
-      const btn = document.getElementById('share-reading-btn');
-      const originalLabel = btn.innerText;
-      btn.innerText = 'PREPARING...';
-      btn.disabled = true;
-
-      const overlay = document.getElementById('share-image-overlay');
-      const loadingEl = document.getElementById('share-image-loading');
-      overlay.classList.remove('hidden');
-      loadingEl.classList.remove('hidden');
-      loadingEl.innerText = 'Rendering card...';
-      document.getElementById('share-image-output').classList.add('hidden');
-      document.getElementById('share-image-hint').classList.add('hidden');
-
+      const btn = document.getElementById('share-reading-btn'); const originalLabel = btn.innerText; btn.innerText = 'PREPARING...'; btn.disabled = true;
+      const overlay = document.getElementById('share-image-overlay'); const loadingEl = document.getElementById('share-image-loading');
+      overlay.classList.remove('hidden'); loadingEl.classList.remove('hidden'); loadingEl.innerText = 'Rendering card...'; document.getElementById('share-image-output').classList.add('hidden'); document.getElementById('share-image-hint').classList.add('hidden');
       try {
-        const dataUrl = await buildReadingCanvasDataUrl();
-        const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], 'cinema-arcana-reading.png', { type: 'image/png' });
-
+        const dataUrl = await buildReadingCanvasDataUrl(); const blob = await (await fetch(dataUrl)).blob(); const file = new File([blob], 'cinema-arcana-reading.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          overlay.classList.add('hidden'); 
-          playTypewriterDing();
-          await navigator.share({
-            files: [file],
-            title: 'Cinema Arcana',
-            text: 'My tarot-matched film projection.'
-          });
-        } else {
-          showShareOverlayFallback(dataUrl, false);
-        }
-      } catch (err) {
-        if (err.name === 'AbortError') {
-          overlay.classList.add('hidden');
-        } else {
-          showShareOverlayFallback(null, true);
-        }
-      } finally {
-        btn.innerText = originalLabel;
-        btn.disabled = false;
-      }
+          overlay.classList.add('hidden'); playTypewriterDing();
+          await navigator.share({ files: [file], title: 'Cinema Arcana', text: 'My tarot-matched projection.' });
+        } else { showShareOverlayFallback(dataUrl, false); }
+      } catch (err) { if (err.name === 'AbortError') { overlay.classList.add('hidden'); } else { showShareOverlayFallback(null, true); } } finally { btn.innerText = originalLabel; btn.disabled = false; }
     }
 
-    function closeShareImageOverlay() {
-      document.getElementById('share-image-overlay').classList.add('hidden');
-    }
-
+    function closeShareImageOverlay() { document.getElementById('share-image-overlay').classList.add('hidden'); }
     function retryProjection() { initiateSubconsciousMatching(); }
     function recalibrate() { location.reload(); }
     function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   </script>
 </body>
 </html>
+
+
+```
