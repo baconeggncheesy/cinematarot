@@ -243,63 +243,8 @@
     @keyframes letterbox-in-bottom { to { transform: translateY(0); } }
     @keyframes letterbox-out       { to { opacity: 0; } }
 
-    /* ACADEMY COUNTDOWN LEADER — full-screen SMPTE-style leader with a rotating sweep
-       hand and the big number. Drawn mostly in CSS; the sweep + numbers are driven by JS. */
-    #countdown-leader {
-      position: fixed; inset: 0;
-      z-index: 1005;
-      background: #0b0f0b; /* the greenish-grey of aged leader stock */
-      display: none; /* hidden by default; JS adds .showing to reveal it */
-      align-items: center; justify-content: center;
-      pointer-events: none;
-    }
-    #countdown-leader.showing { display: flex; }
-    #countdown-leader .leader-frame {
-      position: relative;
-      width: min(74vw, 74vh);
-      height: min(74vw, 74vh);
-      border-radius: 50%;
-      overflow: hidden;
-      background:
-        repeating-conic-gradient(from 0deg, rgba(255,255,255,0.03) 0deg 6deg, rgba(0,0,0,0.05) 6deg 12deg);
-      box-shadow: inset 0 0 120px rgba(0,0,0,0.8);
-    }
-    /* the crosshair reticle */
-    #countdown-leader .reticle-h,
-    #countdown-leader .reticle-v {
-      position: absolute; background: rgba(220,230,220,0.35);
-    }
-    #countdown-leader .reticle-h { top: 50%; left: 0; right: 0; height: 2px; transform: translateY(-50%); }
-    #countdown-leader .reticle-v { left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); }
-    #countdown-leader .reticle-ring {
-      position: absolute; inset: 14%;
-      border: 2px solid rgba(220,230,220,0.28);
-      border-radius: 50%;
-    }
-    /* the sweeping wiper hand, rotated by JS each frame */
-    #countdown-leader .sweep {
-      position: absolute; top: 0; left: 50%;
-      width: 50%; height: 50%;
-      transform-origin: 0% 100%;
-      transform: rotate(0deg);
-      background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.0) 70%);
-    }
-    #countdown-leader .count-num {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Cinzel', serif; font-weight: 700;
-      font-size: min(34vw, 34vh);
-      color: rgba(230,240,230,0.92);
-      text-shadow: 0 0 30px rgba(0,0,0,0.9);
-    }
-    #countdown-leader .leader-grain {
-      position: absolute; inset: 0; opacity: 0.08; mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n2)'/%3E%3C/svg%3E");
-      animation: grain-shift 0.4s steps(2) infinite;
-    }
-
     @media (prefers-reduced-motion: reduce) {
-      #film-grain, #countdown-leader .leader-grain { animation: none; }
+      #film-grain { animation: none; }
     }
     /* ===================== END PHASE 2 CSS ===================== */
 
@@ -357,6 +302,18 @@
             [ INITIATE DIAGNOSTIC ]
           </button>
         </div>
+
+        <!-- PHASE 4: DAILY HOUSE READING banner. Same spread worldwide each day. -->
+        <button onclick="startHouseReading()" id="house-banner" class="mt-4 w-full border border-neutral-800 bg-darkGrey/60 hover:border-neonRed transition-colors p-3 flex items-center justify-between text-left group">
+          <div>
+            <div class="text-[9px] font-bold tracking-widest text-neonRed uppercase">Today's House Reading</div>
+            <div class="text-[9px] text-neutral-500 mt-0.5" id="house-date"></div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="flex space-x-1" id="house-glyphs"></div>
+            <span class="text-neutral-600 group-hover:text-neonRed transition-colors text-xs">›</span>
+          </div>
+        </button>
       </section>
 
       <!-- SCREEN 1: PARAMETERS -->
@@ -481,7 +438,10 @@
 
       <!-- SCREEN 3.5: SPREAD REVIEW -->
       <section id="screen-spread-review" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh] py-4">
-        <div class="scene-heading text-xs">INT. THE ANALYSIS TABLE - CONTINUOUS</div>
+        <div class="scene-heading text-xs flex justify-between items-center">
+          <span id="spread-review-heading">INT. THE ANALYSIS TABLE - CONTINUOUS</span>
+          <span id="house-badge" class="hidden text-[8px] text-neonRed border border-neonRed px-1.5 py-0.5 rounded-sm tracking-widest">HOUSE</span>
+        </div>
         <div class="action text-xs mb-6">The three drawn cards dictate the exact trajectory of the projection. Read the margins carefully.</div>
         
         <div id="review-cards-container" class="space-y-5 flex-1 overflow-y-auto pr-2 pb-6">
@@ -583,18 +543,6 @@
         <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
       </div>
 
-      <!-- PHASE 2: ACADEMY COUNTDOWN LEADER — shown between loading and the poster reveal. -->
-      <div id="countdown-leader">
-        <div class="leader-frame">
-          <div class="leader-grain"></div>
-          <div class="reticle-ring"></div>
-          <div class="reticle-h"></div>
-          <div class="reticle-v"></div>
-          <div class="sweep" id="leader-sweep"></div>
-          <div class="count-num" id="leader-num">3</div>
-        </div>
-      </div>
-
       <!-- VISUAL SHARE CARD OVERLAY -->
       <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
         <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
@@ -644,7 +592,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.3.0 (SENSES)</div>
+      <div>V 9.4.0 (HOUSE)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -688,6 +636,7 @@
       currentMovie: null,
       runnerUps: [], 
       drawnSpread: [], 
+      isHouseReading: false,
       fullInversion: false, 
       journal: [], 
       sceneCount: 0,
@@ -1028,6 +977,7 @@
       loadPersistedState();
       renderGenreChips();
       document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+      renderHouseBanner();
       typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
     };
 
@@ -1037,6 +987,85 @@
       if (!el) return;
       el.innerHTML = text;
     }
+
+    // ===================== PHASE 4: DAILY HOUSE READING =====================
+    // One shared three-card spread everyone in the world gets on the same UTC calendar day.
+    // Deterministic: a hash of the date string seeds a tiny PRNG that picks 3 distinct cards
+    // and their reversals. No backend — the date IS the seed, so every device computes the
+    // identical spread. Your sliders + seen/rejected history still personalize the FILM, so
+    // it's the same omen but a different movie per person (the Wordle mechanic).
+
+    function _houseDateKey(d = new Date()) {
+      // UTC so "today" is globally consistent regardless of timezone.
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    // xmur3 string hash → seed; mulberry32 → deterministic PRNG. Small, well-known, stable.
+    function _seededRng(str) {
+      let h = 1779033703 ^ str.length;
+      for (let i = 0; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      let a = (h ^= h >>> 16) >>> 0;
+      return function () {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // Returns the deterministic spread for a given date as [{card, isReversed, position}, ...]
+    function computeHouseSpread(dateKey = _houseDateKey()) {
+      const rng = _seededRng('cinema-arcana-house::' + dateKey);
+      const deck = [...AppState.tarotDeck];
+      // Fisher–Yates with the seeded RNG, then take the first three.
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck.slice(0, 3).map((card, i) => ({
+        card,
+        isReversed: rng() >= 0.5,
+        position: i
+      }));
+    }
+
+    function renderHouseBanner() {
+      const dateEl = document.getElementById('house-date');
+      const glyphsEl = document.getElementById('house-glyphs');
+      if (!dateEl || !glyphsEl) return;
+
+      const spread = computeHouseSpread();
+      const today = new Date();
+      dateEl.innerText = today.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase()
+        + ' · SAME CARDS FOR EVERYONE';
+
+      // Show the three card numerals as glyphs (revealed cards, since the House is public).
+      glyphsEl.innerHTML = spread.map(d =>
+        `<span class="w-5 h-7 flex items-center justify-center border border-neutral-700 bg-black text-[8px] font-bold text-neonRed ${d.isReversed ? 'rotate-180' : ''}">${d.card.num}</span>`
+      ).join('');
+    }
+
+    // Entry point: load the House spread as the active draw and jump into the reading flow,
+    // skipping the wheel (the cards are pre-drawn by fate, not by the user).
+    async function startHouseReading() {
+      playTypewriterDing();
+      TiltEngine.enable(); // first gesture — arm parallax for later, harmless here
+
+      AppState.drawnSpread = computeHouseSpread();
+      AppState.fullInversion = AppState.drawnSpread.every(d => d.isReversed);
+      AppState.isHouseReading = true;
+
+      // Play the three card draw-sounds in sequence for a sense of the spread being dealt.
+      AppState.drawnSpread.forEach((d, i) => {
+        setTimeout(() => AudioEngine.cardSound(d.card, d.isReversed), i * 260);
+      });
+
+      await goToSpreadReview();
+    }
+    // ========================================================================
 
     // --- SECURE CLOUDFLARE WORKER TRANSLATOR ---
     async function translateVibe() {
@@ -1691,90 +1720,76 @@
         } catch (e) {}
       },
 
-      // --- PHASE 2: ACADEMY LEADER SOUND ---
-      // A looping projector clatter bed for the duration of the countdown, plus one dry
-      // "beep" per number (the classic 1kHz leader tone) scheduled by the visual sequence.
-      // Returns a stop() handle so the visual driver can cut the clatter on reveal.
-      projectorClatter(durationSec = 4) {
-        if (!AppState.audioEnabled) return { stop() {} };
-        try {
-          this.init();
-          const ctx = this.ctx;
-          const now = ctx.currentTime;
-
-          // Master gain for the whole clatter bed so we can fade it out cleanly.
-          const bed = ctx.createGain();
-          bed.gain.setValueAtTime(0.0001, now);
-          bed.gain.linearRampToValueAtTime(0.9, now + 0.15);
-          bed.connect(this.master);
-
-          // Low mechanical rumble (the motor).
-          const motor = ctx.createOscillator();
-          motor.type = 'sawtooth';
-          motor.frequency.value = 46;
-          const motorFilter = ctx.createBiquadFilter();
-          motorFilter.type = 'lowpass';
-          motorFilter.frequency.value = 220;
-          const motorGain = ctx.createGain();
-          motorGain.gain.value = 0.05;
-          motor.connect(motorFilter); motorFilter.connect(motorGain); motorGain.connect(bed);
-          motor.start(now);
-
-          // The sprocket clatter: ~24 filtered noise ticks per second (film runs at 24fps!),
-          // scheduled as short bandpassed transients with tiny random timing jitter.
-          const fps = 24;
-          const totalTicks = Math.ceil(durationSec * fps);
-          for (let i = 0; i < totalTicks; i++) {
-            const t = now + (i / fps) + (Math.random() - 0.5) * 0.006;
-            const src = ctx.createBufferSource();
-            src.buffer = this.noiseBuffer;
-            const f = ctx.createBiquadFilter();
-            f.type = 'bandpass'; f.frequency.value = 1600 + Math.random() * 900; f.Q.value = 6;
-            const g = ctx.createGain();
-            g.gain.setValueAtTime(0.05 + Math.random() * 0.03, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-            src.connect(f); f.connect(g); g.connect(bed);
-            src.start(t); src.stop(t + 0.04);
-          }
-
-          return {
-            stop: (fadeSec = 0.25) => {
-              const t = ctx.currentTime;
-              bed.gain.cancelScheduledValues(t);
-              bed.gain.setValueAtTime(bed.gain.value, t);
-              bed.gain.linearRampToValueAtTime(0.0001, t + fadeSec);
-              setTimeout(() => { try { motor.stop(); } catch (e) {} }, fadeSec * 1000 + 60);
-            }
-          };
-        } catch (e) { return { stop() {} }; }
-      },
-
-      // The dry 1kHz "beep" that hits on each countdown number.
-      leaderBeep() {
-        if (!AppState.audioEnabled) return;
-        this.tone(1000, 0.09, 'square', 0.12);
-      },
-
-      // --- PHASE 2: AMBIENT SPREAD SCORE ---
-      // A persistent evolving pad built from the THREE drawn cards. Each card contributes
-      // one detuned oscillator voice: its pitch comes from the card's arcana scale position
-      // (same NOIR_SCALE as cardSound, so it's harmonically consistent with the draw sounds),
-      // its brightness from the card's dread stat, and a slow per-voice LFO gives the whole
-      // thing drift so it never sits still. Noticeably present but still ambient.
+      // --- PHASE 2/4: FILM-TUNED AMBIENT SPREAD SCORE ---
+      // A persistent evolving pad built from the THREE drawn cards (pitch from each card's
+      // arcana scale position, brightness from its dread stat, slow LFO drift). On top of
+      // that harmonic foundation, the FILM's tone tags (from Gemini) color the whole thing —
+      // so the same spread scores differently for a warm film vs a menacing one, and every
+      // result page sounds distinct and on-tone. No tags = the pure spread pad.
       spreadScore: {
         playing: false,
-        voices: [], bus: null,
-        start(drawnSpread) {
+        voices: [], bus: null, extras: [],
+
+        // Each tag nudges shared pad parameters and/or adds a texture layer. Values are
+        // deltas/multipliers applied cumulatively, so 3-4 tags blend into one character.
+        _tagProfile(tags) {
+          const p = {
+            filterMul: 1,      // multiplies the base lowpass cutoff (bright vs dark)
+            detuneAdd: 0,      // extra detune spread (thickness/unease)
+            gainMul: 1,        // overall level trim
+            subGain: 0,        // adds a low sub-oscillator (weight)
+            shimmer: 0,        // adds high partial shimmer (air/dreaminess)
+            tick: 0,           // adds a slow rhythmic tick (mechanical)
+            waverHz: 0,        // adds slow pitch waver depth (fragile/feverish)
+          };
+          const bump = {
+            smoky:        { filterMul: 0.7, detuneAdd: 4, gainMul: 1.05 },
+            nocturnal:    { filterMul: 0.65, subGain: 0.05 },
+            warm:         { filterMul: 1.15, gainMul: 1.05 },
+            cold:         { filterMul: 1.3, detuneAdd: 3, gainMul: 0.95 },
+            vast:         { shimmer: 0.06, subGain: 0.04, filterMul: 1.1 },
+            claustrophobic:{ filterMul: 0.55, gainMul: 0.95 },
+            mechanical:   { tick: 1, detuneAdd: 2 },
+            organic:      { filterMul: 1.05, waverHz: 0.4 },
+            aching:       { detuneAdd: 5, waverHz: 0.6, filterMul: 0.85 },
+            serene:       { filterMul: 1.2, gainMul: 0.95 },
+            feverish:     { detuneAdd: 8, waverHz: 1.1, filterMul: 1.15 },
+            hypnotic:     { tick: 0.6, shimmer: 0.03 },
+            playful:      { filterMul: 1.25, shimmer: 0.04, gainMul: 0.95 },
+            menacing:     { filterMul: 0.6, subGain: 0.06, detuneAdd: 4 },
+            fragile:      { waverHz: 0.9, gainMul: 0.9, filterMul: 1.1 },
+            grand:        { subGain: 0.05, shimmer: 0.05, gainMul: 1.05 },
+            gritty:       { detuneAdd: 6, filterMul: 0.9 },
+            dreamy:       { shimmer: 0.07, waverHz: 0.5, filterMul: 1.1 },
+          };
+          (tags || []).forEach(tag => {
+            const b = bump[tag];
+            if (!b) return;
+            if (b.filterMul !== undefined) p.filterMul *= b.filterMul;
+            if (b.detuneAdd) p.detuneAdd += b.detuneAdd;
+            if (b.gainMul !== undefined) p.gainMul *= b.gainMul;
+            if (b.subGain) p.subGain = Math.max(p.subGain, b.subGain);
+            if (b.shimmer) p.shimmer = Math.max(p.shimmer, b.shimmer);
+            if (b.tick) p.tick = Math.max(p.tick, b.tick);
+            if (b.waverHz) p.waverHz = Math.max(p.waverHz, b.waverHz);
+          });
+          return p;
+        },
+
+        start(drawnSpread, toneTags) {
           if (!AppState.audioEnabled || this.playing || !Array.isArray(drawnSpread) || drawnSpread.length === 0) return;
           AudioEngine.init();
           const ctx = AudioEngine.ctx;
           const now = ctx.currentTime;
           this.playing = true;
           this.voices = [];
+          this.extras = [];
+
+          const prof = this._tagProfile(toneTags);
 
           this.bus = ctx.createGain();
           this.bus.gain.setValueAtTime(0.0001, now);
-          this.bus.gain.linearRampToValueAtTime(0.13, now + 2.5); // slow swell in
+          this.bus.gain.linearRampToValueAtTime(0.13 * prof.gainMul, now + 2.5); // slow swell in
           this.bus.connect(AudioEngine.master);
 
           const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10];
@@ -1785,27 +1800,25 @@
             const stats = draw.isReversed ? card.reversed.shift : card.upright.shift;
             const dread = Math.min(1, Math.abs(stats.w) / 50);
 
-            // Root the pad low; each card sits an octave or two down from its draw-sound pitch.
             const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
-            let freq = 55 * Math.pow(2, semis / 12); // one octave below cardSound's 110 base
+            let freq = 55 * Math.pow(2, semis / 12);
             if (draw.isReversed) freq *= 0.667;
 
             const osc = ctx.createOscillator();
-            osc.type = i === 1 ? 'triangle' : 'sine'; // present card gets a touch more body
+            osc.type = i === 1 ? 'triangle' : 'sine';
             osc.frequency.value = freq;
 
-            // Slight detune between the three voices → a living chorus, not a dead chord.
-            osc.detune.value = (i - 1) * 6;
+            // Base detune between voices + tag-driven extra spread.
+            osc.detune.value = (i - 1) * (6 + prof.detuneAdd);
 
             const filter = ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            // Dread darkens the voice; calmer cards stay more open.
-            filter.frequency.value = 300 + (1 - dread) * 1400;
+            // Dread darkens; tags scale the whole cutoff (warm=open, menacing=closed).
+            filter.frequency.value = Math.max(120, Math.min(6000, (300 + (1 - dread) * 1400) * prof.filterMul));
 
             const vGain = ctx.createGain();
             vGain.gain.value = 0.33;
 
-            // Per-voice slow LFO on gain for drift.
             const lfo = ctx.createOscillator();
             lfo.type = 'sine';
             lfo.frequency.value = 0.05 + i * 0.03 + Math.random() * 0.02;
@@ -1813,11 +1826,80 @@
             lfoGain.gain.value = 0.14;
             lfo.connect(lfoGain); lfoGain.connect(vGain.gain);
 
+            // Tag-driven pitch waver (fragile/feverish/aching) — a slow vibrato on the voice.
+            if (prof.waverHz > 0) {
+              const waver = ctx.createOscillator();
+              waver.type = 'sine';
+              waver.frequency.value = prof.waverHz;
+              const waverGain = ctx.createGain();
+              waverGain.gain.value = freq * 0.012;
+              waver.connect(waverGain); waverGain.connect(osc.frequency);
+              waver.start(now);
+              this.extras.push({ osc: waver });
+            }
+
             osc.connect(filter); filter.connect(vGain); vGain.connect(this.bus);
             osc.start(now); lfo.start(now);
             this.voices.push({ osc, lfo });
           });
+
+          // --- Tag-driven texture layers, all routed through the same bus ---
+
+          // SUB: low weight for nocturnal/menacing/grand/vast.
+          if (prof.subGain > 0) {
+            const sub = ctx.createOscillator();
+            sub.type = 'sine';
+            sub.frequency.value = 36;
+            const subGain = ctx.createGain();
+            subGain.gain.setValueAtTime(0.0001, now);
+            subGain.gain.linearRampToValueAtTime(prof.subGain, now + 3);
+            sub.connect(subGain); subGain.connect(this.bus);
+            sub.start(now);
+            this.extras.push({ osc: sub });
+          }
+
+          // SHIMMER: airy high partial for vast/dreamy/grand/playful.
+          if (prof.shimmer > 0) {
+            const shim = ctx.createOscillator();
+            shim.type = 'sine';
+            shim.frequency.value = 1760; // high A, sits above the pad
+            const shimFilter = ctx.createBiquadFilter();
+            shimFilter.type = 'bandpass'; shimFilter.frequency.value = 1760; shimFilter.Q.value = 3;
+            const shimGain = ctx.createGain();
+            shimGain.gain.setValueAtTime(0.0001, now);
+            shimGain.gain.linearRampToValueAtTime(prof.shimmer, now + 3.5);
+            // slow tremolo so it glints
+            const shimLfo = ctx.createOscillator();
+            shimLfo.type = 'sine'; shimLfo.frequency.value = 0.18;
+            const shimLfoGain = ctx.createGain(); shimLfoGain.gain.value = prof.shimmer * 0.7;
+            shimLfo.connect(shimLfoGain); shimLfoGain.connect(shimGain.gain);
+            shim.connect(shimFilter); shimFilter.connect(shimGain); shimGain.connect(this.bus);
+            shim.start(now); shimLfo.start(now);
+            this.extras.push({ osc: shim }, { osc: shimLfo });
+          }
+
+          // TICK: a slow mechanical pulse for mechanical/hypnotic. Scheduled as a repeating
+          // interval of soft filtered noise clicks; tracked so stop() clears it.
+          if (prof.tick > 0) {
+            const period = 1.05; // seconds between ticks — a slow, clocklike pulse
+            const doTick = () => {
+              if (!this.playing) return;
+              const t = ctx.currentTime;
+              const src = ctx.createBufferSource();
+              src.buffer = AudioEngine.noiseBuffer;
+              const f = ctx.createBiquadFilter();
+              f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 8;
+              const g = ctx.createGain();
+              g.gain.setValueAtTime(0.05 * prof.tick, t);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+              src.connect(f); f.connect(g); g.connect(this.bus);
+              src.start(t); src.stop(t + 0.08);
+            };
+            const tickTimer = setInterval(doTick, period * 1000);
+            this.extras.push({ timer: tickTimer });
+          }
         },
+
         stop(fadeSec = 1.5) {
           if (!this.playing || !AudioEngine.ctx) return;
           const ctx = AudioEngine.ctx;
@@ -1826,10 +1908,15 @@
           this.bus.gain.setValueAtTime(this.bus.gain.value, t);
           this.bus.gain.linearRampToValueAtTime(0.0001, t + fadeSec);
           const voices = this.voices;
+          const extras = this.extras;
+          // Clear any tick interval immediately so it stops scheduling new clicks.
+          extras.forEach(e => { if (e.timer) clearInterval(e.timer); });
           setTimeout(() => {
             voices.forEach(v => { try { v.osc.stop(); v.lfo.stop(); } catch (e) {} });
+            extras.forEach(e => { if (e.osc) { try { e.osc.stop(); } catch (er) {} } });
           }, fadeSec * 1000 + 100);
           this.voices = [];
+          this.extras = [];
           this.playing = false;
         }
       }
@@ -2099,6 +2186,7 @@
       playTypewriterDing();
       AppState.drawnSpread = [];
       AppState.fullInversion = false;
+      AppState.isHouseReading = false;
       document.getElementById('tarot-proceed-btn').classList.add('hidden');
       document.getElementById('draw-count').innerText = "0/3";
       
@@ -2393,6 +2481,9 @@
         });
 
         AudioEngine.wheelHum.silence();
+        // Show the HOUSE badge only for the daily shared reading.
+        const houseBadge = document.getElementById('house-badge');
+        if (houseBadge) houseBadge.classList.toggle('hidden', !AppState.isHouseReading);
         showScreen('screen-spread-review');
         await renderPsychicReading();
     }
@@ -2599,86 +2690,26 @@
         date: new Date().toLocaleDateString()
       });
 
-      // The result screen is fully built but still hidden. Roll the Academy leader over
-      // black, THEN cut to the projection. The heartbeat fades as the leader takes over.
-      AudioEngine.heartbeat.stop(0.4);
-      await playCountdownLeader(3);
+      // The film's tone tags (from Gemini) color the ambient score so every result page
+      // sounds different and on-tone. Empty array = fall back to the pure spread pad.
+      AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
 
-      // Cue mark flashes at the changeover, letterbox bars slide in to frame the picture.
+      // Straight to the projection: cue mark flashes, letterbox bars frame the picture,
+      // poster reveals. The heartbeat fades as the picture comes up.
+      AudioEngine.heartbeat.stop(0.4);
       flashCueMark();
       showLetterbox();
       showScreenWithFocusReveal('screen-result');
 
-      // Once the poster reveal has settled, bring up the ambient pad built from this spread
-      // and retract the letterbox so the full card is usable.
+      // Once the poster reveal has settled, bring up the film-tuned ambient score and
+      // retract the letterbox so the full card is usable.
       setTimeout(() => {
-        AudioEngine.spreadScore.start(AppState.drawnSpread);
+        AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags);
         hideLetterbox();
       }, REVEAL_DURATION * 1000);
     }
 
     // ===================== PHASE 2 VISUAL DRIVERS =====================
-
-    // The Academy countdown leader: 3 → 2 → 1, each number held ~0.75s while a wiper hand
-    // sweeps a full rotation and a 1kHz beep fires. Projector clatter runs underneath the
-    // whole thing. Resolves when finished so the caller can proceed to the reveal.
-    function playCountdownLeader(fromNumber = 3) {
-      return new Promise(resolve => {
-        const leader = document.getElementById('countdown-leader');
-        const numEl = document.getElementById('leader-num');
-        const sweep = document.getElementById('leader-sweep');
-        if (!leader || !numEl || !sweep) { resolve(); return; }
-
-        const PER_NUMBER_MS = 750;
-        const totalSec = (fromNumber * PER_NUMBER_MS) / 1000;
-
-        let finished = false;
-        const finish = () => {
-          if (finished) return;
-          finished = true;
-          leader.classList.remove('showing');
-          try { clatter.stop(0.2); } catch (e) {}
-          resolve();
-        };
-        // Hard safety net: no matter what happens with rAF or audio, the leader always
-        // clears and the reveal proceeds. Prevents any possibility of a stuck screen.
-        const failsafe = setTimeout(finish, totalSec * 1000 + 600);
-
-        leader.classList.add('showing');
-        const clatter = AudioEngine.projectorClatter(totalSec + 0.3);
-
-        let current = fromNumber;
-        let startTs = null;
-
-        function frame(ts) {
-          if (finished) return;
-          if (startTs === null) startTs = ts;
-          const elapsed = ts - startTs;
-          const idxFloat = elapsed / PER_NUMBER_MS;
-          const withinNumber = idxFloat - Math.floor(idxFloat);
-          sweep.style.transform = `rotate(${withinNumber * 360}deg)`;
-
-          const shownNumber = fromNumber - Math.floor(idxFloat);
-          if (shownNumber !== current && shownNumber >= 1) {
-            current = shownNumber;
-            numEl.innerText = String(current);
-            AudioEngine.leaderBeep();
-            triggerGlitchEffect('glitch-tear');
-          }
-
-          if (elapsed < totalSec * 1000) {
-            requestAnimationFrame(frame);
-          } else {
-            clearTimeout(failsafe);
-            finish();
-          }
-        }
-
-        numEl.innerText = String(fromNumber);
-        AudioEngine.leaderBeep();
-        requestAnimationFrame(frame);
-      });
-    }
 
     function flashCueMark() {
       const cue = document.getElementById('cue-mark');
