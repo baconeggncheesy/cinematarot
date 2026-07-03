@@ -130,6 +130,7 @@
     .script-btn-primary:hover { box-shadow: inset 0 0 10px 0 rgba(255,0,60,0.4); }
     .script-btn-primary:active { background: #FF003C; color: #000; }
     
+    /* Cover Flow Styles */
     .tarot-card-container { perspective: 1200px; transform-style: preserve-3d; }
     .tarot-card {
       position: relative;
@@ -155,6 +156,7 @@
     .flipped .spread-indicator { opacity: 1; transform: rotateZ(0deg) !important; }
     .flipped.reversed-card .spread-indicator { transform: rotateX(180deg) rotateZ(180deg); bottom: auto; top: -20px; }
 
+    /* CRT Sensory Glitches */
     .glitch-tear { animation: glitch-tear-anim 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
     .glitch-shake { animation: glitch-shake-anim 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
     .glitch-vertigo { animation: glitch-vertigo-anim 0.5s ease-in-out both; }
@@ -267,16 +269,17 @@
     </header>
 
     <main class="flex-1 relative pb-6">
+      <!-- SCREEN 0: INTRO -->
       <section id="screen-intro" class="animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="text-center space-y-4 mb-12">
           <h1 class="font-cinzel text-4xl sm:text-5xl font-bold uppercase tracking-widest text-white border-y border-neutral-800 py-6 my-8">
             Cinema Arcana
           </h1>
-          <p class="text-xs text-neutral-500">Tarot For Media</p>
+          <p class="text-xs text-neutral-500">Tarot For Movies</p>
           <p class="text-[10px] uppercase mt-8 text-neutral-600"><span id="current-date"></span></p>
         </div>
         <div class="action text-xs leading-relaxed text-center px-4">
-          An internet-powered diagnostic scours the entire historic landscape of cinema and television to map your immediate subconscious vibe.<br><br>
+          An internet-powered diagnostic scours the entire historic landscape of cinema to map your immediate subconscious vibe.<br><br>
           Zero setup required. Fully client-contained vector search.
         </div>
         <div class="character text-xs mt-8">THE SYSTEM</div>
@@ -299,22 +302,15 @@
         </button>
       </section>
 
+      <!-- SCREEN 1: PARAMETERS -->
       <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. PRE-FLIGHT CALIBRATION - CONTINUOUS</div>
         <div class="action text-xs">The machine demands structural boundaries before querying the live global database.</div>
         <div class="character text-xs">THE SYSTEM</div>
         <div class="dialogue cursor-blink text-xs" id="param-dialogue"></div>
         <div class="space-y-5 mt-4">
-          <!-- Media Format Toggle -->
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">1. Media Format</div>
-            <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
-              <button onclick="setParameter('mediaType', 'movie')" id="mediaType-movie" class="script-btn active flex justify-between"><span>FILM</span><span class="text-neutral-600">MOVIES</span></button>
-              <button onclick="setParameter('mediaType', 'tv')" id="mediaType-tv" class="script-btn flex justify-between"><span>TELEVISION</span><span class="text-neutral-600">SERIES</span></button>
-            </div>
-          </div>
-          <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">2. Cultural Origin</div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">1. Cultural Origin</div>
             <div class="grid grid-cols-3 gap-1.5 text-[9px] font-bold tracking-wider">
               <button onclick="setParameter('language', 'any')" id="lang-any" class="script-btn active">GLOBAL</button>
               <button onclick="setParameter('language', 'english')" id="lang-english" class="script-btn">ENGLISH</button>
@@ -322,7 +318,7 @@
             </div>
           </div>
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Chronological Epoch</div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">2. Chronological Epoch</div>
             <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
               <button onclick="setParameter('era', 'any')" id="era-any" class="script-btn active flex justify-between"><span>ANY ERA</span><span class="text-neutral-600">ALL</span></button>
               <button onclick="setParameter('era', 'golden')" id="era-golden" class="script-btn flex justify-between"><span>GOLDEN</span><span class="text-neutral-600">&lt;1970</span></button>
@@ -331,11 +327,11 @@
             </div>
           </div>
           <div>
-            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">4. Length / Scope</div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">3. Reel Length</div>
             <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
               <button onclick="setRuntime('any')" id="runtime-any" class="script-btn active flex justify-between"><span>ANY LENGTH</span><span class="text-neutral-600">ALL</span></button>
               <button onclick="setRuntime('short')" id="runtime-short" class="script-btn flex justify-between"><span>SHORT</span><span class="text-neutral-600">&lt;95</span></button>
-              <button onclick="setRuntime('feature')" id="runtime-feature" class="script-btn flex justify-between"><span>STANDARD</span><span class="text-neutral-600">95-135</span></button>
+              <button onclick="setRuntime('feature')" id="runtime-feature" class="script-btn flex justify-between"><span>FEATURE</span><span class="text-neutral-600">95-135</span></button>
               <button onclick="setRuntime('epic')" id="runtime-epic" class="script-btn flex justify-between"><span>EPIC</span><span class="text-neutral-600">135+</span></button>
             </div>
           </div>
@@ -346,6 +342,7 @@
         </div>
       </section>
 
+      <!-- SCREEN 2: SLIDERS & VIBE TRANSLATOR -->
       <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE CORE SPECTRUM - GAME 01</div>
         <div class="action text-xs">Five mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
@@ -378,7 +375,7 @@
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
           <div class="flex space-x-2">
-            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A rainy neon city at 3 AM...">
+            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A horror movie set on Long Island...">
             <button onclick="startVoiceInput()" id="vibe-mic-btn" class="script-btn text-xs px-3 uppercase font-bold text-neutral-400 border-neutral-700 hover:text-white hover:border-white" title="Speak your mood">MIC</button>
             <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
           </div>
@@ -396,6 +393,7 @@
         </div>
       </section>
 
+      <!-- SCREEN 3: CINEMA TAROT (3D COVER FLOW SPREAD) -->
       <section id="screen-game3" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE DIRECTOR'S DESK - GAME 02</div>
         <div class="action text-xs mb-2">The Cinematic Arcana hovers above the terminal. Swipe the wheel. Let intuition guide the draw.</div>
@@ -406,6 +404,7 @@
         <div class="text-[9px] font-bold text-neonRed text-center mb-6 tracking-widest uppercase">Draw 3 Cards: <span id="draw-count">0/3</span></div>
         
         <div class="relative w-full h-[260px] overflow-visible select-none touch-pan-y" id="coverflow-container">
+            <!-- Cards injected here -->
         </div>
         
         <div class="flex justify-between items-center w-full max-w-[250px] mx-auto mt-6">
@@ -421,6 +420,7 @@
         </div>
       </section>
 
+      <!-- SCREEN 3.5: SPREAD REVIEW -->
       <section id="screen-spread-review" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh] py-4">
         <div class="scene-heading text-xs flex justify-between items-center">
           <span id="spread-review-heading">INT. THE ANALYSIS TABLE - CONTINUOUS</span>
@@ -428,8 +428,7 @@
         </div>
         <div class="action text-xs mb-6">The three drawn cards dictate the exact trajectory of the projection. Read the margins carefully.</div>
         
-        <div id="review-cards-container" class="space-y-5 flex-1 overflow-y-auto pr-2 pb-6">
-        </div>
+        <div id="review-cards-container" class="space-y-5 flex-1 overflow-y-auto pr-2 pb-6"></div>
 
         <div class="bg-black border border-neutral-800 p-4 font-mono text-xs leading-relaxed text-neutral-300 relative mb-4">
           <div class="absolute top-2 right-2 font-mono text-[8px] text-neonRed font-bold border border-neonRed px-1 rounded-sm">PSYCHIC READING</div>
@@ -446,11 +445,13 @@
         </div>
       </section>
 
+      <!-- SCREEN 4: LOADING -->
       <section id="screen-loading" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">MONTAGE: SYNTHESIZING PSYCHE</div>
         <div class="action text-xs leading-loose">
           -- The telemetrics lock into place.<br>
           -- The Tarot vectors shift the margins.<br>
+          -- The Euclidean matrices calculate.<br>
           -- The global archives are queried.
         </div>
         <div class="character text-xs">THE SYSTEM</div>
@@ -461,6 +462,7 @@
         </div>
       </section>
 
+      <!-- SCREEN 5: RESULT / PROJECTION -->
       <section id="screen-result" class="hidden flex flex-col space-y-6 relative animate-fade-in font-sans">
         <div id="ambient-bg" class="absolute -inset-x-6 -inset-y-8 bg-cover bg-center opacity-25 filter blur-3xl mix-blend-color-dodge transition-all duration-1000 z-0"></div>
         <div class="relative z-10 space-y-4">
@@ -472,7 +474,7 @@
           
           <div class="bg-darkGrey/95 border border-neutral-800 p-3 shadow-neon-sm relative flex flex-row space-x-4 items-center">
             
-            <a id="letterboxd-link" href="#" target="_blank" rel="noopener noreferrer" class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg block hover:border-neonRed transition-colors cursor-pointer" title="View Details">
+            <a id="letterboxd-link" href="#" target="_blank" rel="noopener noreferrer" class="w-[80px] sm:w-[100px] aspect-[2/3] bg-neutral-900 border border-neutral-800 relative overflow-hidden flex-shrink-0 shadow-lg block hover:border-neonRed transition-colors cursor-pointer" title="View on Letterboxd">
               <img id="movie-poster" src="" alt="Cinema Poster" class="w-full h-full object-cover opacity-0 transition-opacity duration-1000" onerror="this.style.opacity='0'; document.getElementById('poster-fallback-text').style.display='flex';">
               <div id="poster-fallback-text" class="absolute inset-0 hidden items-center justify-center text-center p-2 font-cinzel text-[8px] text-neutral-400 select-none">IMAGE REEL MISSING</div>
             </a>
@@ -485,9 +487,10 @@
                 </div>
               </div>
               <div class="border-l border-neutral-700 pl-2">
-                <!-- RESTORED: One Sentence Plot + Cast below -->
+                <!-- Vague One Sentence Plot -->
                 <p class="text-[11px] text-neutral-400 italic font-sans leading-snug" id="movie-plot">"One sentence plot goes here..."</p>
-                <p class="text-[9px] text-neutral-500 font-sans mt-1 uppercase tracking-wider" id="movie-cast"></p>
+                <!-- Subtle cast listing right beneath to keep it spoiler-free -->
+                <p class="text-[9px] text-neutral-500 font-sans mt-2 uppercase tracking-wider" id="movie-cast"></p>
               </div>
               <div class="pt-1">
                 <div id="providers-container" class="flex flex-wrap gap-1 font-mono"></div>
@@ -520,6 +523,7 @@
         </div>
       </section>
 
+      <!-- VISUAL SHARE CARD OVERLAY -->
       <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black">
         <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
       </div>
@@ -531,6 +535,7 @@
         <button onclick="closeShareImageOverlay()" class="script-btn uppercase text-xs px-6 py-2 mt-6 border border-neutral-600">Close</button>
       </div>
 
+      <!-- SCREEN 6: ERROR -->
       <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="WRITER'S BLOCK">WRITER'S BLOCK</div>
         <div class="action text-center mt-2 text-xs leading-relaxed max-w-xs mx-auto" id="error-message">
@@ -542,6 +547,7 @@
         </div>
       </section>
 
+      <!-- SCREEN 7: JOURNAL -->
       <section id="screen-journal" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
         <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
         <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
@@ -570,7 +576,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.4.0 (HOUSE)</div>
+      <div>V 9.5.0 (HOUSE)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -595,7 +601,6 @@
     const AppState = {
       audioEnabled: true,
       currentScreen: 'intro',
-      mediaType: 'movie', 
       language: 'any',
       era: 'any',
       sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
@@ -604,6 +609,7 @@
       runtimeMin: null,
       runtimeBand: 'any',
       manualOverrideText: null, 
+      suggestedTitles: [], // Holds exact setting matches from Gemini
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
@@ -714,8 +720,7 @@
       10751: { w: 10, t: 40, r: 30, h: 70, name: 'FAMILY' },
       12: { w: 40, t: 85, r: 50, h: 60, name: 'ADVENTURE' },
       37: { w: 60, t: 50, r: 15, h: 30, name: 'WESTERN' },
-      10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' },
-      16: { w: 20, t: 65, r: 80, h: 60, name: 'ANIMATION' }
+      10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' }
     };
 
     const GENRE_NAME_TO_ID = Object.fromEntries(
@@ -936,7 +941,7 @@
       try {
         const response = await fetch(WORKER_BASE_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mood: text, mediaType: AppState.mediaType })
+          body: JSON.stringify({ mood: text })
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -958,6 +963,9 @@
             if (slider) { slider.value = coordinates[axis]; updateSliderVal(axis); }
           }
         });
+        
+        // Pick up explicitly suggested titles if the user requested a very specific location/plot
+        AppState.suggestedTitles = coordinates.suggestedTitles || [];
 
         let detectedGenres = Array.isArray(coordinates.genres) ? coordinates.genres.map(name => GENRE_NAME_TO_ID[String(name).toUpperCase()]).filter(id => id !== undefined) : [];
         AppState.runtimeMax = null; AppState.runtimeMin = null;
@@ -1202,7 +1210,7 @@
           (tags || []).forEach(tag => { const b = bump[tag]; if (!b) return; if (b.filterMul !== undefined) p.filterMul *= b.filterMul; if (b.detuneAdd) p.detuneAdd += b.detuneAdd; if (b.gainMul !== undefined) p.gainMul *= b.gainMul; if (b.subGain) p.subGain = Math.max(p.subGain, b.subGain); if (b.shimmer) p.shimmer = Math.max(p.shimmer, b.shimmer); if (b.tick) p.tick = Math.max(p.tick, b.tick); if (b.waverHz) p.waverHz = Math.max(p.waverHz, b.waverHz); });
           return p;
         },
-        start(drawnSpread, toneTags, finalTempo) {
+        start(drawnSpread, toneTags) {
           if (!AppState.audioEnabled || this.playing || !Array.isArray(drawnSpread) || drawnSpread.length === 0) return;
           AudioEngine.init(); const ctx = AudioEngine.ctx; const now = ctx.currentTime;
           this.playing = true; this.voices = []; this.extras = [];
@@ -1230,28 +1238,6 @@
 
           if (prof.subGain > 0) { const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = 36; const subGain = ctx.createGain(); subGain.gain.setValueAtTime(0.0001, now); subGain.gain.linearRampToValueAtTime(prof.subGain, now + 3); sub.connect(subGain); subGain.connect(this.bus); sub.start(now); this.extras.push({ osc: sub }); }
           if (prof.shimmer > 0) { const shim = ctx.createOscillator(); shim.type = 'sine'; shim.frequency.value = 1760; const shimFilter = ctx.createBiquadFilter(); shimFilter.type = 'bandpass'; shimFilter.frequency.value = 1760; shimFilter.Q.value = 3; const shimGain = ctx.createGain(); shimGain.gain.setValueAtTime(0.0001, now); shimGain.gain.linearRampToValueAtTime(prof.shimmer, now + 3.5); const shimLfo = ctx.createOscillator(); shimLfo.type = 'sine'; shimLfo.frequency.value = 0.18; const shimLfoGain = ctx.createGain(); shimLfoGain.gain.value = prof.shimmer * 0.7; shimLfo.connect(shimLfoGain); shimLfoGain.connect(shimGain.gain); shim.connect(shimFilter); shimFilter.connect(shimGain); shimGain.connect(this.bus); shim.start(now); shimLfo.start(now); this.extras.push({ osc: shim }, { osc: shimLfo }); }
-          
-          if (finalTempo !== undefined) {
-             const isKinetic = finalTempo > 55;
-             const isDreadful = AppState.sliders.warmth > 60;
-             const pulsePeriod = isKinetic ? 0.15 : 0.8; 
-             const volMult = isKinetic ? 0.04 : 0.08;
-
-             const doPulse = () => {
-                if (!this.playing) return;
-                const t = ctx.currentTime;
-                if (isKinetic) {
-                  const f = 220 * (isDreadful ? 1 : 1.5) * (Math.random() > 0.5 ? 1 : 1.25);
-                  AudioEngine._toneBlip(t, { freq: f, type: 'sawtooth', gain: volMult, decay: 0.15 });
-                  AudioEngine._noiseTransient(t, { filterType: 'highpass', freq: 4000, Q: 1, gain: 0.02, decay: 0.05, duration: 0.05 });
-                } else {
-                  AudioEngine._noiseTransient(t, { filterType: 'lowpass', freq: 150, Q: 0.5, gain: volMult, decay: 0.2, duration: 0.3 });
-                }
-             };
-             const pulseTimer = setInterval(doPulse, pulsePeriod * 1000);
-             this.extras.push({ timer: pulseTimer });
-          }
-          
           if (prof.tick > 0) { const period = 1.05; const doTick = () => { if (!this.playing) return; const t = ctx.currentTime; const src = ctx.createBufferSource(); src.buffer = AudioEngine.noiseBuffer; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 8; const g = ctx.createGain(); g.gain.setValueAtTime(0.05 * prof.tick, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.06); src.connect(f); f.connect(g); g.connect(this.bus); src.start(t); src.stop(t + 0.08); }; const tickTimer = setInterval(doTick, period * 1000); this.extras.push({ timer: tickTimer }); }
         },
         stop(fadeSec = 1.5) {
@@ -1315,7 +1301,7 @@
       const target = document.getElementById(screenId); if (target) target.classList.remove('hidden');
     }
 
-    async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateParameterUI('mediaType', AppState.mediaType); updateRuntimeUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
+    async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateRuntimeUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
 
     function setParameter(key, value) { AppState[key] = value; playSynthBeep(400, 0.05, 'square'); updateParameterUI(key, value); }
     
@@ -1324,8 +1310,8 @@
     function setRuntime(band) { const b = RUNTIME_BANDS[band] || RUNTIME_BANDS.any; AppState.runtimeBand = RUNTIME_BANDS[band] ? band : 'any'; AppState.runtimeMin = b.min; AppState.runtimeMax = b.max; playSynthBeep(300, 0.05, 'square'); updateRuntimeUI(); }
 
     function updateParameterUI(key, val) {
-      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'], mediaType: ['movie', 'tv'] };
-      const idPrefixes = { language: 'lang', era: 'era', mediaType: 'mediaType' };
+      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'] };
+      const idPrefixes = { language: 'lang', era: 'era' };
       const prefix = idPrefixes[key] || key;
       if (!ids[key]) return;
       ids[key].forEach(item => { const btn = document.getElementById(`${prefix}-${item}`); if (btn) { if (item === val) btn.classList.add('active'); else btn.classList.remove('active'); } });
@@ -1444,7 +1430,7 @@
 
     let progressInterval = null;
     function startLoadingSequence() {
-      const logs = [ "Formatting margins...", "Evaluating structural boundaries...", "Applying 3-Card Spread vector shifts...", "Checking Reversal inversions...", "Establishing secure uplink...", "Cross-referencing the archive...", "Compiling definitive match..." ];
+      const logs = [ "Formatting margins...", "Evaluating structural boundaries...", "Applying 3-Card Spread vector shifts...", "Calculating Euclidean distances...", "Establishing secure uplink...", "Cross-referencing the archive...", "Compiling definitive match..." ];
       let step = 0; const term = document.getElementById('loading-terminal'); const pct = document.getElementById('loading-pct'); pct.innerText = "0%"; term.innerText = logs[0]; term.classList.remove('cursor-blink');
       progressInterval = setInterval(() => {
         const currentPct = parseInt(pct.innerText); if (currentPct >= 100) return; const next = Math.min(100, currentPct + Math.floor(Math.random() * 6) + 2); pct.innerText = `${next}%`;
@@ -1465,11 +1451,11 @@
 
         const payload = {
           type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
-          mediaType: AppState.mediaType,
           language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
           vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
           spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
-          drawnCards: AppState.drawnSpread.map(d => ({ id: d.card.id, reversed: d.isReversed }))
+          drawnCards: AppState.drawnSpread.map(d => ({ id: d.card.id, reversed: d.isReversed })),
+          suggestedTitles: AppState.suggestedTitles // Pass those exact plot matches if Gemini generated them
         };
         const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json().catch(() => null);
@@ -1478,6 +1464,7 @@
       } catch (err) { stopLoadingSequence(); AudioEngine.heartbeat.stop(); console.error("Matchmaker Crash: ", err.message); showScreen('screen-error'); }
     }
     
+    // RESTORED: Your exact plot shortening logic
     function getOneSentencePlot(overview) {
       if (!overview) return "A cinematic journey unfolds in the dark.";
       const match = overview.match(/^.*?[.!?](?:\s|$)/);
@@ -1491,7 +1478,6 @@
 
       const teaser = (data.teaser && data.teaser.trim()) || getOneSentencePlot(movie.overview);
       
-      // Pass the teaser plot AND the cast array to be rendered
       populateFinalReveal(movie, critique, vibes, teaser, data.cast || []); 
 
       const analysisEl = document.getElementById('custom-analysis'); analysisEl.classList.remove('cursor-blink'); analysisEl.style.whiteSpace = 'pre-wrap';
@@ -1502,7 +1488,7 @@
 
       AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
       AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
-      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags, t); hideLetterbox(); }, REVEAL_DURATION * 1000);
+      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags); hideLetterbox(); }, REVEAL_DURATION * 1000);
     }
 
     function flashCueMark() { const cue = document.getElementById('cue-mark'); if (!cue) return; cue.classList.remove('flash'); void cue.offsetWidth; cue.classList.add('flash'); }
@@ -1546,7 +1532,6 @@
       return [w1.replace(/[^A-Z]/g, ''), w2, w3];
     }
 
-    // Now correctly expects plot as the 4th parameter, and cast as the 5th
     function populateFinalReveal(movie, critique, vibes, plot, cast) {
       const vtagEl = document.getElementById('vibe-tagline'); if (vtagEl) vtagEl.innerText = `"${critique.vibeTagline}"`;
       
@@ -1572,13 +1557,11 @@
       if (mratingEl) mratingEl.innerText = movie.vote_average ? movie.vote_average.toFixed(1) : '--';
 
       const letterboxdLink = document.getElementById('letterboxd-link');
-      if (letterboxdLink && movie.id) letterboxdLink.href = AppState.mediaType === 'tv' ? `https://www.themoviedb.org/tv/${movie.id}` : `https://letterboxd.com/tmdb/${movie.id}`;
+      if (letterboxdLink && movie.id) letterboxdLink.href = `https://letterboxd.com/tmdb/${movie.id}`;
       
-      // Restore Plot
       const mplotEl = document.getElementById('movie-plot');
       if (mplotEl) mplotEl.innerText = `"${plot}"`;
       
-      // Inject Cast separately
       const mcastEl = document.getElementById('movie-cast');
       if (mcastEl) {
         if (cast && cast.length > 0) {
@@ -1646,7 +1629,7 @@
       ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H * 0.6);
 
       ctx.fillStyle = '#FF003C'; ctx.font = 'bold 32px Courier New, monospace'; ctx.textAlign = 'center'; ctx.fillText('CINEMA ARCANA', W/2, 100);
-      ctx.fillStyle = '#666'; ctx.font = '20px Courier New, monospace'; ctx.fillText('TAROT FOR MEDIA', W/2, 135);
+      ctx.fillStyle = '#666'; ctx.font = '20px Courier New, monospace'; ctx.fillText('TAROT FOR MOVIES', W/2, 135);
 
       const posterW = 460, posterH = 690; const posterX = (W - posterW) / 2; const posterY = 170;
       if (movie.poster_path) {
@@ -1700,7 +1683,7 @@
       cursorY += 40; ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
       const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id]?.name).join(' + ') || 'NONE';
       const runtimeLabel = AppState.runtimeBand === 'custom' ? `≤${AppState.runtimeMax}MIN` : (AppState.runtimeBand || 'any').toUpperCase();
-      const metaText = `GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}  |  FMT: ${AppState.mediaType.toUpperCase()}`;
+      const metaText = `GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}`;
       ctx.fillText(metaText, W/2, cursorY);
       
       cursorY += 35;
