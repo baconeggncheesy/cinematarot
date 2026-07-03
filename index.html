@@ -269,7 +269,6 @@
     </header>
 
     <main class="flex-1 relative pb-6">
-      <!-- SCREEN 0: INTRO -->
       <section id="screen-intro" class="animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="text-center space-y-4 mb-12">
           <h1 class="font-cinzel text-4xl sm:text-5xl font-bold uppercase tracking-widest text-white border-y border-neutral-800 py-6 my-8">
@@ -302,7 +301,6 @@
         </button>
       </section>
 
-      <!-- SCREEN 1: PARAMETERS -->
       <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. PRE-FLIGHT CALIBRATION - CONTINUOUS</div>
         <div class="action text-xs">The machine demands structural boundaries before querying the live global database.</div>
@@ -342,7 +340,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 2: SLIDERS & VIBE TRANSLATOR -->
       <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE CORE SPECTRUM - GAME 01</div>
         <div class="action text-xs">Five mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
@@ -375,7 +372,7 @@
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
           <div class="flex space-x-2">
-            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A horror movie set on Long Island...">
+            <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. A paralyzed Vietnam veteran from Long Island...">
             <button onclick="startVoiceInput()" id="vibe-mic-btn" class="script-btn text-xs px-3 uppercase font-bold text-neutral-400 border-neutral-700 hover:text-white hover:border-white" title="Speak your mood">MIC</button>
             <button onclick="translateVibe()" id="vibe-submit-btn" class="script-btn text-xs px-4 uppercase font-bold text-neonRed border-neonRed hover:bg-neonRed hover:text-black">Sync</button>
           </div>
@@ -393,7 +390,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 3: CINEMA TAROT (3D COVER FLOW SPREAD) -->
       <section id="screen-game3" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE DIRECTOR'S DESK - GAME 02</div>
         <div class="action text-xs mb-2">The Cinematic Arcana hovers above the terminal. Swipe the wheel. Let intuition guide the draw.</div>
@@ -404,7 +400,6 @@
         <div class="text-[9px] font-bold text-neonRed text-center mb-6 tracking-widest uppercase">Draw 3 Cards: <span id="draw-count">0/3</span></div>
         
         <div class="relative w-full h-[260px] overflow-visible select-none touch-pan-y" id="coverflow-container">
-            <!-- Cards injected here -->
         </div>
         
         <div class="flex justify-between items-center w-full max-w-[250px] mx-auto mt-6">
@@ -420,7 +415,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 3.5: SPREAD REVIEW -->
       <section id="screen-spread-review" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh] py-4">
         <div class="scene-heading text-xs flex justify-between items-center">
           <span id="spread-review-heading">INT. THE ANALYSIS TABLE - CONTINUOUS</span>
@@ -445,7 +439,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 4: LOADING -->
       <section id="screen-loading" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">MONTAGE: SYNTHESIZING PSYCHE</div>
         <div class="action text-xs leading-loose">
@@ -462,7 +455,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 5: RESULT / PROJECTION -->
       <section id="screen-result" class="hidden flex flex-col space-y-6 relative animate-fade-in font-sans">
         <div id="ambient-bg" class="absolute -inset-x-6 -inset-y-8 bg-cover bg-center opacity-25 filter blur-3xl mix-blend-color-dodge transition-all duration-1000 z-0"></div>
         <div class="relative z-10 space-y-4">
@@ -487,9 +479,7 @@
                 </div>
               </div>
               <div class="border-l border-neutral-700 pl-2">
-                <!-- Vague One Sentence Plot -->
                 <p class="text-[11px] text-neutral-400 italic font-sans leading-snug" id="movie-plot">"One sentence plot goes here..."</p>
-                <!-- Subtle cast listing right beneath to keep it spoiler-free -->
                 <p class="text-[9px] text-neutral-500 font-sans mt-2 uppercase tracking-wider" id="movie-cast"></p>
               </div>
               <div class="pt-1">
@@ -523,7 +513,6 @@
         </div>
       </section>
 
-      <!-- VISUAL SHARE CARD OVERLAY -->
       <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black">
         <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
       </div>
@@ -535,7 +524,6 @@
         <button onclick="closeShareImageOverlay()" class="script-btn uppercase text-xs px-6 py-2 mt-6 border border-neutral-600">Close</button>
       </div>
 
-      <!-- SCREEN 6: ERROR -->
       <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="WRITER'S BLOCK">WRITER'S BLOCK</div>
         <div class="action text-center mt-2 text-xs leading-relaxed max-w-xs mx-auto" id="error-message">
@@ -547,7 +535,6 @@
         </div>
       </section>
 
-      <!-- SCREEN 7: JOURNAL -->
       <section id="screen-journal" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
         <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
         <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
@@ -576,7 +563,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.5.0 (HOUSE)</div>
+      <div>V 9.6.0 (HOUSE)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -609,7 +596,7 @@
       runtimeMin: null,
       runtimeBand: 'any',
       manualOverrideText: null, 
-      suggestedTitles: [], // Holds exact setting matches from Gemini
+      suggestedTitles: [], 
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
@@ -964,7 +951,6 @@
           }
         });
         
-        // Pick up explicitly suggested titles if the user requested a very specific location/plot
         AppState.suggestedTitles = coordinates.suggestedTitles || [];
 
         let detectedGenres = Array.isArray(coordinates.genres) ? coordinates.genres.map(name => GENRE_NAME_TO_ID[String(name).toUpperCase()]).filter(id => id !== undefined) : [];
@@ -1420,7 +1406,12 @@
       const el = document.getElementById('psychic-reading-text'); if (!el) return; el.innerText = 'Consulting the cards...';
       const spreadDetail = AppState.drawnSpread.map((draw, i) => { const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future'; return `${pos}: ${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`; }).join(', ');
       try {
-        const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'reading', spread: spreadDetail, fullInversion: AppState.fullInversion }) });
+        const res = await fetch(WORKER_BASE_URL, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          // Injecting the manual override text for personalization
+          body: JSON.stringify({ type: 'reading', spread: spreadDetail, fullInversion: AppState.fullInversion, manualOverride: AppState.manualOverrideText }) 
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json(); let text = data?.candidates?.[0]?.content?.parts?.[0]?.text; if (!text) throw new Error('Empty response');
         text = text.trim(); if (text.startsWith('```')) text = text.replace(/^```[a-z]*\n?/, '').replace(/```$/, '').trim();
@@ -1455,7 +1446,8 @@
           vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
           spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
           drawnCards: AppState.drawnSpread.map(d => ({ id: d.card.id, reversed: d.isReversed })),
-          suggestedTitles: AppState.suggestedTitles // Pass those exact plot matches if Gemini generated them
+          suggestedTitles: AppState.suggestedTitles, 
+          manualOverride: AppState.manualOverrideText // Injecting override text to personalize the final assessment
         };
         const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json().catch(() => null);
@@ -1464,7 +1456,7 @@
       } catch (err) { stopLoadingSequence(); AudioEngine.heartbeat.stop(); console.error("Matchmaker Crash: ", err.message); showScreen('screen-error'); }
     }
     
-    // RESTORED: Your exact plot shortening logic
+    // RESTORED: Spoiler-Free Plot
     function getOneSentencePlot(overview) {
       if (!overview) return "A cinematic journey unfolds in the dark.";
       const match = overview.match(/^.*?[.!?](?:\s|$)/);
