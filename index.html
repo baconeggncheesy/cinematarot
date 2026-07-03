@@ -1941,6 +1941,256 @@ buildReadingCanvasDataUrl = async function() {
 
   return canvas.toDataURL('image/png');
 };
+// SHARE CARD TEXT FIX — paste above </script>
+async function buildReadingCanvasDataUrl() {
+  const movie = AppState.currentMovie || {};
+  const W = 1080;
+  const H = 1920;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+
+  const ctx = canvas.getContext('2d');
+
+  function cleanCanvasText(value) {
+    return String(value || '')
+      .replace(/[•·]/g, '-')
+      .replace(/[—–]/g, '-')
+      .replace(/[⚠]/g, '!')
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/[^\x20-\x7E]/g, '');
+  }
+
+  function safePosterProxyUrl() {
+    const raw =
+      AppState.currentPosterUrl ||
+      movie.sharePosterUrl ||
+      movie.posterUrl ||
+      movie.poster_url ||
+      movie.poster ||
+      movie.imageUrl ||
+      movie.poster_path ||
+      null;
+
+    if (!raw) return null;
+
+    const value = String(raw).trim();
+
+    if (value.startsWith('https://image.tmdb.org')) {
+      try {
+        const parsed = new URL(value);
+        return `${WORKER_BASE_URL}?img=${encodeURIComponent(parsed.pathname)}`;
+      } catch (e) {
+        return `${WORKER_BASE_URL}?img=${encodeURIComponent(value)}`;
+      }
+    }
+
+    if (/^https?:\/\//i.test(value)) {
+      return `${WORKER_BASE_URL}?img=${encodeURIComponent(value)}`;
+    }
+
+    if (value.startsWith('/t/p/')) {
+      return `${WORKER_BASE_URL}?img=${encodeURIComponent(value)}`;
+    }
+
+    if (value.startsWith('/')) {
+      return `${WORKER_BASE_URL}?img=${encodeURIComponent('/t/p/w500' + value)}`;
+    }
+
+    return `${WORKER_BASE_URL}?img=${encodeURIComponent('/t/p/w500/' + value)}`;
+  }
+
+  ctx.fillStyle = '#0A0A0A';
+  ctx.fillRect(0, 0, W, H);
+
+  const grad = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W);
+  grad.addColorStop(0, 'rgba(255,0,60,0.18)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H * 0.6);
+
+  ctx.fillStyle = '#FF003C';
+  ctx.font = 'bold 32px Courier New, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('CINEMA ARCANA', W / 2, 100);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '20px Courier New, monospace';
+  ctx.fillText('TAROT FOR MOVIES', W / 2, 135);
+
+  const posterW = 460;
+  const posterH = 690;
+  const posterX = (W - posterW) / 2;
+  const posterY = 170;
+
+  const posterUrl = safePosterProxyUrl();
+
+  if (posterUrl) {
+    try {
+      const posterImg = await loadImageCrossOrigin(posterUrl);
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,0,60,0.5)';
+      ctx.shadowBlur = 40;
+      ctx.drawImage(posterImg, posterX, posterY, posterW, posterH);
+      ctx.restore();
+
+      ctx.strokeStyle = '#FF003C';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(posterX, posterY, posterW, posterH);
+    } catch (e) {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(posterX, posterY, posterW, posterH);
+    }
+  } else {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(posterX, posterY, posterW, posterH);
+  }
+
+  let cursorY = posterY + posterH + 70;
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 44px Georgia, serif';
+  ctx.textAlign = 'center';
+
+  const title = cleanCanvasText(movie.title || movie.name || 'UNKNOWN');
+  ctx.fillText(title.length > 30 ? title.slice(0, 30) + '...' : title, W / 2, cursorY);
+
+  cursorY += 48;
+
+  const year = cleanCanvasText((movie.release_date || movie.first_air_date || '').split('-')[0]);
+  const dir = cleanCanvasText(
+    movie.credits?.crew?.find(c => c.job === 'Director' || c.job === 'Executive Producer')?.name || ''
+  );
+
+  ctx.fillStyle = '#FF003C';
+  ctx.font = 'bold 22px Courier New, monospace';
+  ctx.fillText([year, dir].filter(Boolean).join('  -  '), W / 2, cursorY);
+
+  cursorY += 70;
+
+  ctx.fillStyle = '#666';
+  ctx.font = '20px Courier New, monospace';
+  ctx.fillText('THE SPREAD', W / 2, cursorY);
+
+  cursorY += 40;
+
+  const cardThumbW = 150;
+  const cardThumbH = 225;
+  const cardGap = 40;
+  const totalCardsW = cardThumbW * 3 + cardGap * 2;
+  let cardX = (W - totalCardsW) / 2;
+  const cardY = cursorY;
+
+  for (let i = 0; i < AppState.drawnSpread.length; i++) {
+    const draw = AppState.drawnSpread[i];
+    const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
+
+    try {
+      const cardImg = await loadImageWithJpegFallback(draw.card.image);
+
+      ctx.save();
+
+      if (draw.isReversed) {
+        ctx.translate(cardX + cardThumbW / 2, cardY + cardThumbH / 2);
+        ctx.rotate(Math.PI);
+        ctx.drawImage(cardImg, -cardThumbW / 2, -cardThumbH / 2, cardThumbW, cardThumbH);
+      } else {
+        ctx.drawImage(cardImg, cardX, cardY, cardThumbW, cardThumbH);
+      }
+
+      ctx.restore();
+    } catch (e) {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH);
+    }
+
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FF003C';
+    ctx.font = 'bold 16px Courier New, monospace';
+    ctx.fillText(pos, cardX + cardThumbW / 2, cardY + cardThumbH + 30);
+
+    cardX += cardThumbW + cardGap;
+  }
+
+  cursorY = cardY + cardThumbH + 60;
+  ctx.textAlign = 'left';
+
+  AppState.drawnSpread.forEach((draw, i) => {
+    const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
+
+    ctx.fillStyle = '#FF003C';
+    ctx.font = 'bold 20px Courier New, monospace';
+    ctx.fillText(`[${pos}]`, 120, cursorY);
+
+    ctx.fillStyle = '#ccc';
+    ctx.font = '20px Courier New, monospace';
+
+    const cardLabel = cleanCanvasText(`${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`);
+    ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '...' : cardLabel, 270, cursorY);
+
+    cursorY += 40;
+  });
+
+  if (AppState.fullInversion) {
+    cursorY += 20;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FF003C';
+    ctx.font = 'bold 24px Courier New, monospace';
+    ctx.fillText('[ FULL INVERSION - RARE OMEN ]', W / 2, cursorY);
+    cursorY += 20;
+  }
+
+  cursorY += 60;
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FF003C';
+  ctx.font = 'bold 22px Courier New, monospace';
+  ctx.fillText('DIAGNOSTIC PARAMETERS', W / 2, cursorY);
+
+  cursorY += 40;
+
+  ctx.fillStyle = '#ccc';
+  ctx.font = '18px Courier New, monospace';
+
+  const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id]?.name).filter(Boolean).join(' + ') || 'NONE';
+  const runtimeLabel = AppState.runtimeBand === 'custom'
+    ? `<=${AppState.runtimeMax}MIN`
+    : (AppState.runtimeBand || 'any').toUpperCase();
+
+  const metaText = cleanCanvasText(`GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}`);
+  ctx.fillText(metaText, W / 2, cursorY);
+
+  cursorY += 35;
+
+  const s = AppState.sliders;
+  const sliderText = cleanCanvasText(
+    `WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`
+  );
+  ctx.fillText(sliderText, W / 2, cursorY);
+
+  if (AppState.manualOverrideText) {
+    cursorY += 40;
+    ctx.fillStyle = '#FF003C';
+    ctx.font = 'italic 18px Courier New, monospace';
+
+    const overrideText = cleanCanvasText(`OVERRIDE: "${AppState.manualOverrideText.toUpperCase()}"`);
+    ctx.fillText(overrideText.length > 90 ? overrideText.slice(0, 90) + '...' : overrideText, W / 2, cursorY);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#444';
+  ctx.font = '18px Courier New, monospace';
+  ctx.fillText('cinema-arcana - ' + new Date().toLocaleDateString(), W / 2, H - 60);
+
+  return canvas.toDataURL('image/png');
+}
   </script>
 </body>
 </html>
