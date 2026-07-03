@@ -249,9 +249,11 @@
       position: fixed; inset: 0;
       z-index: 1005;
       background: #0b0f0b; /* the greenish-grey of aged leader stock */
-      display: flex; align-items: center; justify-content: center;
+      display: none; /* hidden by default; JS adds .showing to reveal it */
+      align-items: center; justify-content: center;
       pointer-events: none;
     }
+    #countdown-leader.showing { display: flex; }
     #countdown-leader .leader-frame {
       position: relative;
       width: min(74vw, 74vh);
@@ -578,7 +580,7 @@
       </div>
 
       <!-- PHASE 2: ACADEMY COUNTDOWN LEADER — shown between loading and the poster reveal. -->
-      <div id="countdown-leader" class="hidden">
+      <div id="countdown-leader">
         <div class="leader-frame">
           <div class="leader-grain"></div>
           <div class="reticle-ring"></div>
@@ -2405,17 +2407,30 @@
         const PER_NUMBER_MS = 750;
         const totalSec = (fromNumber * PER_NUMBER_MS) / 1000;
 
-        leader.classList.remove('hidden');
+        let finished = false;
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          leader.classList.remove('showing');
+          try { clatter.stop(0.2); } catch (e) {}
+          resolve();
+        };
+        // Hard safety net: no matter what happens with rAF or audio, the leader always
+        // clears and the reveal proceeds. Prevents any possibility of a stuck screen.
+        const failsafe = setTimeout(finish, totalSec * 1000 + 600);
+
+        leader.classList.add('showing');
         const clatter = AudioEngine.projectorClatter(totalSec + 0.3);
 
         let current = fromNumber;
         let startTs = null;
 
         function frame(ts) {
+          if (finished) return;
           if (startTs === null) startTs = ts;
           const elapsed = ts - startTs;
-          const idxFloat = elapsed / PER_NUMBER_MS;      // 0..fromNumber
-          const withinNumber = idxFloat - Math.floor(idxFloat); // 0..1 sweep progress
+          const idxFloat = elapsed / PER_NUMBER_MS;
+          const withinNumber = idxFloat - Math.floor(idxFloat);
           sweep.style.transform = `rotate(${withinNumber * 360}deg)`;
 
           const shownNumber = fromNumber - Math.floor(idxFloat);
@@ -2429,13 +2444,11 @@
           if (elapsed < totalSec * 1000) {
             requestAnimationFrame(frame);
           } else {
-            leader.classList.add('hidden');
-            clatter.stop(0.2);
-            resolve();
+            clearTimeout(failsafe);
+            finish();
           }
         }
 
-        // First beep on the opening number.
         numEl.innerText = String(fromNumber);
         AudioEngine.leaderBeep();
         requestAnimationFrame(frame);
