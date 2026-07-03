@@ -64,7 +64,12 @@
     .tarot-card.flipped.reversed-card { transform: rotateY(180deg) rotateZ(180deg); }
     .tarot-card-front, .tarot-card-back { position: absolute; backface-visibility: hidden; inset: 0; width: 100%; height: 100%; background: #0A0A0A; border: 1px solid #333; overflow: hidden; }
     .tarot-card-front { transform: rotateY(180deg); }
-    .tarot-card-back { background: radial-gradient(circle at center, rgba(255,0,60,0.25), #050505 60%); display: flex; align-items: center; justify-content: center; }
+    .tarot-card-back { background: #050505; display: flex; align-items: center; justify-content: center; }
+    .card-back-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(255,0,60,0.28), #050505 62%); overflow: hidden; }
+    .card-back-fallback::before { content: ""; position: absolute; inset: 10px; border: 1px solid rgba(255,0,60,0.75); box-shadow: inset 0 0 18px rgba(255,0,60,0.18); }
+    .card-back-fallback::after { content: "CINEMA ARCANA"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-90deg); font-family: Cinzel, serif; font-size: 10px; letter-spacing: 0.25em; color: rgba(255,255,255,0.42); white-space: nowrap; }
+    .card-back-sigil { position: relative; z-index: 1; font-family: Cinzel, serif; color: #FF003C; font-size: 38px; text-shadow: 0 0 14px rgba(255,0,60,0.55); }
+    .card-back-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
     .spread-indicator { position: absolute; bottom: -20px; left: 0; width: 100%; text-align: center; font-size: 8px; color: #FF003C; font-weight: bold; opacity: 0; transition: opacity 0.5s; }
     .flipped .spread-indicator { opacity: 1; }
     .glitch-tear { animation: glitch-tear-anim 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both; }
@@ -307,6 +312,37 @@
     };
 
     const GENRE_NAME_TO_ID = Object.fromEntries(Object.entries(GENRE_MAP).map(function(pair) { return [pair[1].name, parseInt(pair[0], 10)]; }));
+
+    const CARD_BACK_CANDIDATES = [
+      "assets/card-back.jpeg",
+      "assets/card-back.jpg",
+      "assets/back.jpeg",
+      "assets/back.jpg",
+      "assets/deck-back.jpeg",
+      "assets/deck-back.jpg",
+      "assets/back-of-deck.jpeg",
+      "assets/back-of-deck.jpg",
+      "assets/tarot-back.jpeg",
+      "assets/tarot-back.jpg",
+      "assets/cinema-arcana-back.jpeg",
+      "assets/cinema-arcana-back.jpg"
+    ];
+
+    function cardBackMarkup() {
+      return "" +
+        '<div class="card-back-fallback"><div class="card-back-sigil">✦</div></div>' +
+        '<img class="card-back-img" data-card-back-index="0" src="' + CARD_BACK_CANDIDATES[0] + '" onerror="cycleCardBackImage(this)" alt="Cinema Arcana card back">';
+    }
+
+    function cycleCardBackImage(img) {
+      const nextIndex = parseInt(img.getAttribute("data-card-back-index") || "0", 10) + 1;
+      if (nextIndex < CARD_BACK_CANDIDATES.length) {
+        img.setAttribute("data-card-back-index", String(nextIndex));
+        img.src = CARD_BACK_CANDIDATES[nextIndex];
+      } else {
+        img.style.display = "none";
+      }
+    }
 
     const STORAGE_KEYS = {
       seen: "cinema_arcana_seen",
@@ -623,6 +659,7 @@
       AppState.drawnSpread = [];
       wheelIndex = 0;
       updateDrawCount();
+      initCoverFlowControls();
       renderCoverFlow();
       showScreen("screen-game3");
       typewriter("tarot-dialogue", "Choose three cards. Do not over-explain the impulse.");
@@ -637,31 +674,42 @@
     function renderCoverFlow() {
       const container = document.getElementById("coverflow-container");
       if (!container) return;
+
       const deck = AppState.tarotDeck;
       const pieces = [];
-      for (let offset = -3; offset <= 3; offset++) {
+
+      for (let offset = -4; offset <= 4; offset++) {
         const idx = mod(wheelIndex + offset, deck.length);
         const card = deck[idx];
         const drawn = AppState.drawnSpread.find(function(draw) { return draw.card.id === card.id; });
         const isCenter = offset === 0;
         const abs = Math.abs(offset);
-        const x = offset * 70;
-        const scale = isCenter ? 1 : 0.82 - abs * 0.05;
-        const rotate = offset * -18;
-        const z = 20 - abs * 20;
-        const opacity = isCenter ? 1 : 0.65 - abs * 0.12;
+
+        const x = offset * 66;
+        const y = abs * 10;
+        const scale = isCenter ? 1.04 : Math.max(0.54, 0.86 - abs * 0.075);
+        const rotateY = offset * -24;
+        const rotateZ = offset * -2.5;
+        const z = 90 - abs * 28;
+        const opacity = isCenter ? 1 : Math.max(0.18, 0.78 - abs * 0.14);
+        const blur = abs > 3 ? 1.5 : 0;
         const flipped = drawn ? " flipped" : "";
         const reversed = drawn && drawn.isReversed ? " reversed-card" : "";
-        pieces.push(
-          '<div class="tarot-card-container absolute top-0 left-1/2 w-[120px] h-[210px]" style="z-index:' + (10 - abs) + '; opacity:' + opacity + '; transform: translateX(calc(-50% + ' + x + 'px)) translateZ(' + z + 'px) scale(' + scale + ') rotateY(' + rotate + 'deg);">' +
-            '<div onclick="selectWheelIndex(' + idx + ')" class="tarot-card' + flipped + reversed + '">' +
-              '<div class="tarot-card-back"><div class="font-cinzel text-neonRed text-3xl">' + card.num + '</div></div>' +
-              '<div class="tarot-card-front"><img src="' + card.image + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\';"><div class="absolute bottom-0 left-0 right-0 bg-black/80 p-1 text-center text-[8px] text-white uppercase">' + escapeHtml(card.name) + '</div></div>' +
-              '<div class="spread-indicator">' + (drawn ? (drawn.isReversed ? "REVERSED" : "UPRIGHT") : "") + '</div>' +
-            '</div>' +
-          '</div>'
-        );
+
+        pieces.push(`
+          <div class="tarot-card-container absolute top-0 left-1/2 w-[120px] h-[210px]" style="z-index:${50 - abs}; opacity:${opacity}; transform: translateX(calc(-50% + ${x}px)) translateY(${y}px) translateZ(${z}px) scale(${scale}) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg); filter: blur(${blur}px);">
+            <div onclick="selectWheelIndex(${idx})" class="tarot-card${flipped}${reversed}">
+              <div class="tarot-card-back">${cardBackMarkup()}</div>
+              <div class="tarot-card-front">
+                <img src="${card.image}" class="w-full h-full object-cover" onerror="this.style.display='none';">
+                <div class="absolute bottom-0 left-0 right-0 bg-black/80 p-1 text-center text-[8px] text-white uppercase">${escapeHtml(card.name)}</div>
+              </div>
+              <div class="spread-indicator">${drawn ? (drawn.isReversed ? "REVERSED" : "UPRIGHT") : ""}</div>
+            </div>
+          </div>
+        `);
       }
+
       container.innerHTML = pieces.join("");
     }
 
@@ -676,6 +724,65 @@
       renderCoverFlow();
       AudioEngine.wheelHum.update(0.8);
       playSynthBeep(direction > 0 ? 320 : 260, 0.04, "square");
+    }
+
+
+    const wheelDragState = {
+      active: false,
+      startX: 0,
+      lastX: 0,
+      moved: 0
+    };
+
+    function initCoverFlowControls() {
+      const container = document.getElementById("coverflow-container");
+      if (!container || container.dataset.bound === "true") return;
+
+      container.dataset.bound = "true";
+      container.style.touchAction = "pan-y";
+
+      container.addEventListener("pointerdown", function(event) {
+        wheelDragState.active = true;
+        wheelDragState.startX = event.clientX;
+        wheelDragState.lastX = event.clientX;
+        wheelDragState.moved = 0;
+        try { container.setPointerCapture(event.pointerId); } catch (e) {}
+      });
+
+      container.addEventListener("pointermove", function(event) {
+        if (!wheelDragState.active) return;
+
+        const dx = event.clientX - wheelDragState.lastX;
+        wheelDragState.lastX = event.clientX;
+        wheelDragState.moved += dx;
+
+        if (Math.abs(wheelDragState.moved) >= 42) {
+          const steps = Math.trunc(wheelDragState.moved / 42);
+          wheelDragState.moved -= steps * 42;
+          wheelIndex = mod(wheelIndex - steps, AppState.tarotDeck.length);
+          renderCoverFlow();
+          AudioEngine.wheelHum.update(Math.min(1.2, Math.abs(dx) / 12));
+          playSynthBeep(steps > 0 ? 260 : 320, 0.025, "square");
+        }
+      });
+
+      const endDrag = function(event) {
+        if (!wheelDragState.active) return;
+        wheelDragState.active = false;
+
+        const total = event.clientX - wheelDragState.startX;
+        if (Math.abs(total) > 24 && Math.abs(wheelDragState.moved) > 12) {
+          spinWheel(total < 0 ? 1 : -1);
+        }
+
+        AudioEngine.wheelHum.silence();
+      };
+
+      container.addEventListener("pointerup", endDrag);
+      container.addEventListener("pointercancel", endDrag);
+      container.addEventListener("pointerleave", function(event) {
+        if (wheelDragState.active) endDrag(event);
+      });
     }
 
     function drawCenteredCard() {
@@ -886,6 +993,40 @@
       container.innerHTML = options.length ? options.slice(0, 4).map(function(x) { return '<span class="text-[8px] border border-neutral-700 px-1 py-0.5 text-neutral-400">' + escapeHtml(x) + '</span>'; }).join("") : '<span class="text-[8px] border border-neutral-700 px-1 py-0.5 text-neutral-500">CHECK JUSTWATCH</span>';
     }
 
+    function buildVagueOneLineReview(movie) {
+      const genres = Array.isArray(movie.genres) ? movie.genres.map(function(g) { return g.name; }) : [];
+      const primary = genres.length ? genres[0].toLowerCase() : "cinematic";
+      const year = getYear(movie);
+      const director = getDirector(movie);
+
+      const moodBank = {
+        Horror: "a bad-room signal with something breathing behind the walls",
+        Thriller: "a pressure chamber with the clock hidden just out of frame",
+        Drama: "a bruised little human weather system",
+        Comedy: "a crooked grin with a knife tucked somewhere offscreen",
+        Romance: "a private ache dressed up as a movie",
+        "Science Fiction": "a future-tense dream with the wires showing",
+        Fantasy: "a spell with dirt under its fingernails",
+        Crime: "a dirty bargain glowing under streetlight",
+        Mystery: "a locked door pretending not to be one",
+        Action: "a hard-running machine with a pulse underneath",
+        Adventure: "a wide-open map with a shadow in the corner",
+        Western: "dust, judgment, and a horizon that does not forgive",
+        Music: "a rhythm section for whatever is wrong with the heart",
+        History: "old ghosts arranged under clean museum glass",
+        War: "a field report from the end of ordinary morality",
+        Family: "a softer spell than it first admits",
+        Documentary: "the real world caught looking guilty"
+      };
+
+      const key = genres[0] || "";
+      const phrase = moodBank[key] || "a " + primary + " transmission best entered cold";
+      const credit = director && director !== "DIR" && director !== "UNKNOWN" ? " from " + director : "";
+      const yearBit = year && year !== "----" ? year + ": " : "";
+
+      return yearBit + phrase + credit + ".";
+    }
+
     function renderResult(data) {
       const movie = data.movie;
       AppState.currentMovie = movie;
@@ -903,11 +1044,11 @@
       document.getElementById("movie-director").innerText = director;
       document.getElementById("movie-runtime").innerText = movie.runtime ? movie.runtime + " MIN" : "-- MIN";
       document.getElementById("movie-rating").innerText = movie.vote_average ? movie.vote_average.toFixed(1) : "--";
-      document.getElementById("movie-plot").innerText = oneSentence(movie.overview);
+      document.getElementById("movie-plot").innerText = data.teaser || data.plotTeaser || data.vaguePlot || buildVagueOneLineReview(movie);
       const cast = data.cast && data.cast.length ? data.cast : (movie.credits && movie.credits.cast ? movie.credits.cast.slice(0, 3).map(function(c) { return c.name; }) : []);
       document.getElementById("movie-cast").innerText = cast.length ? "CAST: " + cast.join(" • ") : "";
       document.getElementById("custom-analysis").innerText = data.assessment || "The machine selected this title, but the oracle kept its mouth shut.";
-      document.getElementById("vibe-tagline").innerText = "A projection drawn from your cards, your pressure, and the live archive.";
+      document.getElementById("vibe-tagline").innerText = "A vague signal from the archive. Enter cold.";
       const poster = document.getElementById("movie-poster");
       const fallback = document.getElementById("poster-fallback-text");
       if (fallback) fallback.style.display = "none";
@@ -1405,6 +1546,7 @@
       const dateEl = document.getElementById("current-date");
       if (dateEl) dateEl.innerText = new Date().toLocaleDateString();
       typewriter("intro-dialogue", "Are you ready to project your subconscious?");
+      initCoverFlowControls();
     };
   </script>
 </body>
