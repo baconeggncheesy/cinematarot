@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-black select-none">
 <head>
@@ -7,6 +6,8 @@
   <title>CINEMA ARCANA — Tarot For Movies</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Added Tone.js for the dynamic generative film scores -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -616,7 +617,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.9.0 (ARCHIVE)</div>
+      <div>V 9.9.0 (ARCHIVE+TONE)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -666,7 +667,8 @@
           guesses: [],
           won: false,
           lost: false,
-          movie: null
+          movie: null,
+          scoreSpec: null
       },
       
       tarotDeck: [
@@ -715,7 +717,7 @@
         { id: 'reflection', name: 'Reflection', num: 'XIV', image: 'assets/14-reflection.jpeg', audio: 'freq-harmonic', glitch: 'glitch-vertigo',
           upright: { shift: { w: 20, t: -20, r: 30, h: -10 }, hook: "The alchemical blending of opposites. Two selves in perfect balance." },
           reversed: { shift: { w: -20, t: 20, r: -30, h: 10 }, hook: "The mirror cracks. The terrifying equilibrium of dual identities fractures." } },
-        { id: 'hotel', name: 'The Devil', num: 'XV', image: 'assets/15-hotel.jpeg', audio: 'freq-static', glitch: 'glitch-tear',
+        { id: 'hotel', name: 'The Hotel (The Devil)', num: 'XV', image: 'assets/15-hotel.jpeg', audio: 'freq-static', glitch: 'glitch-tear',
           upright: { shift: { w: 45, t: 15, r: 10, h: -25 }, hook: "Claustrophobic madness. The shadow self takes the wheel." },
           reversed: { shift: { w: -45, t: -15, r: -10, h: 25 }, hook: "The chains loosen, but the isolation remains absolute." } },
         { id: 'tower', name: 'The Nakatomi (The Tower)', num: 'XVI', image: 'assets/16-tower.jpeg', audio: 'freq-heavy', glitch: 'glitch-shake',
@@ -846,7 +848,7 @@
         if (savedDaily && savedDaily.dateIndex === currentDayIndex) {
             AppState.daily = savedDaily;
         } else {
-            AppState.daily = { dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null };
+            AppState.daily = { dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, scoreSpec: null };
             localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
         }
 
@@ -1066,6 +1068,7 @@
                 
                 if (data.movie) {
                     AppState.daily.movie = data.movie;
+                    AppState.daily.scoreSpec = data.scoreSpec;
                     persistDailyState();
                 } else {
                     throw new Error("No media returned from archive.");
@@ -1272,6 +1275,11 @@
             AppState.daily.won = true;
             playSynthBeep(600, 0.1, 'sine');
             setTimeout(() => playSynthBeep(800, 0.2, 'sine'), 150);
+            
+            // Trigger the daily victory ambient score!
+            if (AppState.daily.scoreSpec) {
+                AudioEngine.spreadScore.start(null, null, AppState.daily.scoreSpec);
+            }
         } else if (AppState.daily.guesses.length >= 6) {
             AppState.daily.lost = true;
             triggerGlitchEffect('glitch-shake');
@@ -1486,6 +1494,7 @@
       }
     }
 
+    // --- TONE.JS INTEGRATION ---
     const AudioEngine = {
       ctx: null, master: null, filter: null, noiseBuffer: null,
       init() {
@@ -1662,367 +1671,100 @@
         } catch (e) {}
       },
 
+      // --- NEW GENERATIVE TONE.JS SPREADSCORE ---
       spreadScore: {
-        playing: false, voices: [], bus: null, extras: [],
-        _tagProfile(tags) {
-          const p = { filterMul: 1, detuneAdd: 0, gainMul: 1, subGain: 0, shimmer: 0, tick: 0, waverHz: 0, };
-          const bump = { smoky: { filterMul: 0.7, detuneAdd: 4, gainMul: 1.05 }, nocturnal: { filterMul: 0.65, subGain: 0.05 }, warm: { filterMul: 1.15, gainMul: 1.05 }, cold: { filterMul: 1.3, detuneAdd: 3, gainMul: 0.95 }, vast: { shimmer: 0.06, subGain: 0.04, filterMul: 1.1 }, claustrophobic:{ filterMul: 0.55, gainMul: 0.95 }, mechanical: { tick: 1, detuneAdd: 2 }, organic: { filterMul: 1.05, waverHz: 0.4 }, aching: { detuneAdd: 5, waverHz: 0.6, filterMul: 0.85 }, serene: { filterMul: 1.2, gainMul: 0.95 }, feverish: { detuneAdd: 8, waverHz: 1.1, filterMul: 1.15 }, hypnotic: { tick: 0.6, shimmer: 0.03 }, playful: { filterMul: 1.25, shimmer: 0.04, gainMul: 0.95 }, menacing: { filterMul: 0.6, subGain: 0.06, detuneAdd: 4 }, fragile: { waverHz: 0.9, gainMul: 0.9, filterMul: 1.1 }, grand: { subGain: 0.05, shimmer: 0.05, gainMul: 1.05 }, gritty: { detuneAdd: 6, filterMul: 0.9 }, dreamy: { shimmer: 0.07, waverHz: 0.5, filterMul: 1.1 }, };
+        playing: false, synths: [], effects: [], loop: null,
+        start(drawnSpread, toneTags, spec) {
+          if (!AppState.audioEnabled || this.playing || typeof Tone === 'undefined') return;
+          this.playing = true;
+
+          spec = spec || { key: "C", mode: "minor", bpm: 60, density: "sparse", instrument: "synth" };
+          Tone.Transport.bpm.value = spec.bpm;
           
-          if (tags && Array.isArray(tags)) {
-              for (let i = 0; i < tags.length; i++) {
-                const tag = tags[i];
-                const b = bump[tag]; 
-                if (!b) continue; 
-                if (b.filterMul !== undefined) p.filterMul *= b.filterMul; 
-                if (b.detuneAdd) p.detuneAdd += b.detuneAdd; 
-                if (b.gainMul !== undefined) p.gainMul *= b.gainMul; 
-                if (b.subGain) p.subGain = Math.max(p.subGain, b.subGain); 
-                if (b.shimmer) p.shimmer = Math.max(p.shimmer, b.shimmer); 
-                if (b.tick) p.tick = Math.max(p.tick, b.tick); 
-                if (b.waverHz) p.waverHz = Math.max(p.waverHz, b.waverHz); 
+          const reverb = new Tone.Reverb({ decay: 8, wet: 0.6 }).toDestination();
+          const delay = new Tone.FeedbackDelay("8n", 0.3).connect(reverb);
+          const filter = new Tone.Filter(2000, "lowpass").connect(delay);
+          const lfo = new Tone.LFO(0.1, 400, 3000).connect(filter.frequency).start();
+
+          this.effects = [reverb, delay, filter, lfo];
+
+          let oscType = "triangle";
+          if (spec.instrument === "fm") oscType = "fmsine";
+          if (spec.instrument === "am") oscType = "amsine";
+
+          const pad = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: oscType },
+            envelope: { attack: 3, decay: 2, sustain: 0.8, release: 5 }
+          }).connect(filter);
+          pad.volume.value = -12;
+
+          const arp = new Tone.Synth({
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.05, decay: 0.2, sustain: 0.1, release: 1 }
+          }).connect(delay);
+          arp.volume.value = -18;
+          
+          this.synths = [pad, arp];
+
+          const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+          let rIdx = notes.indexOf(spec.key);
+          if (rIdx === -1) rIdx = 0;
+          
+          const scale = spec.mode === "major" ? [0, 2, 4, 5, 7, 9, 11] : [0, 2, 3, 5, 7, 8, 10];
+          
+          const getNote = (octave, deg) => {
+              const octShift = Math.floor(deg / 7);
+              const scaleDegree = ((deg % 7) + 7) % 7; 
+              const semitones = scale[scaleDegree];
+              const finalIdx = (rIdx + semitones) % 12;
+              const finalOctave = octave + octShift + Math.floor((rIdx + semitones) / 12);
+              return notes[finalIdx] + finalOctave;
+          };
+
+          const prog = [0, 3, 4, 0]; // i, iv, v, i (minor) or I, IV, V, I (major)
+          let step = 0;
+          
+          this.loop = new Tone.Loop((time) => {
+              const chordDeg = prog[step % prog.length];
+              const chord = [getNote(3, chordDeg), getNote(3, chordDeg + 2), getNote(3, chordDeg + 4)];
+              
+              const vel = 0.6 + (step % 2) * 0.2; 
+              pad.triggerAttackRelease(chord, "1m", time, vel);
+              
+              if (spec.density === "dense") {
+                  arp.triggerAttackRelease(getNote(4, chordDeg + 2), "8n", time + Tone.Time("2n").toSeconds(), 0.5);
+                  arp.triggerAttackRelease(getNote(5, chordDeg + 4), "8n", time + Tone.Time("2n.").toSeconds(), 0.3);
               }
-          }
-          return p;
-        },
-        start(drawnSpread, toneTags) {
-          if (!AppState.audioEnabled || this.playing || !Array.isArray(drawnSpread) || drawnSpread.length === 0) return;
-          AudioEngine.init(); const ctx = AudioEngine.ctx; const now = ctx.currentTime;
-          this.playing = true; this.voices = []; this.extras = [];
+              step++;
+          }, "2m").start(0);
 
-          const prof = this._tagProfile(toneTags);
-          this.bus = ctx.createGain(); this.bus.gain.setValueAtTime(0.0001, now); this.bus.gain.linearRampToValueAtTime(0.13 * prof.gainMul, now + 2.5); this.bus.connect(AudioEngine.master);
-          const NOIR_SCALE = [0, 2, 3, 5, 7, 8, 10];
-
-          drawnSpread.forEach((draw, i) => {
-            const card = draw.card; const idx = typeof card.arcanaIndex === 'number' ? card.arcanaIndex : i;
-            const stats = draw.isReversed ? card.reversed.shift : card.upright.shift;
-            const dread = Math.min(1, Math.abs(stats.w) / 50);
-            const semis = NOIR_SCALE[idx % NOIR_SCALE.length] + 12 * Math.floor(idx / NOIR_SCALE.length);
-            let freq = 55 * Math.pow(2, semis / 12); if (draw.isReversed) freq *= 0.667;
-
-            const osc = ctx.createOscillator(); osc.type = i === 1 ? 'triangle' : 'sine'; osc.frequency.value = freq; osc.detune.value = (i - 1) * (6 + prof.detuneAdd);
-            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = Math.max(120, Math.min(6000, (300 + (1 - dread) * 1400) * prof.filterMul));
-            const vGain = ctx.createGain(); vGain.gain.value = 0.33;
-            const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.05 + i * 0.03 + Math.random() * 0.02;
-            const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.14; lfo.connect(lfoGain); lfoGain.connect(vGain.gain);
-
-            if (prof.waverHz > 0) { const waver = ctx.createOscillator(); waver.type = 'sine'; waver.frequency.value = prof.waverHz; const waverGain = ctx.createGain(); waverGain.gain.value = freq * 0.012; waver.connect(waverGain); waverGain.connect(osc.frequency); waver.start(now); this.extras.push({ osc: waver }); }
-            osc.connect(filter); filter.connect(vGain); vGain.connect(this.bus); osc.start(now); lfo.start(now); this.voices.push({ osc, lfo });
-          });
-
-          if (prof.subGain > 0) { const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = 36; const subGain = ctx.createGain(); subGain.gain.setValueAtTime(0.0001, now); subGain.gain.linearRampToValueAtTime(prof.subGain, now + 3); sub.connect(subGain); subGain.connect(this.bus); sub.start(now); this.extras.push({ osc: sub }); }
-          if (prof.shimmer > 0) { const shim = ctx.createOscillator(); shim.type = 'sine'; shim.frequency.value = 1760; const shimFilter = ctx.createBiquadFilter(); shimFilter.type = 'bandpass'; shimFilter.frequency.value = 1760; shimFilter.Q.value = 3; const shimGain = ctx.createGain(); shimGain.gain.setValueAtTime(0.0001, now); shimGain.gain.linearRampToValueAtTime(prof.shimmer, now + 3.5); const shimLfo = ctx.createOscillator(); shimLfo.type = 'sine'; shimLfo.frequency.value = 0.18; const shimLfoGain = ctx.createGain(); shimLfoGain.gain.value = prof.shimmer * 0.7; shimLfo.connect(shimLfoGain); shimLfoGain.connect(shimGain.gain); shim.connect(shimFilter); shimFilter.connect(shimGain); shimGain.connect(this.bus); shim.start(now); shimLfo.start(now); this.extras.push({ osc: shim }, { osc: shimLfo }); }
-          if (prof.tick > 0) { 
-            const period = 1.05; 
-            const doTick = () => { 
-                if (!this.playing || !AudioEngine.ctx || !AudioEngine.noiseBuffer) return; 
-                const t = AudioEngine.ctx.currentTime; 
-                const src = AudioEngine.ctx.createBufferSource(); 
-                src.buffer = AudioEngine.noiseBuffer; 
-                const f = AudioEngine.ctx.createBiquadFilter(); 
-                f.type = 'bandpass'; 
-                f.frequency.value = 2200; 
-                f.Q.value = 8; 
-                const g = AudioEngine.ctx.createGain(); 
-                g.gain.setValueAtTime(0.05 * prof.tick, t); 
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.06); 
-                src.connect(f); 
-                f.connect(g); 
-                g.connect(this.bus); 
-                src.start(t); 
-                src.stop(t + 0.08); 
-            }; 
-            const tickTimer = setInterval(doTick, period * 1000); 
-            this.extras.push({ timer: tickTimer }); 
-          }
+          Tone.Transport.start();
         },
         stop(fadeSec) {
-          if (!this.playing || !AudioEngine.ctx) return; 
+          if (!this.playing || typeof Tone === 'undefined') return;
           fadeSec = fadeSec || 1.5;
-          const ctx = AudioEngine.ctx; 
-          const t = ctx.currentTime;
-          this.bus.gain.cancelScheduledValues(t); 
-          this.bus.gain.setValueAtTime(this.bus.gain.value, t); 
-          this.bus.gain.linearRampToValueAtTime(0.0001, t + fadeSec);
-          const voices = this.voices; 
-          const extras = this.extras; 
+          Tone.Transport.stop();
+          if (this.loop) { this.loop.stop(); this.loop.dispose(); this.loop = null; }
           
-          for (let i = 0; i < extras.length; i++) {
-              if (extras[i].timer) clearInterval(extras[i].timer);
+          for (let i = 0; i < this.synths.length; i++) {
+              const s = this.synths[i];
+              s.releaseAll(); 
+              setTimeout(() => s.dispose(), fadeSec * 1000 + 500); 
           }
           
           setTimeout(() => { 
-              for (let i = 0; i < voices.length; i++) {
-                  try { voices[i].osc.stop(); voices[i].lfo.stop(); } catch (e) {} 
+              for (let i = 0; i < this.effects.length; i++) {
+                  if(this.effects[i].dispose) this.effects[i].dispose(); 
               }
-              for (let i = 0; i < extras.length; i++) {
-                  if (extras[i].osc) { try { extras[i].osc.stop(); } catch (er) {} }
-              }
-          }, fadeSec * 1000 + 100);
+          }, fadeSec * 1000 + 1000);
           
-          this.voices = []; this.extras = []; this.playing = false;
+          this.synths = []; this.effects = []; this.playing = false;
         }
       }
     };
 
-    const TiltEngine = {
-      x: 0, y: 0, _rawX: 0, _rawY: 0, active: false, _baseGamma: null, _baseBeta: null,
-      handleOrientation(e) {
-        if (e.gamma === null || e.beta === null) return;
-        if (this._baseGamma === null) { this._baseGamma = e.gamma; this._baseBeta = e.beta; }
-        const dGamma = e.gamma - this._baseGamma; const dBeta = e.beta - this._baseBeta;
-        this._rawX = Math.max(-1, Math.min(1, dGamma / 25)); this._rawY = Math.max(-1, Math.min(1, dBeta / 25));
-      },
-      _loop() {
-        if (!this.active) return;
-        this.x += (this._rawX - this.x) * 0.12; this.y += (this._rawY - this.y) * 0.12;
-        
-        const game3El = document.getElementById('screen-game3');
-        const wheelVisible = game3El && !game3El.classList.contains('hidden');
-        if (wheelVisible && typeof updateWheel === 'function') updateWheel();
-        
-        requestAnimationFrame(() => this._loop());
-      },
-      _attach() { if (this.active) return; this.active = true; window.addEventListener('deviceorientation', e => this.handleOrientation(e), true); requestAnimationFrame(() => this._loop()); },
-      async enable() { if (this.active) return; try { const DOE = window.DeviceOrientationEvent; if (DOE && typeof DOE.requestPermission === 'function') { const state = await DOE.requestPermission(); if (state === 'granted') this._attach(); } else if (DOE) { this._attach(); } } catch (e) { } },
-      recalibrate() { this._baseGamma = null; this._baseBeta = null; }
-    };
-    window.TiltEngine = TiltEngine;
-
-    function toggleAudio() {
-      AppState.audioEnabled = !AppState.audioEnabled;
-      document.getElementById('audio-toggle-btn').innerText = AppState.audioEnabled ? "[AUDIO: ON]" : "[AUDIO: OFF]";
-      if (AppState.audioEnabled) { 
-          AudioEngine.tone(440, 0.05, 'square'); 
-          const loadingEl = document.getElementById('screen-loading');
-          const loadingVisible = loadingEl && !loadingEl.classList.contains('hidden'); 
-          if (loadingVisible) { AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.3); } 
-      } else { 
-          AudioEngine.heartbeat.stop(0.15); AudioEngine.wheelHum.silence(); AudioEngine.spreadScore.stop(0.3); 
-      }
-    }
-    function playSynthBeep(freq, duration, type) { AudioEngine.tone(freq, duration, type || 'square', 0.05); }
-    function playArcanaSound(type) {
-      if (!AppState.audioEnabled) return; AudioEngine.init(); const ctx = AudioEngine.ctx; const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(AudioEngine.master); const now = ctx.currentTime;
-      switch(type) {
-        case 'freq-heavy': osc.type = 'sine'; osc.frequency.setValueAtTime(40, now); osc.frequency.exponentialRampToValueAtTime(20, now + 1); gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1); osc.start(now); osc.stop(now + 1); break;
-        case 'freq-bell': osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(150, now + 2); gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 2); osc.start(now); osc.stop(now + 2); break;
-        case 'freq-static': osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2); break;
-        case 'freq-harmonic': osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(800, now + 1.5); gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5); osc.start(now); osc.stop(now + 1.5); break;
-        case 'freq-tramp': osc.type = 'square'; osc.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); break;
-        default: playSynthBeep(200, 0.5, 'sine');
-      }
-    }
-    function playTypewriterDing() { playSynthBeep(1200, 0.1, 'sine'); setTimeout(() => playSynthBeep(1500, 0.1, 'sine'), 50); }
-    function triggerGlitchEffect(glitchClass) { const body = document.getElementById('app-body'); body.classList.add(glitchClass); setTimeout(() => body.classList.remove(glitchClass), 500); }
-
-    function showScreen(screenId) {
-      const resultEl = document.getElementById('screen-result');
-      const leavingResult = screenId !== 'screen-result' && resultEl && !resultEl.classList.contains('hidden');
-      if (leavingResult) { AudioEngine.spreadScore.stop(0.6); hideLetterbox(); }
-      
-      const reviewEl = document.getElementById('screen-spread-review');
-      const leavingReview = screenId !== 'screen-spread-review' && reviewEl && !reviewEl.classList.contains('hidden');
-      if (leavingReview && window.speechSynthesis && _speaking) { speechSynthesis.cancel(); _speaking = false; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR'; }
-
-      const screens = ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal', 'screen-daily-game'];
-      for (let i = 0; i < screens.length; i++) {
-        const el = document.getElementById(screens[i]);
-        if (el) el.classList.add('hidden');
-      }
-      
-      const target = document.getElementById(screenId); 
-      if (target) target.classList.remove('hidden');
-    }
-
-    async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateRuntimeUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
-
-    function setParameter(key, value) { AppState[key] = value; playSynthBeep(400, 0.05, 'square'); updateParameterUI(key, value); }
-    
-    const RUNTIME_BANDS = { any: { min: null, max: null }, short: { min: null, max: 95 }, feature: { min: 95, max: 135 }, epic: { min: 135, max: null } };
-    function updateRuntimeUI() { 
-        const bands = ['any', 'short', 'feature', 'epic'];
-        for (let i = 0; i < bands.length; i++) {
-            const k = bands[i];
-            const el = document.getElementById('runtime-' + k);
-            if (el) {
-                if (k === AppState.runtimeBand) el.classList.add('active');
-                else el.classList.remove('active');
-            }
-        }
-    }
-    
-    function setRuntime(band) { 
-        const b = RUNTIME_BANDS[band] || RUNTIME_BANDS.any; 
-        AppState.runtimeBand = RUNTIME_BANDS[band] ? band : 'any'; 
-        AppState.runtimeMin = b.min; 
-        AppState.runtimeMax = b.max; 
-        playSynthBeep(300, 0.05, 'square'); 
-        updateRuntimeUI(); 
-    }
-
-    function updateParameterUI(key, val) {
-      const ids = { language: ['any', 'english', 'foreign'], era: ['any', 'golden', 'neon', 'digital'] };
-      const idPrefixes = { language: 'lang', era: 'era' };
-      const prefix = idPrefixes[key] || key;
-      if (!ids[key]) return;
-      for (let i = 0; i < ids[key].length; i++) {
-          const item = ids[key][i];
-          const btn = document.getElementById(prefix + '-' + item);
-          if (btn) {
-              if (item === val) btn.classList.add('active');
-              else btn.classList.remove('active');
-          }
-      }
-    }
-
-    async function goToGame1() { playTypewriterDing(); showScreen('screen-game1'); await sleep(300); typewriter('slider-dialogue', "Adjust the margins of your mind. How do you want to feel?"); }
-    function updateSliderVal(sliderType) { const val = document.getElementById('slider-' + sliderType).value; document.getElementById('val-' + sliderType).innerText = val; AppState.sliders[sliderType] = parseInt(val); playSynthBeep(200 + parseInt(val) * 5, 0.02, 'square'); }
-
-    function tryJpegFallback(img, fallbackText) {
-      const currentSrc = img.getAttribute('src') || '';
-      if (!img.dataset.triedJpeg && currentSrc.toLowerCase().endsWith('.jpg')) { img.dataset.triedJpeg = 'true'; img.src = currentSrc.replace(/\.jpg$/i, '.jpeg'); return; }
-      img.onerror = null; img.src = "[https://via.placeholder.com/150x210/0A0A0A/FF003C?text=](https://via.placeholder.com/150x210/0A0A0A/FF003C?text=)" + encodeURIComponent(fallbackText || 'TAROT');
-    }
-
-    let wheelIndex = 0; let wheelCards = []; const WHEEL_CARD_SPACING = 65; 
-    let wheelDragActive = false; let isSwipingWheel = false; let wheelTouchStartX = 0; let wheelTouchStartY = 0; let wheelDragStartIndex = 0; let wheelVelocityTracker = []; let wheelVelocity = 0; let wheelRAF = null; let wheelTargetIndex = 0; let isSettling = false;
-
-    async function goToTarotGame() {
-      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; 
-      document.getElementById('tarot-proceed-btn').classList.add('hidden'); document.getElementById('draw-count').innerText = "0/3";
-      initTarotWheel(); TiltEngine.recalibrate(); showScreen('screen-game3'); await sleep(300); typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
-    }
-
-    function initTarotWheel() {
-        const container = document.getElementById('coverflow-container'); container.innerHTML = '';
-        wheelCards = [...AppState.tarotDeck].sort(() => 0.5 - Math.random()); wheelIndex = Math.floor(wheelCards.length / 2); 
-        
-        for (let i = 0; i < wheelCards.length; i++) {
-            const card = wheelCards[i];
-            const el = document.createElement('div'); el.className = 'absolute top-2 left-1/2 w-[130px] h-[195px] tarot-card-container'; el.id = 'wheel-card-' + i;
-            el.onclick = () => { if (wheelOffset(i) === 0) drawCenteredCard(); else spinTo(i); };
-            el.innerHTML = '<div class="tarot-card w-full h-full shadow-lg"><div class="tarot-card-back rounded-sm border border-neutral-700 bg-black overflow-hidden"><img src="assets/card-back.jpeg" class="w-full h-full object-cover" onerror="tryJpegFallback(this, \'TAROT\')"></div><div class="tarot-card-front shadow-neon-sm border border-neonRed bg-black overflow-hidden"><img src="' + card.image + '" class="w-full h-full object-cover" onerror="tryJpegFallback(this, \'' + card.num + '\')"><div class="spread-indicator bg-black pb-1" id="ind-' + card.id + '"></div></div></div>';
-            container.appendChild(el);
-        }
-
-        container.addEventListener('touchstart', e => { wheelDragActive = true; isSettling = false; isSwipingWheel = false; if (wheelRAF !== null) { cancelAnimationFrame(wheelRAF); wheelRAF = null; } wheelTouchStartX = e.touches[0].clientX; wheelTouchStartY = e.touches[0].clientY; wheelDragStartIndex = wheelIndex; wheelVelocityTracker = [{ x: wheelTouchStartX, t: performance.now() }]; wheelVelocity = 0; }, {passive: true});
-        container.addEventListener('touchmove', e => { if (!wheelDragActive) return; const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY; const now = performance.now(); if (!isSwipingWheel) { const dx = Math.abs(currentX - wheelTouchStartX); const dy = Math.abs(currentY - wheelTouchStartY); if (dy > dx && dy > 5) { wheelDragActive = false; return; } if (dx > 5) isSwipingWheel = true; } if (isSwipingWheel) { if (e.cancelable) e.preventDefault(); const prevPoint = wheelVelocityTracker[wheelVelocityTracker.length - 1]; wheelVelocityTracker.push({ x: currentX, t: now }); if (wheelVelocityTracker.length > 5) wheelVelocityTracker.shift(); const deltaFromStart = currentX - wheelTouchStartX; wheelIndex = wheelDragStartIndex - (deltaFromStart / WHEEL_CARD_SPACING); updateWheel(); if (prevPoint) { const dt = Math.max(1, now - prevPoint.t); const instVelocity = Math.abs((currentX - prevPoint.x) / dt) * 16 / WHEEL_CARD_SPACING; AudioEngine.wheelHum.update(instVelocity); } } }, {passive: false});
-        container.addEventListener('touchend', e => { if (!wheelDragActive) return; wheelDragActive = false; if (isSwipingWheel) { const now = performance.now(); const validPoints = wheelVelocityTracker.filter(p => now - p.t < 150); const oldest = validPoints[0] || wheelVelocityTracker[0]; const dt = Math.max(1, now - oldest.t); const dx = e.changedTouches[0].clientX - oldest.x; wheelVelocity = -(dx / dt) * 16 / WHEEL_CARD_SPACING; wheelVelocity = Math.max(-1.5, Math.min(1.5, wheelVelocity)); } else { wheelVelocity = 0; } isSettling = false; if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); }, {passive: true});
-        updateWheel();
-    }
-
-    function runPhysics() {
-        if (wheelDragActive) { AudioEngine.wheelHum.update(Math.abs(wheelVelocity)); wheelRAF = requestAnimationFrame(runPhysics); return; }
-        if (!isSettling) { wheelVelocity *= 0.94; wheelIndex += wheelVelocity; if (Math.abs(wheelVelocity) < 0.05) { isSettling = true; wheelTargetIndex = Math.round(wheelIndex); } } else { const diff = wheelTargetIndex - wheelIndex; wheelVelocity = diff * 0.15; wheelIndex += wheelVelocity; if (Math.abs(diff) < 0.005) { wheelIndex = wheelTargetIndex; wheelVelocity = 0; updateWheel(); AudioEngine.wheelHum.silence(); wheelRAF = null; const tone = ((Math.round(wheelIndex) % 12) + 12) % 12; playSynthBeep(320 + tone * 12, 0.02, 'triangle'); return; } }
-        AudioEngine.wheelHum.update(Math.abs(wheelVelocity)); updateWheel(); wheelRAF = requestAnimationFrame(runPhysics);
-    }
-    function wheelOffset(i) { const N = wheelCards.length; if (N === 0) return 0; let diff = (i - wheelIndex) % N; if (diff > N / 2) diff -= N; else if (diff < -N / 2) diff += N; return diff; }
-    function spinTo(index) { wheelTargetIndex = Math.round(wheelIndex) + Math.round(wheelOffset(index)); isSettling = true; AudioEngine.wheelHum.update(0.5); if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); playSynthBeep(400, 0.02, 'triangle'); }
-    function spinWheel(dir) { wheelTargetIndex = Math.round(wheelIndex) + dir; isSettling = true; AudioEngine.wheelHum.update(0.5); if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); const tone = ((Math.abs(wheelTargetIndex) % 12) + 12) % 12; playSynthBeep(320 + tone * 12, 0.02, 'triangle'); }
-    
-    function updateWheel() {
-        const tiltX = (window.TiltEngine && TiltEngine.x) || 0; const tiltY = (window.TiltEngine && TiltEngine.y) || 0;
-        for (let i = 0; i < wheelCards.length; i++) {
-            const el = document.getElementById('wheel-card-' + i); const offset = wheelOffset(i); const absOffset = Math.abs(offset);
-            let translateX = offset * WHEEL_CARD_SPACING; let scale = Math.max(0.5, 1 - (absOffset * 0.15)); let rotateY = Math.abs(offset) < 0.01 ? 0 : (offset > 0 ? -45 : 45); let zIndex = Math.round(50 - absOffset); let opacity = absOffset > 3 ? 0 : 1;
-            const depth = 0.4 + absOffset * 0.5; const tiltShiftX = tiltX * 26 * depth; const tiltRotY = tiltX * 10; const tiltRotX = tiltY * 8;
-            el.style.transform = 'translateX(calc(-50% + ' + (translateX + tiltShiftX) + 'px)) scale(' + scale + ') perspective(1000px) rotateY(' + (rotateY + tiltRotY) + 'deg) rotateX(' + tiltRotX + 'deg)';
-            el.style.zIndex = zIndex; el.style.opacity = opacity; el.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
-        }
-    }
-
-    async function drawCenteredCard() {
-        if (AppState.drawnSpread.length >= 3) return;
-        wheelDragActive = false; wheelVelocity = 0; const cleanIndex = Math.round(wheelIndex); wheelTargetIndex = cleanIndex; wheelIndex = cleanIndex; if (wheelRAF) { cancelAnimationFrame(wheelRAF); wheelRAF = null; } updateWheel(); 
-        const N = wheelCards.length; const realIndex = ((cleanIndex % N) + N) % N; const card = wheelCards[realIndex]; const el = document.getElementById('wheel-card-' + realIndex).querySelector('.tarot-card');
-        if(el.classList.contains('flipped')) return; 
-
-        const isReversed = Math.random() >= 0.5; AppState.drawnSpread.push({ card: card, isReversed: isReversed, position: AppState.drawnSpread.length });
-        const ind = document.getElementById('ind-' + card.id); const posName = AppState.drawnSpread.length === 1 ? "PAST" : AppState.drawnSpread.length === 2 ? "PRESENT" : "FUTURE";
-        ind.innerText = posName + (isReversed ? ' (REV)' : '');
-        el.classList.add('flipped'); if (isReversed) el.classList.add('reversed-card'); el.parentElement.style.filter = "brightness(1.2)"; AudioEngine.wheelHum.silence();
-        AudioEngine.cardSound(card, isReversed); triggerGlitchEffect(card.glitch);
-        document.getElementById('draw-count').innerText = AppState.drawnSpread.length + "/3";
-        
-        const logicObj = isReversed ? card.reversed : card.upright;
-        await typewriter('tarot-dialogue', '[' + posName + '] You drew ' + card.name + (isReversed ? ' Upside Down' : '') + '. ' + logicObj.hook, 15);
-
-        if (AppState.drawnSpread.length === 3) {
-            const allCards = document.querySelectorAll('.tarot-card:not(.flipped)');
-            for (let i = 0; i < allCards.length; i++) allCards[i].parentElement.style.opacity = '0.2';
-            document.getElementById('tarot-proceed-btn').classList.remove('hidden');
-            
-            let allRev = true;
-            for (let i = 0; i < AppState.drawnSpread.length; i++) {
-                if (!AppState.drawnSpread[i].isReversed) allRev = false;
-            }
-            AppState.fullInversion = allRev;
-            
-            if (AppState.fullInversion) { triggerGlitchEffect('glitch-vertigo'); playArcanaSound('freq-heavy'); await sleep(300); await typewriter('tarot-dialogue', "[ FULL INVERSION — every card fell against you. This spread is a rare omen. ]", 20); }
-        }
-    }
-
-    async function goToSpreadReview() {
-        playTypewriterDing(); const container = document.getElementById('review-cards-container'); container.innerHTML = '';
-        if (AppState.fullInversion) { container.innerHTML += '<div class="border border-neonRed bg-neonRed/10 p-3 text-center animate-fade-in glitch-text" data-text="FULL INVERSION"><div class="text-neonRed font-bold text-xs tracking-widest uppercase">⚠ Full Inversion ⚠</div><div class="text-[9px] text-neutral-400 mt-1">All three cards fell reversed. A 1-in-8 omen — read the spread with caution.</div></div>'; }
-        
-        let html = '';
-        for (let i = 0; i < AppState.drawnSpread.length; i++) {
-            const draw = AppState.drawnSpread[i];
-            const posName = i === 0 ? "PAST" : i === 1 ? "PRESENT" : "FUTURE"; 
-            const logicObj = draw.isReversed ? draw.card.reversed : draw.card.upright;
-            html += `
-                <div class="flex items-center space-x-4 bg-darkGrey p-2 border border-neutral-900 shadow-sm animate-fade-in" style="animation-delay: ${i*0.2}s">
-                    <div class="w-[60px] aspect-[2/3] flex-shrink-0 border border-neutral-700 bg-black overflow-hidden relative"><img src="${draw.card.image}" class="w-full h-full object-cover ${draw.isReversed ? 'rotate-180' : ''}" onerror="tryJpegFallback(this, '${draw.card.num}')"></div>
-                    <div class="flex-1 font-mono text-xs text-neutral-300">
-                        <div class="text-neonRed font-bold tracking-widest text-[10px] mb-1">[ ${posName} ]</div>
-                        <div class="font-bold text-white uppercase leading-tight">${draw.card.name}</div>
-                        <div class="italic text-[9px] text-neutral-500 mb-1.5 uppercase">${draw.isReversed ? 'Reversed (Inverted Matrices)' : 'Upright Alignment'}</div>
-                        <div class="leading-relaxed text-[10px] text-neutral-400 border-l border-neutral-700 pl-2">"${logicObj.hook}"</div>
-                    </div>
-                </div>
-            `;
-        }
-        container.innerHTML += html;
-        AudioEngine.wheelHum.silence(); 
-        showScreen('screen-spread-review'); await renderPsychicReading();
-    }
-
-    async function renderPsychicReading() {
-      const el = document.getElementById('psychic-reading-text'); if (!el) return; el.innerText = 'Consulting the cards...';
-      const spreadArr = [];
-      for (let i = 0; i < AppState.drawnSpread.length; i++) {
-          const draw = AppState.drawnSpread[i];
-          const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future';
-          spreadArr.push(pos + ': ' + draw.card.name + (draw.isReversed ? ' (Reversed)' : ''));
-      }
-      const spreadDetail = spreadArr.join(', ');
-      
-      try {
-        const res = await fetch(WORKER_BASE_URL, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ type: 'reading', spread: spreadDetail, manualOverride: AppState.manualOverrideText }) 
-        });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json(); 
-        
-        let text = null;
-        if (data && data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
-            text = data.candidates[0].content.parts[0].text;
-        }
-
-        if (!text) throw new Error('Empty response');
-        
-        text = text.replace(/[*_`]/g, '').trim(); 
-        
-        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ Hear';
-      } catch (err) { AppState.lastReadingText = null; el.innerHTML = '<span class="text-neonRed font-bold">[ THE CARDS ARE SILENT ]</span><br><br><span class="text-neutral-400">No reading could be drawn this time. Proceed when ready.</span>'; }
-    }
-
-    let progressInterval = null;
     function startLoadingSequence() {
+      if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') { Tone.start(); }
       const logs = [ "Formatting margins...", "Evaluating structural boundaries...", "Applying 3-Card Spread vector shifts...", "Calculating Euclidean distances...", "Establishing secure uplink...", "Cross-referencing the archive...", "Compiling definitive match..." ];
       let step = 0; const term = document.getElementById('loading-terminal'); const pct = document.getElementById('loading-pct'); pct.innerText = "0%"; term.innerText = logs[0]; term.classList.remove('cursor-blink');
       progressInterval = setInterval(() => {
@@ -2030,6 +1772,8 @@
         if (next < 100) { if (Math.random() > 0.6 && step < logs.length - 1) { step++; term.innerText = logs[step]; playSynthBeep(700, 0.02, 'square'); } } else { term.innerText = "[ DECRYPTING SUBCONSCIOUS TRUTHS... ]"; term.classList.add('cursor-blink'); playSynthBeep(220, 0.06, 'sine'); }
       }, 180);
     }
+    
+    let progressInterval = null;
     function stopLoadingSequence() { if (progressInterval) clearInterval(progressInterval); progressInterval = null; const term = document.getElementById('loading-terminal'); if (term) term.classList.remove('cursor-blink'); }
 
     async function initiateSubconsciousMatching() {
@@ -2106,7 +1850,9 @@
       }
       
       AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
-      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags); hideLetterbox(); }, REVEAL_DURATION * 1000);
+      
+      // Pass the newly generated scoreSpec to Tone.js
+      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags, data.scoreSpec); hideLetterbox(); }, REVEAL_DURATION * 1000);
     }
 
     function flashCueMark() { const cue = document.getElementById('cue-mark'); if (!cue) return; cue.classList.remove('flash'); void cue.offsetWidth; cue.classList.add('flash'); }
@@ -2263,7 +2009,7 @@
          if(posterImg && AppState.drawnSpread[2]) { posterImg.src = AppState.drawnSpread[2].card.image; posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; }; }
       }
       
-      if (movie.backdrop_path && ambientBg) { ambientBg.style.backgroundImage = "url('" + WORKER_BASE_URL + "?img=" + encodeURIComponent("/t/p/original" + movie.backdrop_path) + "')"; } else if (ambientBg) { ambientBg.style.backgroundImage = "none"; }
+      if (movie.backdrop_path && ambientBg) { ambientBg.style.backgroundImage = 'url(\'' + WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/original' + movie.backdrop_path) + '\')'; } else if (ambientBg) { ambientBg.style.backgroundImage = "none"; }
 
       const providersContainer = document.getElementById('providers-container');
       if (providersContainer) {
