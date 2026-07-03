@@ -305,7 +305,7 @@
         <div class="character text-xs">THE SYSTEM</div>
         <div class="dialogue cursor-blink text-xs" id="param-dialogue"></div>
         <div class="space-y-5 mt-4">
-          <!-- NEW: Media Format Toggle -->
+          <!-- Media Format Toggle -->
           <div>
             <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">1. Media Format</div>
             <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
@@ -485,8 +485,9 @@
                 </div>
               </div>
               <div class="border-l border-neutral-700 pl-2">
-                <!-- SPOILER FREE! WE ONLY SHOW CAST HERE NOW -->
-                <p class="text-[11px] text-neutral-400 font-sans leading-snug uppercase tracking-wider" id="movie-cast">"Loading cast..."</p>
+                <!-- RESTORED: One Sentence Plot + Cast below -->
+                <p class="text-[11px] text-neutral-400 italic font-sans leading-snug" id="movie-plot">"One sentence plot goes here..."</p>
+                <p class="text-[9px] text-neutral-500 font-sans mt-1 uppercase tracking-wider" id="movie-cast"></p>
               </div>
               <div class="pt-1">
                 <div id="providers-container" class="flex flex-wrap gap-1 font-mono"></div>
@@ -594,7 +595,7 @@
     const AppState = {
       audioEnabled: true,
       currentScreen: 'intro',
-      mediaType: 'movie', // NEW! Default is 'movie', can switch to 'tv'
+      mediaType: 'movie', 
       language: 'any',
       era: 'any',
       sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
@@ -602,7 +603,7 @@
       runtimeMax: null, 
       runtimeMin: null,
       runtimeBand: 'any',
-      manualOverrideText: null, // NEW! Keeps track of user inputted vibe
+      manualOverrideText: null, 
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
@@ -714,7 +715,7 @@
       12: { w: 40, t: 85, r: 50, h: 60, name: 'ADVENTURE' },
       37: { w: 60, t: 50, r: 15, h: 30, name: 'WESTERN' },
       10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' },
-      16: { w: 20, t: 65, r: 80, h: 60, name: 'ANIMATION' } // Added common for both
+      16: { w: 20, t: 65, r: 80, h: 60, name: 'ANIMATION' }
     };
 
     const GENRE_NAME_TO_ID = Object.fromEntries(
@@ -926,7 +927,7 @@
       const text = inputEl.value.trim();
 
       if (!text) return;
-      AppState.manualOverrideText = text; // Track the override text
+      AppState.manualOverrideText = text;
 
       statusEl.classList.remove('text-neonRed'); statusEl.innerText = "Transmitting to ghost...";
       btnEl.innerText = "WAIT"; btnEl.disabled = true;
@@ -935,7 +936,7 @@
       try {
         const response = await fetch(WORKER_BASE_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mood: text, mediaType: AppState.mediaType }) // Passing media type
+          body: JSON.stringify({ mood: text, mediaType: AppState.mediaType })
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1230,17 +1231,15 @@
           if (prof.subGain > 0) { const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = 36; const subGain = ctx.createGain(); subGain.gain.setValueAtTime(0.0001, now); subGain.gain.linearRampToValueAtTime(prof.subGain, now + 3); sub.connect(subGain); subGain.connect(this.bus); sub.start(now); this.extras.push({ osc: sub }); }
           if (prof.shimmer > 0) { const shim = ctx.createOscillator(); shim.type = 'sine'; shim.frequency.value = 1760; const shimFilter = ctx.createBiquadFilter(); shimFilter.type = 'bandpass'; shimFilter.frequency.value = 1760; shimFilter.Q.value = 3; const shimGain = ctx.createGain(); shimGain.gain.setValueAtTime(0.0001, now); shimGain.gain.linearRampToValueAtTime(prof.shimmer, now + 3.5); const shimLfo = ctx.createOscillator(); shimLfo.type = 'sine'; shimLfo.frequency.value = 0.18; const shimLfoGain = ctx.createGain(); shimLfoGain.gain.value = prof.shimmer * 0.7; shimLfo.connect(shimLfoGain); shimLfoGain.connect(shimGain.gain); shim.connect(shimFilter); shimFilter.connect(shimGain); shimGain.connect(this.bus); shim.start(now); shimLfo.start(now); this.extras.push({ osc: shim }, { osc: shimLfo }); }
           
-          // NEW: Dynamic Arpeggiator / Pulse mapped to the TEMPO slider
           if (finalTempo !== undefined) {
              const isKinetic = finalTempo > 55;
              const isDreadful = AppState.sliders.warmth > 60;
-             const pulsePeriod = isKinetic ? 0.15 : 0.8; // Fast arpeggio or slow heartbeat
+             const pulsePeriod = isKinetic ? 0.15 : 0.8; 
              const volMult = isKinetic ? 0.04 : 0.08;
 
              const doPulse = () => {
                 if (!this.playing) return;
                 const t = ctx.currentTime;
-                // High tempo = synth pluck, Low tempo = filtered thump
                 if (isKinetic) {
                   const f = 220 * (isDreadful ? 1 : 1.5) * (Math.random() > 0.5 ? 1 : 1.25);
                   AudioEngine._toneBlip(t, { freq: f, type: 'sawtooth', gain: volMult, decay: 0.15 });
@@ -1466,7 +1465,7 @@
 
         const payload = {
           type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
-          mediaType: AppState.mediaType, // NEW! Let the worker know to query TV vs Film
+          mediaType: AppState.mediaType,
           language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
           vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
           spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
@@ -1478,13 +1477,22 @@
         await revealResult(data, finalWarmth, finalTempo, finalReality, finalHumor);
       } catch (err) { stopLoadingSequence(); AudioEngine.heartbeat.stop(); console.error("Matchmaker Crash: ", err.message); showScreen('screen-error'); }
     }
+    
+    function getOneSentencePlot(overview) {
+      if (!overview) return "A cinematic journey unfolds in the dark.";
+      const match = overview.match(/^.*?[.!?](?:\s|$)/);
+      return match ? match[0].trim() : overview.substring(0, 100) + '...';
+    }
 
     async function revealResult(data, w, t, r, h) {
       stopLoadingSequence(); document.getElementById('loading-pct').innerText = "100%";
       const movie = data.movie; AppState.currentMovie = movie; AppState.runnerUps = data.runnerUps || [];
       const vibes = generateVibeWords(movie, w, t, r, h); const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
 
-      populateFinalReveal(movie, critique, vibes, data.cast || []); // Passes cast down instead of plot
+      const teaser = (data.teaser && data.teaser.trim()) || getOneSentencePlot(movie.overview);
+      
+      // Pass the teaser plot AND the cast array to be rendered
+      populateFinalReveal(movie, critique, vibes, teaser, data.cast || []); 
 
       const analysisEl = document.getElementById('custom-analysis'); analysisEl.classList.remove('cursor-blink'); analysisEl.style.whiteSpace = 'pre-wrap';
       analysisEl.innerHTML = (data.assessment && data.assessment.trim()) ? data.assessment.trim() : '<span class="text-neonRed font-bold">[ WRITER\'S BLOCK ]</span><br><br><span class="text-neutral-400">The machine has nothing to say. Try REROLL SCENE or come back later.</span>';
@@ -1494,7 +1502,7 @@
 
       AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
       AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
-      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags, t); hideLetterbox(); }, REVEAL_DURATION * 1000); // Now passing tempo
+      setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags, t); hideLetterbox(); }, REVEAL_DURATION * 1000);
     }
 
     function flashCueMark() { const cue = document.getElementById('cue-mark'); if (!cue) return; cue.classList.remove('flash'); void cue.offsetWidth; cue.classList.add('flash'); }
@@ -1538,7 +1546,8 @@
       return [w1.replace(/[^A-Z]/g, ''), w2, w3];
     }
 
-    function populateFinalReveal(movie, critique, vibes, cast) {
+    // Now correctly expects plot as the 4th parameter, and cast as the 5th
+    function populateFinalReveal(movie, critique, vibes, plot, cast) {
       const vtagEl = document.getElementById('vibe-tagline'); if (vtagEl) vtagEl.innerText = `"${critique.vibeTagline}"`;
       
       const mtitleEl = document.getElementById('movie-title');
@@ -1565,12 +1574,17 @@
       const letterboxdLink = document.getElementById('letterboxd-link');
       if (letterboxdLink && movie.id) letterboxdLink.href = AppState.mediaType === 'tv' ? `https://www.themoviedb.org/tv/${movie.id}` : `https://letterboxd.com/tmdb/${movie.id}`;
       
+      // Restore Plot
+      const mplotEl = document.getElementById('movie-plot');
+      if (mplotEl) mplotEl.innerText = `"${plot}"`;
+      
+      // Inject Cast separately
       const mcastEl = document.getElementById('movie-cast');
       if (mcastEl) {
         if (cast && cast.length > 0) {
             mcastEl.innerText = `STARRING: ${cast.join(', ')}`;
         } else {
-            mcastEl.innerText = "NO CAST DATA AVAILABLE";
+            mcastEl.innerText = "";
         }
       }
       
@@ -1694,7 +1708,6 @@
       const sliderText = `WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`;
       ctx.fillText(sliderText, W/2, cursorY);
       
-      // NEW: Drawing the manual override text on the canvas
       if (AppState.manualOverrideText) {
           cursorY += 40;
           ctx.fillStyle = '#FF003C';
@@ -1733,3 +1746,6 @@
   </script>
 </body>
 </html>
+
+
+```
