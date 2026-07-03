@@ -983,7 +983,7 @@
       for (let i = 0; i < filtered.length; i++) {
         const entry = filtered[i];
         const index = AppState.journal.indexOf(entry);
-        const posterUrl = entry.poster ? 'https://image.tmdb.org/t/p/w200' + entry.poster : '';
+        const posterUrl = entry.poster ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + entry.poster) : '';
         
         let statusHtml = '';
         let titleClass = 'text-white';
@@ -1128,7 +1128,7 @@
             }
         }
 
-        const posterUrl = m.poster_path ? 'https://image.tmdb.org/t/p/w200' + m.poster_path : '';
+        const posterUrl = m.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + m.poster_path) : '';
         const guessesCount = AppState.daily.guesses.length;
         const isGameOver = AppState.daily.won || AppState.daily.lost;
 
@@ -1351,7 +1351,7 @@
       try {
         const response = await fetch(WORKER_BASE_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mood: text })
+          body: JSON.stringify({ type: 'mood', mood: text })
         });
 
         if (!response.ok) throw new Error("HTTP " + response.status);
@@ -2116,7 +2116,7 @@
     function showScreenWithFocusReveal(screenId) {
       showScreen(screenId);
       const overlay = document.getElementById('poster-reveal-overlay'); const overlayImg = document.getElementById('poster-reveal-img'); const realPoster = document.getElementById('movie-poster');
-      const movie = AppState.currentMovie; const posterUrl = movie && movie.poster_path ? '[https://image.tmdb.org/t/p/w780](https://image.tmdb.org/t/p/w780)' + movie.poster_path : null;
+      const movie = AppState.currentMovie; const posterUrl = movie && movie.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w780' + movie.poster_path) : null;
       AudioEngine.focusSweep(REVEAL_DURATION); playTypewriterDing();
 
       if (!overlay || !overlayImg || !realPoster || !posterUrl) { const el = document.getElementById(screenId); if (el) { el.classList.remove('focus-reveal'); void el.offsetWidth; el.classList.add('focus-reveal'); } return; }
@@ -2256,13 +2256,13 @@
       if (posterImg) posterImg.style.opacity = "0"; if (fallbackText) fallbackText.style.display = "flex";
       
       if (movie.poster_path && posterImg) {
-        posterImg.src = '[https://image.tmdb.org/t/p/w500](https://image.tmdb.org/t/p/w500)' + movie.poster_path;
+        posterImg.src = WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w500' + movie.poster_path);
         posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; };
       } else {
          if(posterImg && AppState.drawnSpread[2]) { posterImg.src = AppState.drawnSpread[2].card.image; posterImg.onload = () => { posterImg.style.opacity = "1"; if (fallbackText) fallbackText.style.display = "none"; }; }
       }
       
-      if (movie.backdrop_path && ambientBg) { ambientBg.style.backgroundImage = 'url(\'[https://image.tmdb.org/t/p/original](https://image.tmdb.org/t/p/original)' + movie.backdrop_path + '\')'; } else if (ambientBg) { ambientBg.style.backgroundImage = "none"; }
+      if (movie.backdrop_path && ambientBg) { ambientBg.style.backgroundImage = "url('" + WORKER_BASE_URL + "?img=" + encodeURIComponent("/t/p/original" + movie.backdrop_path) + "')"; } else if (ambientBg) { ambientBg.style.backgroundImage = "none"; }
 
       const providersContainer = document.getElementById('providers-container');
       if (providersContainer) {
@@ -2292,7 +2292,7 @@
       let html = '';
       for (let i = 0; i < AppState.runnerUps.length; i++) {
         const movie = AppState.runnerUps[i];
-        const posterUrl = movie.poster_path ? '[https://image.tmdb.org/t/p/w200](https://image.tmdb.org/t/p/w200)' + movie.poster_path : '';
+        const posterUrl = movie.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + movie.poster_path) : '';
         const year = (movie.release_date || movie.first_air_date || '').split('-')[0];
         const title = movie.title || movie.name || 'Untitled';
         html += `
@@ -2454,6 +2454,3 @@
   </script>
 </body>
 </html>
-
-
-```
