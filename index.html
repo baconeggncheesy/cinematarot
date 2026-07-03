@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-black select-none">
 <head>
@@ -247,6 +248,24 @@
       transform-origin: top left;
       will-change: transform, filter;
     }
+
+    /* Daily Game Specific Styles */
+    .daily-box {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    .daily-box.filled { border-color: #FF003C; color: #FF003C; }
+    .daily-box.won { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.1); }
+    .clue-item { border-left: 2px solid #333; padding-left: 12px; margin-bottom: 12px; font-size: 11px; color: #a3a3a3; transition: all 0.5s ease; }
+    .clue-item.active { border-color: #FF003C; color: #e5e5e5; }
+    .clue-label { font-size: 9px; text-transform: uppercase; color: #FF003C; font-weight: bold; margin-bottom: 2px; tracking: 0.1em; }
   </style>
 </head>
 <body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
@@ -288,16 +307,50 @@
           </button>
         </div>
 
-        <button onclick="startHouseReading()" id="house-banner" class="mt-4 w-full border border-neutral-800 bg-darkGrey/60 hover:border-neonRed transition-colors p-3 flex items-center justify-between text-left group">
+        <button onclick="openDailyGame()" id="daily-game-banner" class="mt-4 w-full border border-neutral-800 bg-darkGrey/60 hover:border-neonRed transition-colors p-3 flex items-center justify-between text-left group">
           <div>
-            <div class="text-[9px] font-bold tracking-widest text-neonRed uppercase">Today's House Reading</div>
-            <div class="text-[9px] text-neutral-500 mt-0.5" id="house-date"></div>
+            <div class="text-[9px] font-bold tracking-widest text-neonRed uppercase">The Daily Archive</div>
+            <div class="text-[9px] text-neutral-500 mt-0.5">GLOBAL ENIGMA • GUESS THE REEL</div>
           </div>
           <div class="flex items-center space-x-2">
-            <div class="flex space-x-1" id="house-glyphs"></div>
             <span class="text-neutral-600 group-hover:text-neonRed transition-colors text-xs">›</span>
           </div>
         </button>
+      </section>
+
+      <!-- NEW DAILY GAME SCREEN -->
+      <section id="screen-daily-game" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-2">
+        <div class="scene-heading text-xs text-center border-none mb-2">INT. THE GLOBAL ARCHIVE - DAILY</div>
+        <div class="action text-[10px] text-center mb-6 px-4">The machine has locked onto a single frequency. Six spoiler-free clues to deduce the title.</div>
+
+        <div class="flex justify-center space-x-2 mb-6" id="daily-guess-boxes">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="daily-clues-container" class="space-y-1 mb-6 flex-1 px-2">
+           <!-- Populated by JS -->
+        </div>
+
+        <div id="daily-search-section" class="relative mt-auto">
+          <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Scan the Database:</div>
+          <div class="flex space-x-2">
+            <input type="text" id="daily-search-input" oninput="debounceDailySearch()" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for a title...">
+          </div>
+          <div id="daily-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <div id="daily-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
+            <div id="daily-end-message" class="text-neonRed font-bold text-xs uppercase tracking-widest mb-2"></div>
+            <div id="daily-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-4"></div>
+            <button onclick="shareDailyResult()" id="share-daily-btn" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">
+              [ COPY RESULT TO CLIPBOARD ]
+            </button>
+            <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">
+              Back to Main Terminal
+            </button>
+        </div>
       </section>
 
       <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
@@ -417,7 +470,6 @@
       <section id="screen-spread-review" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh] py-4">
         <div class="scene-heading text-xs flex justify-between items-center">
           <span id="spread-review-heading">INT. THE ANALYSIS TABLE - CONTINUOUS</span>
-          <span id="house-badge" class="hidden text-[8px] text-neonRed border border-neonRed px-1.5 py-0.5 rounded-sm tracking-widest">HOUSE</span>
         </div>
         <div class="action text-xs mb-6">The three drawn cards dictate the exact trajectory of the projection. Read the margins carefully.</div>
         
@@ -478,9 +530,7 @@
                 </div>
               </div>
               <div class="border-l border-neutral-700 pl-2">
-                <!-- Vague One Sentence Plot -->
                 <p class="text-[11px] text-neutral-400 italic font-sans leading-snug" id="movie-plot">"One sentence plot goes here..."</p>
-                <!-- Subtle cast listing right beneath to keep it spoiler-free -->
                 <p class="text-[9px] text-neutral-500 font-sans mt-2 uppercase tracking-wider font-bold" id="movie-cast"></p>
               </div>
               <div class="pt-1">
@@ -501,9 +551,10 @@
           
           <div class="bg-darkGrey/90 border border-dashed border-neutral-700 p-4 space-y-3 relative font-mono">
             <span class="font-mono text-[9px] tracking-wider text-neutral-400 block uppercase font-bold">Script Notes (Adjustments):</span>
-            <div class="flex space-x-2 pt-1">
-              <button onclick="markMovieAsSeen()" class="script-btn flex-1 text-center text-[10px] tracking-widest text-green-500 hover:border-green-500 hover:text-green-400">I'VE SEEN THIS</button>
-              <button onclick="rerollCurrentSpectrum()" class="script-btn flex-1 text-center font-bold text-[10px] tracking-widest !text-neonRed hover:!border-neonRed hover:!text-neonRed">REROLL SCENE</button>
+            <div class="flex space-x-2 pt-1" id="script-notes-buttons">
+              <button id="btn-seen" onclick="markMovieAsSeen()" class="script-btn flex-1 text-center text-[10px] tracking-widest text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>
+              <button id="btn-pass" onclick="markMovieNotInterested()" class="script-btn flex-1 text-center text-[10px] tracking-widest text-orange-500 hover:border-orange-500 hover:text-orange-400">PASS</button>
+              <button onclick="rerollCurrentSpectrum()" class="script-btn flex-1 text-center font-bold text-[10px] tracking-widest !text-neonRed hover:!border-neonRed hover:!text-neonRed">REROLL</button>
             </div>
           </div>
           
@@ -564,7 +615,7 @@
     </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
-      <div>V 9.9.0 (HOUSE)</div>
+      <div>V 9.9.0 (ARCHIVE)</div>
       <div class="flex items-center space-x-2">
         <span>SCENES:</span>
         <div id="retro-counter" class="flex space-x-0.5">
@@ -605,10 +656,18 @@
       currentMovie: null,
       runnerUps: [], 
       drawnSpread: [], 
-      isHouseReading: false,
       fullInversion: false, 
       journal: [], 
       sceneCount: 0,
+      
+      // Daily Game State
+      daily: {
+          dateIndex: null,
+          guesses: [], // array of strings (the guessed titles)
+          won: false,
+          lost: false,
+          movie: null
+      },
       
       tarotDeck: [
         { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpeg', audio: 'freq-tramp', glitch: 'glitch-shake',
@@ -756,7 +815,8 @@
       rejected: 'cinema_arcana_rejected',
       journal: 'cinema_arcana_journal',
       sceneCount: 'cinema_arcana_scene_count',
-      taste: 'cinema_arcana_taste'
+      taste: 'cinema_arcana_taste',
+      daily: 'cinema_arcana_daily'
     };
 
     function loadPersistedState() {
@@ -771,6 +831,19 @@
         const taste = JSON.parse(localStorage.getItem(STORAGE_KEYS.taste) || '{}');
         if (taste && typeof taste === 'object' && !Array.isArray(taste)) AppState.tasteAvoid = taste;
         AppState.sceneCount = parseInt(localStorage.getItem(STORAGE_KEYS.sceneCount) || '0', 10) || 0;
+        
+        // Load Daily Game State
+        const savedDaily = JSON.parse(localStorage.getItem(STORAGE_KEYS.daily) || 'null');
+        const now = new Date();
+        const currentDayIndex = Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000);
+        
+        if (savedDaily && savedDaily.dateIndex === currentDayIndex) {
+            AppState.daily = savedDaily;
+        } else {
+            AppState.daily = { dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null };
+            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
+        }
+
       } catch (e) { }
       renderHitCounter(AppState.sceneCount || 0);
     }
@@ -780,6 +853,10 @@
         localStorage.setItem(STORAGE_KEYS.seen, JSON.stringify(AppState.seenMovies));
         localStorage.setItem(STORAGE_KEYS.rejected, JSON.stringify(AppState.rejectedMovies));
       } catch (e) { }
+    }
+    
+    function persistDailyState() {
+        try { localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily)); } catch (e) {}
     }
 
     function recordRejectionTaste(movie) {
@@ -818,6 +895,24 @@
       });
       renderJournal();
     }
+    
+    function removeJournalEntry(index) {
+        if (index > -1 && index < AppState.journal.length) {
+            const entry = AppState.journal[index];
+            if (entry && entry.id) {
+                // Also wipe it from the rejection and seen lists so it can be recommended again
+                AppState.seenMovies = AppState.seenMovies.filter(id => id !== entry.id);
+                AppState.rejectedMovies = AppState.rejectedMovies.filter(id => id !== entry.id);
+                persistSeenRejected();
+            }
+            AppState.journal.splice(index, 1);
+            try {
+                localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
+            } catch(e) {}
+            playSynthBeep(300, 0.05, 'square');
+            renderJournal();
+        }
+    }
 
     function renderJournal() {
       const list = document.getElementById('journal-list');
@@ -836,19 +931,35 @@
         return;
       }
       list.innerHTML = filtered.map(entry => {
+        const index = AppState.journal.indexOf(entry);
         const posterUrl = entry.poster ? `https://image.tmdb.org/t/p/w200${entry.poster}` : '';
+        const isSeen = entry.id && AppState.seenMovies.includes(entry.id);
+        const isRejected = entry.id && AppState.rejectedMovies.includes(entry.id);
         const canMarkSeen = entry.id && journalTab === 'recommended';
+        
+        let statusHtml = '';
+        if (journalTab === 'recommended') {
+            if (isRejected) {
+                statusHtml = `<span class="text-[9px] text-orange-500 font-bold tracking-widest uppercase flex-shrink-0">PASSED</span>`;
+            } else if (canMarkSeen) {
+                statusHtml = `<button onclick="markJournalEntrySeen(${entry.id})" class="script-btn text-[9px] px-2 py-1.5 flex-shrink-0 text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>`;
+            }
+        } else if (journalTab === 'seen') {
+            statusHtml = `<span class="text-[9px] text-green-500 flex-shrink-0 font-bold">✓ SEEN</span>`;
+        }
+
         return `
-          <div class="flex items-center space-x-3 bg-darkGrey p-2 border border-neutral-900">
+          <div class="flex items-center space-x-3 bg-darkGrey p-2 border border-neutral-900 relative group">
+            <button onclick="removeJournalEntry(${index})" class="absolute top-1 right-1 text-neutral-600 hover:text-neonRed text-[12px] font-bold px-2 py-1 z-10" title="Remove from Journal">×</button>
             <div class="w-[45px] aspect-[2/3] flex-shrink-0 border border-neutral-800 bg-black overflow-hidden">
               ${posterUrl ? `<img src="${posterUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
             </div>
-            <div class="flex-1 min-w-0 font-mono">
-              <div class="font-bold text-white text-xs uppercase truncate">${entry.title}${entry.year ? ` (${entry.year})` : ''}</div>
+            <div class="flex-1 min-w-0 font-mono pr-6">
+              <div class="font-bold text-white text-xs uppercase truncate ${isRejected ? 'line-through opacity-50' : ''}">${entry.title}${entry.year ? ` (${entry.year})` : ''}</div>
               <div class="text-[9px] text-neutral-500 mt-0.5">${entry.date}</div>
               <div class="text-[9px] text-neutral-600 truncate">${entry.spread}</div>
             </div>
-            ${canMarkSeen ? `<button onclick="markJournalEntrySeen(${entry.id})" class="script-btn text-[9px] px-2 py-1.5 flex-shrink-0 text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>` : journalTab === 'seen' ? `<span class="text-[9px] text-green-500 flex-shrink-0 font-bold">✓</span>` : ''}
+            ${statusHtml}
           </div>
         `;
       }).join('');
@@ -871,47 +982,288 @@
     window.onload = function() {
       loadPersistedState(); renderGenreChips();
       document.getElementById('current-date').innerText = new Date().toLocaleDateString();
-      renderHouseBanner();
       typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
     };
 
     async function typewriter(elementId, text) { const el = document.getElementById(elementId); if (el) el.innerHTML = text; }
 
-    function _houseDateKey(d = new Date()) { return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`; }
-    function _seededRng(str) {
-      let h = 1779033703 ^ str.length;
-      for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
-      let a = (h ^= h >>> 16) >>> 0;
-      return function () {
-        a |= 0; a = (a + 0x6D2B79F5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
+    // --- NEW DAILY GAME LOGIC ---
+    let dailySearchTimer = null;
+    
+    // Helper to completely avoid spoilers
+    function getOneSentencePlot(overview) {
+      if (!overview) return "A cinematic journey unfolds in the dark.";
+      const match = overview.match(/^.*?[.!?](?:\s|$)/);
+      return match ? match[0].trim() : overview.substring(0, 100) + '...';
     }
-    function computeHouseSpread(dateKey = _houseDateKey()) {
-      const rng = _seededRng('cinema-arcana-house::' + dateKey);
-      const deck = [...AppState.tarotDeck];
-      for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-      }
-      return deck.slice(0, 3).map((card, i) => ({ card, isReversed: rng() >= 0.5, position: i }));
+
+    async function openDailyGame() {
+        playTypewriterDing();
+        showScreen('screen-loading');
+        
+        // If we don't have today's movie cached, fetch it
+        if (!AppState.daily.movie) {
+            try {
+                const res = await fetch(WORKER_BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'daily' })
+                });
+                
+                if (!res.ok) throw new Error("Could not connect to Global Archive.");
+                const data = await res.json();
+                
+                if (data.movie) {
+                    AppState.daily.movie = data.movie;
+                    persistDailyState();
+                } else {
+                    throw new Error("No media returned from archive.");
+                }
+            } catch(e) {
+                document.getElementById('error-message').innerText = e.message;
+                showScreen('screen-error');
+                return;
+            }
+        }
+        
+        renderDailyGameUI();
+        showScreen('screen-daily-game');
     }
-    function renderHouseBanner() {
-      const dateEl = document.getElementById('house-date');
-      const glyphsEl = document.getElementById('house-glyphs');
-      if (!dateEl || !glyphsEl) return;
-      const spread = computeHouseSpread();
-      dateEl.innerText = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toUpperCase() + ' · SAME CARDS FOR EVERYONE';
-      glyphsEl.innerHTML = spread.map(d => `<span class="w-5 h-7 flex items-center justify-center border border-neutral-700 bg-black text-[8px] font-bold text-neonRed ${d.isReversed ? 'rotate-180' : ''}">${d.card.num}</span>`).join('');
+
+    function renderDailyGameUI() {
+        const m = AppState.daily.movie;
+        if (!m) return;
+
+        // Render Guesses Boxes
+        const boxesContainer = document.getElementById('daily-guess-boxes');
+        boxesContainer.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+            const isGuessed = i < AppState.daily.guesses.length;
+            const isCorrect = isGuessed && AppState.daily.guesses[i] === (m.title || m.name);
+            const isWonBox = AppState.daily.won && isCorrect;
+            
+            boxesContainer.innerHTML += `
+                <div class="daily-box ${isGuessed ? 'filled' : ''} ${isWonBox ? 'won' : ''}">
+                    ${isGuessed ? (isCorrect ? '✓' : '×') : ''}
+                </div>
+            `;
+        }
+
+        // Prepare Clues
+        const year = (m.release_date || m.first_air_date || '').split('-')[0] || '----';
+        const genres = m.genres ? m.genres.map(g => g.name).join(', ') : 'UNKNOWN';
+        const runtime = m.runtime ? m.runtime : '--';
+        const rating = m.vote_average ? m.vote_average.toFixed(1) : '--';
+        const premise = getOneSentencePlot(m.overview);
+        
+        let castStr = "UNKNOWN";
+        if (m.credits && m.credits.cast) {
+            castStr = m.credits.cast.slice(0, 3).map(c => c.name).join(', ');
+        }
+        
+        let dirStr = "UNKNOWN";
+        if (m.credits && m.credits.crew) {
+            const d = m.credits.crew.find(c => c.job === 'Director');
+            if (d) dirStr = d.name;
+        }
+
+        const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : '';
+        const guessesCount = AppState.daily.guesses.length;
+        const isGameOver = AppState.daily.won || AppState.daily.lost;
+
+        // Render Clues
+        const cluesContainer = document.getElementById('daily-clues-container');
+        cluesContainer.innerHTML = `
+            <div class="clue-item active">
+                <div class="clue-label">Clue 1: Origin & Frequency</div>
+                <div>Year: ${year} • Genres: ${genres}</div>
+            </div>
+            
+            <div class="clue-item ${guessesCount >= 1 || isGameOver ? 'active' : 'opacity-20 blur-[2px]'}">
+                <div class="clue-label">Clue 2: Metrics</div>
+                <div>${guessesCount >= 1 || isGameOver ? `Length: ${runtime} MIN • Public Rating: ${rating}` : 'Locked'}</div>
+            </div>
+            
+            <div class="clue-item ${guessesCount >= 2 || isGameOver ? 'active' : 'opacity-20 blur-[2px]'}">
+                <div class="clue-label">Clue 3: The Premise (Spoiler-Free)</div>
+                <div class="italic">"${guessesCount >= 2 || isGameOver ? premise : 'Locked'}"</div>
+            </div>
+            
+            <div class="clue-item ${guessesCount >= 3 || isGameOver ? 'active' : 'opacity-20 blur-[2px]'}">
+                <div class="clue-label">Clue 4: Faces</div>
+                <div>${guessesCount >= 3 || isGameOver ? `Starring: ${castStr}` : 'Locked'}</div>
+            </div>
+            
+            <div class="clue-item ${guessesCount >= 4 || isGameOver ? 'active' : 'opacity-20 blur-[2px]'}">
+                <div class="clue-label">Clue 5: The Auteur</div>
+                <div>${guessesCount >= 4 || isGameOver ? `Directed by: ${dirStr}` : 'Locked'}</div>
+            </div>
+            
+            <div class="clue-item ${guessesCount >= 5 || isGameOver ? 'active' : 'opacity-20 blur-[2px]'}">
+                <div class="clue-label">Clue 6: Visual Evidence</div>
+                <div class="mt-2 relative w-[80px] h-[120px] bg-neutral-900 border border-neutral-800 overflow-hidden">
+                    ${posterUrl && (guessesCount >= 5 || isGameOver) ? `<img src="${posterUrl}" class="w-full h-full object-cover transition-all duration-1000 ${isGameOver ? 'blur-0' : 'blur-[12px] contrast-125 saturate-150'}">` : ''}
+                </div>
+            </div>
+        `;
+
+        // Handle End States
+        const searchSection = document.getElementById('daily-search-section');
+        const endSection = document.getElementById('daily-end-section');
+        
+        if (isGameOver) {
+            searchSection.classList.add('hidden');
+            endSection.classList.remove('hidden');
+            
+            const msgEl = document.getElementById('daily-end-message');
+            const ansEl = document.getElementById('daily-answer-reveal');
+            
+            if (AppState.daily.won) {
+                msgEl.innerText = "[ ARCHIVE RETRIEVED ]";
+                msgEl.classList.remove('text-neonRed');
+                msgEl.classList.add('text-green-500');
+            } else {
+                msgEl.innerText = "[ ENIGMA FAILED ]";
+                msgEl.classList.remove('text-green-500');
+                msgEl.classList.add('text-neonRed');
+            }
+            
+            ansEl.innerText = m.title || m.name || 'UNKNOWN';
+        } else {
+            searchSection.classList.remove('hidden');
+            endSection.classList.add('hidden');
+        }
     }
-    async function startHouseReading() {
-      playTypewriterDing(); TiltEngine.enable();
-      AppState.drawnSpread = computeHouseSpread(); AppState.fullInversion = AppState.drawnSpread.every(d => d.isReversed); AppState.isHouseReading = true;
-      AppState.drawnSpread.forEach((d, i) => { setTimeout(() => AudioEngine.cardSound(d.card, d.isReversed), i * 260); });
-      await goToSpreadReview();
+
+    function debounceDailySearch() {
+        clearTimeout(dailySearchTimer);
+        dailySearchTimer = setTimeout(executeDailySearch, 400);
     }
+
+    async function executeDailySearch() {
+        const input = document.getElementById('daily-search-input').value.trim();
+        const resultsContainer = document.getElementById('daily-search-results');
+        
+        if (input.length < 2) {
+            resultsContainer.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const res = await fetch(WORKER_BASE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'search', query: input })
+            });
+            
+            if (!res.ok) throw new Error('Search failed');
+            const data = await res.json();
+            
+            resultsContainer.innerHTML = '';
+            if (data.results && data.results.length > 0) {
+                // Take top 5
+                const top5 = data.results.slice(0, 5);
+                top5.forEach(movie => {
+                    const title = movie.title || movie.name || 'Unknown';
+                    const year = (movie.release_date || movie.first_air_date || '').split('-')[0] || '';
+                    const display = year ? `${title} (${year})` : title;
+                    
+                    // Pass the title as the guess so it reads well in history, but we verify against ID usually.
+                    // For Wordle style, checking exact string or ID works. We'll pass the ID to confirm, but save title to history.
+                    resultsContainer.innerHTML += `
+                        <div onclick="submitDailyGuess(${movie.id}, '${title.replace(/'/g, "\\'")}')" class="p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate">
+                            ${display}
+                        </div>
+                    `;
+                });
+                resultsContainer.classList.remove('hidden');
+            } else {
+                resultsContainer.innerHTML = `<div class="p-3 text-[10px] text-neutral-600 uppercase">No signal found...</div>`;
+                resultsContainer.classList.remove('hidden');
+            }
+            
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function submitDailyGuess(guessedId, guessedTitle) {
+        document.getElementById('daily-search-input').value = '';
+        document.getElementById('daily-search-results').classList.add('hidden');
+        
+        const m = AppState.daily.movie;
+        if (!m) return;
+        
+        AppState.daily.guesses.push(guessedTitle);
+        
+        if (guessedId === m.id) {
+            AppState.daily.won = true;
+            playSynthBeep(600, 0.1, 'sine');
+            setTimeout(() => playSynthBeep(800, 0.2, 'sine'), 150);
+        } else if (AppState.daily.guesses.length >= 6) {
+            AppState.daily.lost = true;
+            triggerGlitchEffect('glitch-shake');
+            playArcanaSound('freq-heavy');
+        } else {
+            playSynthBeep(200, 0.1, 'square');
+        }
+        
+        persistDailyState();
+        renderDailyGameUI();
+    }
+    
+    function shareDailyResult() {
+        const d = new Date();
+        const dateStr = `${d.getUTCMonth()+1}/${d.getUTCDate()}/${String(d.getUTCFullYear()).slice(2)}`;
+        
+        let grid = "";
+        for (let i = 0; i < 6; i++) {
+            const isGuessed = i < AppState.daily.guesses.length;
+            const isCorrect = isGuessed && AppState.daily.guesses[i] === (AppState.daily.movie.title || AppState.daily.movie.name);
+            
+            if (isCorrect) grid += "🟩 ";
+            else if (isGuessed) grid += "🟥 ";
+            else grid += "⬛ ";
+        }
+        
+        const attempts = AppState.daily.won ? AppState.daily.guesses.length : "X";
+        const shareText = `CINEMA ARCANA [Daily] - ${dateStr}\nAttempts: ${attempts}/6\n${grid.trim()}`;
+        
+        const btn = document.getElementById('share-daily-btn');
+        const origText = btn.innerText;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(shareText).then(() => {
+                btn.innerText = "[ COPIED TO CLIPBOARD ]";
+                playTypewriterDing();
+                setTimeout(() => { btn.innerText = origText; }, 2000);
+            }).catch(() => {
+                fallbackShareDaily(shareText, btn, origText);
+            });
+        } else {
+            fallbackShareDaily(shareText, btn, origText);
+        }
+    }
+    
+    function fallbackShareDaily(text, btn, origText) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";  // Avoid scrolling to bottom
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            btn.innerText = "[ COPIED TO CLIPBOARD ]";
+            playTypewriterDing();
+        } catch (err) {
+            btn.innerText = "[ FAILED TO COPY ]";
+        }
+        document.body.removeChild(textArea);
+        setTimeout(() => { btn.innerText = origText; }, 2000);
+    }
+    // --- END DAILY GAME LOGIC ---
+
 
     async function translateVibe() {
       const inputEl = document.getElementById('vibe-input');
@@ -1254,7 +1606,6 @@
         if (!this.active) return;
         this.x += (this._rawX - this.x) * 0.12; this.y += (this._rawY - this.y) * 0.12;
         
-        // Removed optional chaining syntax (?.)
         const game3El = document.getElementById('screen-game3');
         const wheelVisible = game3El && !game3El.classList.contains('hidden');
         if (wheelVisible && typeof updateWheel === 'function') updateWheel();
@@ -1295,7 +1646,6 @@
     function triggerGlitchEffect(glitchClass) { const body = document.getElementById('app-body'); body.classList.add(glitchClass); setTimeout(() => body.classList.remove(glitchClass), 500); }
 
     function showScreen(screenId) {
-      // Removed optional chaining syntax (?.)
       const resultEl = document.getElementById('screen-result');
       const leavingResult = screenId !== 'screen-result' && resultEl && !resultEl.classList.contains('hidden');
       if (leavingResult) { AudioEngine.spreadScore.stop(0.6); hideLetterbox(); }
@@ -1304,7 +1654,7 @@
       const leavingReview = screenId !== 'screen-spread-review' && reviewEl && !reviewEl.classList.contains('hidden');
       if (leavingReview && window.speechSynthesis && _speaking) { speechSynthesis.cancel(); _speaking = false; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR'; }
 
-      ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+      ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal', 'screen-daily-game'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
       const target = document.getElementById(screenId); if (target) target.classList.remove('hidden');
     }
 
@@ -1337,7 +1687,7 @@
     let wheelDragActive = false; let isSwipingWheel = false; let wheelTouchStartX = 0; let wheelTouchStartY = 0; let wheelDragStartIndex = 0; let wheelVelocityTracker = []; let wheelVelocity = 0; let wheelRAF = null; let wheelTargetIndex = 0; let isSettling = false;
 
     async function goToTarotGame() {
-      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; AppState.isHouseReading = false;
+      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; 
       document.getElementById('tarot-proceed-btn').classList.add('hidden'); document.getElementById('draw-count').innerText = "0/3";
       initTarotWheel(); TiltEngine.recalibrate(); showScreen('screen-game3'); await sleep(300); typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
     }
@@ -1419,7 +1769,7 @@
                 </div>
             `;
         });
-        AudioEngine.wheelHum.silence(); const houseBadge = document.getElementById('house-badge'); if (houseBadge) houseBadge.classList.toggle('hidden', !AppState.isHouseReading);
+        AudioEngine.wheelHum.silence(); 
         showScreen('screen-spread-review'); await renderPsychicReading();
     }
 
@@ -1435,7 +1785,6 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json(); 
         
-        // Removed optional chaining syntax (?.)
         let text = null;
         if (data && data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
             text = data.candidates[0].content.parts[0].text;
@@ -1485,13 +1834,6 @@
         await revealResult(data, finalWarmth, finalTempo, finalReality, finalHumor);
       } catch (err) { stopLoadingSequence(); AudioEngine.heartbeat.stop(); console.error("Matchmaker Crash: ", err.message); showScreen('screen-error'); }
     }
-    
-    // Spoiler-Free Vague Plot
-    function getOneSentencePlot(overview) {
-      if (!overview) return "A cinematic journey unfolds in the dark.";
-      const match = overview.match(/^.*?[.!?](?:\s|$)/);
-      return match ? match[0].trim() : overview.substring(0, 100) + '...';
-    }
 
     async function revealResult(data, w, t, r, h) {
       stopLoadingSequence(); document.getElementById('loading-pct').innerText = "100%";
@@ -1509,6 +1851,18 @@
       addJournalEntry({ id: movie.id || null, title: movie.title || movie.name || 'Untitled', year: (movie.release_date || movie.first_air_date || '').split('-')[0], poster: movie.poster_path || null, spread: spreadSummary, date: new Date().toLocaleDateString() });
 
       AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
+      
+      const btnPass = document.getElementById('btn-pass');
+      if (btnPass) {
+          btnPass.innerText = "PASS";
+          btnPass.classList.remove('opacity-50', 'pointer-events-none');
+      }
+      const btnSeen = document.getElementById('btn-seen');
+      if (btnSeen) {
+          btnSeen.innerText = "SEEN";
+          btnSeen.classList.remove('opacity-50', 'pointer-events-none');
+      }
+      
       AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
       setTimeout(() => { AudioEngine.spreadScore.start(AppState.drawnSpread, AppState.currentToneTags); hideLetterbox(); }, REVEAL_DURATION * 1000);
     }
@@ -1538,10 +1892,55 @@
         }); });
       setTimeout(() => { overlay.classList.add('hidden'); }, REVEAL_DURATION * 1000 + 100);
     }
-
-    function addToSeenList(movieId) { if (!movieId) return; if (!AppState.seenMovies.includes(movieId)) { AppState.seenMovies.push(movieId); persistSeenRejected(); } }
-    function markMovieAsSeen() { if (AppState.currentMovie && AppState.currentMovie.id) { addToSeenList(AppState.currentMovie.id); initiateSubconsciousMatching(); } }
-    function rerollCurrentSpectrum() { if (AppState.currentMovie && AppState.currentMovie.id) { AppState.rejectedMovies.push(AppState.currentMovie.id); recordRejectionTaste(AppState.currentMovie); persistSeenRejected(); initiateSubconsciousMatching(); } }
+    
+    function markMovieAsSeen() { 
+        if (AppState.currentMovie && AppState.currentMovie.id) { 
+            addToSeenList(AppState.currentMovie.id); 
+            playTypewriterDing();
+            const btn = document.getElementById('btn-seen');
+            if (btn) {
+                btn.innerText = "LOGGED";
+                btn.classList.add('opacity-50', 'pointer-events-none');
+            }
+            const btnPass = document.getElementById('btn-pass');
+            if (btnPass) {
+                btnPass.classList.add('opacity-50', 'pointer-events-none');
+            }
+        } 
+    }
+    
+    function markMovieNotInterested() {
+        if (AppState.currentMovie && AppState.currentMovie.id) {
+            const id = AppState.currentMovie.id;
+            if (!AppState.rejectedMovies.includes(id)) {
+                AppState.rejectedMovies.push(id);
+                recordRejectionTaste(AppState.currentMovie);
+                persistSeenRejected();
+            }
+            playTypewriterDing();
+            const btn = document.getElementById('btn-pass');
+            if (btn) {
+                btn.innerText = "PASSED";
+                btn.classList.add('opacity-50', 'pointer-events-none');
+            }
+            const btnSeen = document.getElementById('btn-seen');
+            if (btnSeen) {
+                btnSeen.classList.add('opacity-50', 'pointer-events-none');
+            }
+        }
+    }
+    
+    function rerollCurrentSpectrum() { 
+        if (AppState.currentMovie && AppState.currentMovie.id) { 
+            const id = AppState.currentMovie.id;
+            if (!AppState.rejectedMovies.includes(id)) {
+                AppState.rejectedMovies.push(id); 
+                recordRejectionTaste(AppState.currentMovie); 
+                persistSeenRejected(); 
+            }
+            initiateSubconsciousMatching(); 
+        } 
+    }
 
     function dominantWord(name) {
       const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']); const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
@@ -1655,9 +2054,6 @@
       }).join('');
     }
 
-    function loadImageCrossOrigin(url) { return new Promise((resolve, reject) => { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => resolve(img); img.onerror = reject; img.src = url; }); }
-    async function loadImageWithJpegFallback(url) { try { return await loadImageCrossOrigin(url); } catch (e) { if (/\.jpg$/i.test(url)) { return await loadImageCrossOrigin(url.replace(/\.jpg$/i, '.jpeg')); } if (/\.jpeg$/i.test(url)) { return await loadImageCrossOrigin(url.replace(/\.jpeg$/i, '.jpg')); } throw e; } }
-
     function normalizeTmdbImageUrl(value, size = "w500") {
       if (!value) return null;
       const raw = String(value).trim();
@@ -1672,14 +2068,7 @@
     function getCurrentPosterUrl(size = "w500") {
       const movie = AppState.currentMovie || {};
       return normalizeTmdbImageUrl(
-        AppState.currentPosterUrl ||
-          movie.sharePosterUrl ||
-          movie.posterUrl ||
-          movie.poster_url ||
-          movie.poster ||
-          movie.imageUrl ||
-          movie.poster_path,
-        size
+        AppState.currentPosterUrl || movie.sharePosterUrl || movie.posterUrl || movie.poster_url || movie.poster || movie.imageUrl || movie.poster_path, size
       );
     }
 
@@ -1688,203 +2077,89 @@
       if (!posterUrl) return null;
       try {
         const parsed = new URL(posterUrl);
-        if (parsed.hostname === "image.tmdb.org") {
-          return `${WORKER_BASE_URL}?img=${encodeURIComponent(parsed.pathname)}`;
-        }
+        if (parsed.hostname === "image.tmdb.org") { return `${WORKER_BASE_URL}?img=${encodeURIComponent(parsed.pathname)}`; }
       } catch (e) {}
       return `${WORKER_BASE_URL}?img=${encodeURIComponent(posterUrl)}`;
     }
 
     async function buildReadingCanvasDataUrl() {
       const movie = AppState.currentMovie || {};
-      const W = 1080;
-      const H = 1920;
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
+      const W = 1080; const H = 1920; const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H; const ctx = canvas.getContext('2d');
 
-      function cleanCanvasText(value) {
-        return String(value || '')
-          .replace(/[•·]/g, '-')
-          .replace(/[—–]/g, '-')
-          .replace(/[⚠]/g, '!')
-          .replace(/[“”]/g, '"')
-          .replace(/[‘’]/g, "'")
-          .replace(/[^\x20-\x7E]/g, '');
-      }
+      function cleanCanvasText(value) { return String(value || '').replace(/[•·]/g, '-').replace(/[—–]/g, '-').replace(/[⚠]/g, '!').replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[^\x20-\x7E]/g, ''); }
 
-      ctx.fillStyle = '#0A0A0A';
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#0A0A0A'; ctx.fillRect(0, 0, W, H);
+      const grad = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W); grad.addColorStop(0, 'rgba(255,0,60,0.18)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H * 0.6);
 
-      const grad = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W);
-      grad.addColorStop(0, 'rgba(255,0,60,0.18)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H * 0.6);
+      ctx.fillStyle = '#FF003C'; ctx.font = 'bold 32px Courier New, monospace'; ctx.textAlign = 'center'; ctx.fillText('CINEMA ARCANA', W / 2, 100);
+      ctx.fillStyle = '#666'; ctx.font = '20px Courier New, monospace'; ctx.fillText('TAROT FOR MOVIES', W / 2, 135);
 
-      ctx.fillStyle = '#FF003C';
-      ctx.font = 'bold 32px Courier New, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('CINEMA ARCANA', W / 2, 100);
-
-      ctx.fillStyle = '#666';
-      ctx.font = '20px Courier New, monospace';
-      ctx.fillText('TAROT FOR MOVIES', W / 2, 135);
-
-      const posterW = 460;
-      const posterH = 690;
-      const posterX = (W - posterW) / 2;
-      const posterY = 170;
-      const sharePosterUrl = getCanvasSafePosterUrl('w500');
+      const posterW = 460; const posterH = 690; const posterX = (W - posterW) / 2; const posterY = 170; const sharePosterUrl = getCanvasSafePosterUrl('w500');
 
       if (sharePosterUrl) {
         try {
           const posterImg = await loadImageCrossOrigin(sharePosterUrl);
-          ctx.save();
-          ctx.shadowColor = 'rgba(255,0,60,0.5)';
-          ctx.shadowBlur = 40;
-          ctx.drawImage(posterImg, posterX, posterY, posterW, posterH);
-          ctx.restore();
-
-          ctx.strokeStyle = '#FF003C';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(posterX, posterY, posterW, posterH);
-        } catch (e) {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(posterX, posterY, posterW, posterH);
-        }
-      } else {
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(posterX, posterY, posterW, posterH);
-      }
+          ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.5)'; ctx.shadowBlur = 40; ctx.drawImage(posterImg, posterX, posterY, posterW, posterH); ctx.restore();
+          ctx.strokeStyle = '#FF003C'; ctx.lineWidth = 3; ctx.strokeRect(posterX, posterY, posterW, posterH);
+        } catch (e) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(posterX, posterY, posterW, posterH); }
+      } else { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(posterX, posterY, posterW, posterH); }
 
       let cursorY = posterY + posterH + 70;
+      ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 44px Georgia, serif'; ctx.textAlign = 'center';
+      const title = cleanCanvasText(movie.title || movie.name || 'UNKNOWN'); ctx.fillText(title.length > 30 ? title.slice(0, 30) + '...' : title, W / 2, cursorY);
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 44px Georgia, serif';
-      ctx.textAlign = 'center';
-      const title = cleanCanvasText(movie.title || movie.name || 'UNKNOWN');
-      ctx.fillText(title.length > 30 ? title.slice(0, 30) + '...' : title, W / 2, cursorY);
-
-      cursorY += 48;
-      const year = cleanCanvasText((movie.release_date || movie.first_air_date || '').split('-')[0]);
+      cursorY += 48; const year = cleanCanvasText((movie.release_date || movie.first_air_date || '').split('-')[0]);
+      let dir = ''; if (movie.credits && movie.credits.crew) { const dirObj = movie.credits.crew.find(c => c.job === 'Director' || c.job === 'Executive Producer'); if (dirObj) dir = dirObj.name; }
       
-      let dir = '';
-      if (movie.credits && movie.credits.crew) {
-        const dirObj = movie.credits.crew.find(c => c.job === 'Director' || c.job === 'Executive Producer');
-        if (dirObj) dir = dirObj.name;
-      }
-      
-      ctx.fillStyle = '#FF003C';
-      ctx.font = 'bold 22px Courier New, monospace';
-      ctx.fillText([year, cleanCanvasText(dir)].filter(Boolean).join('  -  '), W / 2, cursorY);
+      ctx.fillStyle = '#FF003C'; ctx.font = 'bold 22px Courier New, monospace'; ctx.fillText([year, cleanCanvasText(dir)].filter(Boolean).join('  -  '), W / 2, cursorY);
+      cursorY += 70; ctx.fillStyle = '#666'; ctx.font = '20px Courier New, monospace'; ctx.fillText('THE SPREAD', W / 2, cursorY); cursorY += 40;
 
-      cursorY += 70;
-      ctx.fillStyle = '#666';
-      ctx.font = '20px Courier New, monospace';
-      ctx.fillText('THE SPREAD', W / 2, cursorY);
-      cursorY += 40;
-
-      const cardThumbW = 150;
-      const cardThumbH = 225;
-      const cardGap = 40;
-      const totalCardsW = cardThumbW * 3 + cardGap * 2;
-      let cardX = (W - totalCardsW) / 2;
-      const cardY = cursorY;
+      const cardThumbW = 150; const cardThumbH = 225; const cardGap = 40; const totalCardsW = cardThumbW * 3 + cardGap * 2; let cardX = (W - totalCardsW) / 2; const cardY = cursorY;
 
       for (let i = 0; i < AppState.drawnSpread.length; i++) {
-        const draw = AppState.drawnSpread[i];
-        const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
-
+        const draw = AppState.drawnSpread[i]; const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
         try {
           const cardImg = await loadImageWithJpegFallback(draw.card.image);
           ctx.save();
-          if (draw.isReversed) {
-            ctx.translate(cardX + cardThumbW / 2, cardY + cardThumbH / 2);
-            ctx.rotate(Math.PI);
-            ctx.drawImage(cardImg, -cardThumbW / 2, -cardThumbH / 2, cardThumbW, cardThumbH);
-          } else {
-            ctx.drawImage(cardImg, cardX, cardY, cardThumbW, cardThumbH);
-          }
+          if (draw.isReversed) { ctx.translate(cardX + cardThumbW / 2, cardY + cardThumbH / 2); ctx.rotate(Math.PI); ctx.drawImage(cardImg, -cardThumbW / 2, -cardThumbH / 2, cardThumbW, cardThumbH); } 
+          else { ctx.drawImage(cardImg, cardX, cardY, cardThumbW, cardThumbH); }
           ctx.restore();
-        } catch (e) {
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH);
-        }
+        } catch (e) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cardX, cardY, cardThumbW, cardThumbH); }
 
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
-
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 16px Courier New, monospace';
-        ctx.fillText(pos, cardX + cardThumbW / 2, cardY + cardThumbH + 30);
-
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(cardX, cardY, cardThumbW, cardThumbH);
+        ctx.textAlign = 'center'; ctx.fillStyle = '#FF003C'; ctx.font = 'bold 16px Courier New, monospace'; ctx.fillText(pos, cardX + cardThumbW / 2, cardY + cardThumbH + 30);
         cardX += cardThumbW + cardGap;
       }
 
-      cursorY = cardY + cardThumbH + 60;
-      ctx.textAlign = 'left';
+      cursorY = cardY + cardThumbH + 60; ctx.textAlign = 'left';
 
       AppState.drawnSpread.forEach((draw, i) => {
         const pos = i === 0 ? 'PAST' : i === 1 ? 'PRESENT' : 'FUTURE';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 20px Courier New, monospace';
-        ctx.fillText(`[${pos}]`, 120, cursorY);
-
-        ctx.fillStyle = '#ccc';
-        ctx.font = '20px Courier New, monospace';
+        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 20px Courier New, monospace'; ctx.fillText(`[${pos}]`, 120, cursorY);
+        ctx.fillStyle = '#ccc'; ctx.font = '20px Courier New, monospace';
         const cardLabel = cleanCanvasText(`${draw.card.name}${draw.isReversed ? ' (Reversed)' : ''}`);
-        ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '...' : cardLabel, 270, cursorY);
-        cursorY += 40;
+        ctx.fillText(cardLabel.length > 38 ? cardLabel.slice(0, 38) + '...' : cardLabel, 270, cursorY); cursorY += 40;
       });
 
-      if (AppState.fullInversion) {
-        cursorY += 20;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'bold 24px Courier New, monospace';
-        ctx.fillText('[ FULL INVERSION - RARE OMEN ]', W / 2, cursorY);
-        cursorY += 20;
-      }
+      if (AppState.fullInversion) { cursorY += 20; ctx.textAlign = 'center'; ctx.fillStyle = '#FF003C'; ctx.font = 'bold 24px Courier New, monospace'; ctx.fillText('[ FULL INVERSION - RARE OMEN ]', W / 2, cursorY); cursorY += 20; }
 
-      cursorY += 60;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#FF003C';
-      ctx.font = 'bold 22px Courier New, monospace';
-      ctx.fillText('DIAGNOSTIC PARAMETERS', W / 2, cursorY);
-
-      cursorY += 40;
-      ctx.fillStyle = '#ccc';
-      ctx.font = '18px Courier New, monospace';
+      cursorY += 60; ctx.textAlign = 'center'; ctx.fillStyle = '#FF003C'; ctx.font = 'bold 22px Courier New, monospace'; ctx.fillText('DIAGNOSTIC PARAMETERS', W / 2, cursorY); cursorY += 40; ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
 
       const genreNames = AppState.vibeGenreIds.map(id => GENRE_MAP[id] ? GENRE_MAP[id].name : null).filter(Boolean).join(' + ') || 'NONE';
       const runtimeLabel = AppState.runtimeBand === 'custom' ? `<=${AppState.runtimeMax}MIN` : (AppState.runtimeBand || 'any').toUpperCase();
       const metaText = cleanCanvasText(`GENRES: ${genreNames}  |  RUNTIME: ${runtimeLabel}  |  ERA: ${AppState.era.toUpperCase()}`);
-      ctx.fillText(metaText, W / 2, cursorY);
-
-      cursorY += 35;
-      const s = AppState.sliders;
-      const sliderText = cleanCanvasText(
-        `WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`
-      );
-      ctx.fillText(sliderText, W / 2, cursorY);
+      ctx.fillText(metaText, W / 2, cursorY); cursorY += 35;
+      
+      const s = AppState.sliders; const sliderText = cleanCanvasText(`WARMTH: ${s.warmth}% | TEMPO: ${s.tempo}% | REALITY: ${s.reality}% | OBSCURE: ${s.obscurity}% | HUMOR: ${s.humor}%`); ctx.fillText(sliderText, W / 2, cursorY);
 
       if (AppState.manualOverrideText) {
-        cursorY += 40;
-        ctx.fillStyle = '#FF003C';
-        ctx.font = 'italic 18px Courier New, monospace';
+        cursorY += 40; ctx.fillStyle = '#FF003C'; ctx.font = 'italic 18px Courier New, monospace';
         const overrideText = cleanCanvasText(`OVERRIDE: "${AppState.manualOverrideText.toUpperCase()}"`);
         ctx.fillText(overrideText.length > 90 ? overrideText.slice(0, 90) + '...' : overrideText, W / 2, cursorY);
       }
 
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#444';
-      ctx.font = '18px Courier New, monospace';
-      ctx.fillText('cinema-arcana - ' + new Date().toLocaleDateString(), W / 2, H - 60);
-
+      ctx.textAlign = 'center'; ctx.fillStyle = '#444'; ctx.font = '18px Courier New, monospace'; ctx.fillText('cinema-arcana - ' + new Date().toLocaleDateString(), W / 2, H - 60);
       return canvas.toDataURL('image/png');
     }
 
@@ -1902,8 +2177,7 @@
       try {
         const dataUrl = await buildReadingCanvasDataUrl(); const blob = await (await fetch(dataUrl)).blob(); const file = new File([blob], 'cinema-arcana-reading.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          overlay.classList.add('hidden'); playTypewriterDing();
-          await navigator.share({ files: [file], title: 'Cinema Arcana', text: 'My tarot-matched projection.' });
+          overlay.classList.add('hidden'); playTypewriterDing(); await navigator.share({ files: [file], title: 'Cinema Arcana', text: 'My tarot-matched projection.' });
         } else { showShareOverlayFallback(dataUrl, false); }
       } catch (err) { if (err.name === 'AbortError') { overlay.classList.add('hidden'); } else { showShareOverlayFallback(null, true); } } finally { btn.innerText = originalLabel; btn.disabled = false; }
     }
