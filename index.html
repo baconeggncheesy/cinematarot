@@ -904,13 +904,21 @@
     }
 
 	    function addJournalEntry(entry) {
+	      const entryId = entry && entry.id ? String(entry.id) : null;
+	      const entrySpread = entry && entry.spread ? String(entry.spread) : "";
+	      if (entryId) {
+	        AppState.journal = AppState.journal.filter(existing => {
+	          if (!existing || !existing.id) return true;
+	          return String(existing.id) !== entryId || String(existing.spread || "") !== entrySpread;
+	        });
+	      }
 	      AppState.journal.unshift(entry);
-	      if (AppState.journal.length > 50) AppState.journal.length = 50; 
-      AppState.sceneCount = (AppState.sceneCount || 0) + 1;
-      try {
-        localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
-        localStorage.setItem(STORAGE_KEYS.sceneCount, String(AppState.sceneCount));
-      } catch (e) {}
+	      if (AppState.journal.length > 50) AppState.journal.length = 50;
+	      AppState.sceneCount = (AppState.sceneCount || 0) + 1;
+	      try {
+	        localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
+	        localStorage.setItem(STORAGE_KEYS.sceneCount, String(AppState.sceneCount));
+	      } catch (e) {}
 	      renderHitCounter(AppState.sceneCount);
 	    }
 
@@ -2275,13 +2283,16 @@
 	      return [w1.replace(/[^A-Z]/g, ''), w2, w3];
 	    }
 
-    function getDirectorName(movie) {
-      const crew = movie && movie.credits && Array.isArray(movie.credits.crew) ? movie.credits.crew : [];
-      const director = crew.find(c => c.job === 'Director');
-      if (director && director.name) return director.name;
-      if (movie && movie.director && !/producer/i.test(String(movie.director))) return movie.director;
-      if (movie && movie.created_by && movie.created_by.length > 0 && movie.created_by[0].name) return movie.created_by[0].name;
-      return "AUTEUR";
+	    function getDirectorName(movie) {
+	      const crew = movie && movie.credits && Array.isArray(movie.credits.crew) ? movie.credits.crew : [];
+	      const directors = [];
+	      for (let i = 0; i < crew.length; i++) {
+	        if (crew[i].job === 'Director' && crew[i].name && !directors.includes(crew[i].name)) directors.push(crew[i].name);
+	      }
+	      if (directors.length > 0) return directors.join(' & ');
+	      if (movie && movie.director && !/producer/i.test(String(movie.director))) return movie.director;
+	      if (movie && movie.created_by && movie.created_by.length > 0 && movie.created_by[0].name) return movie.created_by[0].name;
+	      return "AUTEUR";
     }
 
     function buildRunnerUpRationale() {
