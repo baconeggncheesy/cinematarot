@@ -578,12 +578,19 @@
         <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
       </div>
 
-      <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
-        <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
-        <img id="share-image-output" class="hidden max-w-full max-h-[75vh] border border-neonRed shadow-neon" alt="Shareable tarot card">
-        <div id="share-image-hint" class="hidden text-[10px] text-neutral-400 uppercase tracking-widest mt-4 text-center px-4">Press &amp; hold the image to save it to your device</div>
-        <button onclick="closeShareImageOverlay()" class="script-btn uppercase text-xs px-6 py-2 mt-6 border border-neutral-600">Close</button>
-      </div>
+	      <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
+	        <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
+	        <img id="share-image-output" class="hidden max-w-full max-h-[75vh] border border-neonRed shadow-neon" alt="Shareable tarot card">
+	        <div id="share-image-hint" class="hidden text-[10px] text-neutral-400 uppercase tracking-widest mt-4 text-center px-4">Press &amp; hold the image to save it to your device</div>
+	        <button onclick="closeShareImageOverlay()" class="script-btn uppercase text-xs px-6 py-2 mt-6 border border-neutral-600">Close</button>
+	      </div>
+
+	      <div id="deck-card-overlay" class="hidden fixed inset-0 bg-black/95 z-50 p-4 flex items-center justify-center">
+	        <div class="w-full max-w-md border border-neonRed bg-black shadow-neon p-3 relative max-h-[92vh] overflow-y-auto">
+	          <button onclick="closeDeckCard()" class="absolute top-2 right-2 text-neutral-500 hover:text-neonRed text-lg font-bold px-2 leading-none" aria-label="Close card detail">×</button>
+	          <div id="deck-card-detail"></div>
+	        </div>
+	      </div>
 
 	      <section id="screen-error" class="hidden animate-fade-in text-center py-12 flex flex-col justify-center min-h-[60vh]">
 	        <div class="scene-heading glitch-text text-2xl border-none mb-6" data-text="APP NOT WORKING">APP NOT WORKING</div>
@@ -622,13 +629,11 @@
 	        </div>
 	      </section>
 
-	      <section id="screen-deck" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
+	      <section id="screen-deck" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-2">
 	        <div class="scene-heading text-xs">INT. THE DECK - CONTINUOUS</div>
-	        <div class="action text-xs mb-4">The full Cinematic Arcana, indexed for inspection.</div>
+	        <div class="action text-[10px] mb-3">The full Cinematic Arcana, indexed for inspection.</div>
 
-	        <div id="deck-grid" class="grid grid-cols-3 gap-2 mb-4"></div>
-
-	        <div id="deck-detail" class="hidden border border-neutral-800 bg-darkGrey/80 p-3 mb-4"></div>
+	        <div id="deck-grid" class="grid grid-cols-6 gap-1 mb-3"></div>
 
 	        <div class="mt-auto pt-4 border-t border-neutral-900">
 	          <button onclick="closeDeck()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Back</button>
@@ -993,34 +998,33 @@
 	      playSynthBeep(300, 0.04, 'square');
 	    }
 
-	    function renderDeck() {
-	      const grid = document.getElementById('deck-grid');
-	      if (!grid) return;
-	      let html = '';
-	      for (let i = 0; i < AppState.tarotDeck.length; i++) {
-	        const card = AppState.tarotDeck[i];
-	        html += '<button onclick="showDeckCard(' + i + ')" class="text-left border border-neutral-900 bg-black hover:border-neonRed transition-colors p-1 group">';
-	        html += '<div class="aspect-[2/3] border border-neutral-800 bg-neutral-950 overflow-hidden mb-1"><img src="' + card.image + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="tryJpegFallback(this, \'' + htmlEscape(card.num) + '\')"></div>';
-	        html += '<div class="text-[8px] text-neonRed font-bold tracking-widest">' + htmlEscape(card.num) + '</div>';
-	        html += '<div class="text-[9px] text-neutral-300 uppercase leading-tight truncate">' + htmlEscape(card.name) + '</div>';
-	        html += '</button>';
-	      }
-	      grid.innerHTML = html;
-	      showDeckCard(0);
-	    }
+		    function renderDeck() {
+		      const grid = document.getElementById('deck-grid');
+		      if (!grid) return;
+		      let html = '';
+		      for (let i = 0; i < AppState.tarotDeck.length; i++) {
+		        const card = AppState.tarotDeck[i];
+		        html += '<button onclick="showDeckCard(' + i + ')" class="text-left border border-neutral-900 bg-black hover:border-neonRed transition-colors p-1 group min-w-0">';
+		        html += '<div class="aspect-[2/3] border border-neutral-800 bg-neutral-950 overflow-hidden"><img src="' + card.image + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="tryJpegFallback(this, \'' + htmlEscape(card.num) + '\')"></div>';
+		        html += '<div class="text-[7px] text-neonRed font-bold tracking-widest mt-1 truncate">' + htmlEscape(card.num) + '</div>';
+		        html += '<div class="text-[7px] text-neutral-300 uppercase leading-tight truncate">' + htmlEscape(card.name) + '</div>';
+		        html += '</button>';
+		      }
+		      grid.innerHTML = html;
+		    }
 
-	    function showDeckCard(index) {
-	      const detail = document.getElementById('deck-detail');
-	      const card = AppState.tarotDeck[index];
-	      if (!detail || !card) return;
-	      detail.classList.remove('hidden');
-	      detail.innerHTML = `
-	        <div class="flex space-x-3">
-	          <div class="w-[96px] aspect-[2/3] flex-shrink-0 border border-neonRed bg-black overflow-hidden shadow-neon-sm">
-	            <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${htmlEscape(card.num)}')">
-	          </div>
-	          <div class="flex-1 min-w-0 font-mono">
-	            <div class="text-[9px] text-neonRed font-bold tracking-widest mb-1">[ ${htmlEscape(card.num)} ]</div>
+		    function showDeckCard(index) {
+		      const overlay = document.getElementById('deck-card-overlay');
+		      const detail = document.getElementById('deck-card-detail');
+		      const card = AppState.tarotDeck[index];
+		      if (!overlay || !detail || !card) return;
+		      detail.innerHTML = `
+		        <div class="flex space-x-3 pr-6">
+		          <div class="w-[104px] aspect-[2/3] flex-shrink-0 border border-neonRed bg-black overflow-hidden shadow-neon-sm">
+		            <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${htmlEscape(card.num)}')">
+		          </div>
+		          <div class="flex-1 min-w-0 font-mono">
+		            <div class="text-[9px] text-neonRed font-bold tracking-widest mb-1">[ ${htmlEscape(card.num)} ]</div>
 	            <div class="font-cinzel text-lg text-white uppercase leading-tight mb-2">${htmlEscape(card.name)}</div>
 	            <div class="text-[10px] text-neutral-400 leading-relaxed mb-2"><span class="text-neutral-200 font-bold">UPRIGHT:</span> ${htmlEscape(card.upright.hook)}</div>
 	            <div class="text-[10px] text-neutral-400 leading-relaxed mb-3"><span class="text-neutral-200 font-bold">REVERSED:</span> ${htmlEscape(card.reversed.hook)}</div>
@@ -1029,10 +1033,19 @@
 	              <div class="mt-1"><span class="text-orange-500">Reversed Vector:</span> ${htmlEscape(formatShift(card.reversed.shift))}</div>
 	            </div>
 	          </div>
-	        </div>
-	      `;
-	      playSynthBeep(360 + (index * 8), 0.03, 'triangle');
-	    }
+		        </div>
+		      `;
+		      overlay.classList.remove('hidden');
+		      playSynthBeep(360 + (index * 8), 0.03, 'triangle');
+		    }
+
+		    function closeDeckCard() {
+		      const overlay = document.getElementById('deck-card-overlay');
+		      if (overlay && !overlay.classList.contains('hidden')) {
+		        overlay.classList.add('hidden');
+		        playSynthBeep(220, 0.03, 'square');
+		      }
+		    }
 
     function setJournalTab(tab) {
       journalTab = tab;
@@ -1171,13 +1184,20 @@
       triggerGlitchEffect('glitch-shake'); playTypewriterDing(); journalTab = 'recommended'; setJournalTab('recommended');
     }
 
-    window.onload = function() {
-      loadPersistedState(); renderGenreChips();
-      document.getElementById('current-date').innerText = new Date().toLocaleDateString();
-      typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
-    };
+	    window.onload = function() {
+	      loadPersistedState(); renderGenreChips();
+	      document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+	      typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
+	    };
 
-    async function typewriter(elementId, text) { const el = document.getElementById(elementId); if (el) el.innerHTML = text; }
+	    document.addEventListener('keydown', function(event) {
+	      if (event.key === 'Escape') {
+	        closeDeckCard();
+	        closeShareImageOverlay();
+	      }
+	    });
+
+	    async function typewriter(elementId, text) { const el = document.getElementById(elementId); if (el) el.innerHTML = text; }
 
     // --- NEW DAILY GAME LOGIC ---
     let dailySearchTimer = null;
