@@ -692,10 +692,11 @@
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
-      rejectedMovies: [],
-      currentMovie: null,
-      runnerUps: [], 
-      drawnSpread: [], 
+	      rejectedMovies: [],
+	      currentMovie: null,
+	      runnerUps: [], 
+	      rerollNonce: 0,
+	      drawnSpread: [], 
       fullInversion: false, 
       journal: [], 
       sceneCount: 0,
@@ -2344,11 +2345,12 @@
         const payload = {
 	          type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor, aftertaste: finalAftertaste },
           language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
-          vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
-          spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
-          suggestedTitles: AppState.suggestedTitles, 
-          manualOverride: AppState.manualOverrideText
-        };
+	          vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
+	          spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
+	          suggestedTitles: AppState.suggestedTitles, 
+	          manualOverride: AppState.manualOverrideText,
+	          rerollNonce: AppState.rerollNonce || 0
+	        };
         const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data || data.error || !data.movie) { throw new Error((data && data.error) || "HTTP " + res.status); }
@@ -2459,7 +2461,7 @@
 	        } 
 	    }
     
-    function markMovieNotInterested() {
+	    function markMovieNotInterested() {
         if (AppState.currentMovie && AppState.currentMovie.id) {
             const id = AppState.currentMovie.id;
             if (!AppState.rejectedMovies.includes(id)) {
@@ -2479,9 +2481,19 @@
 	                btnSeen.disabled = true;
 	            }
 	        }
-	    }
-	    
-	    function rerollCurrentSpectrum() { 
+		    }
+
+		    function addRejectedMovieId(movie) {
+		        if (!movie || !movie.id) return false;
+		        const id = String(movie.id);
+		        if (!AppState.rejectedMovies.map(String).includes(id)) {
+		            AppState.rejectedMovies.push(id);
+		            return true;
+		        }
+		        return false;
+		    }
+		    
+		    function rerollCurrentSpectrum() { 
 	        closeShareImageOverlay();
 	        closeDeckCard();
 	        if (!AppState.currentMovie || !AppState.currentMovie.id) {
@@ -2490,13 +2502,19 @@
 	            showScreen('screen-error');
 	            return;
 	        }
-	        const id = String(AppState.currentMovie.id);
-	        if (!AppState.rejectedMovies.map(String).includes(id)) {
-	            AppState.rejectedMovies.push(id); 
-	            recordRejectionTaste(AppState.currentMovie); 
-	            persistSeenRejected(); 
-	        }
-	        const btnReroll = document.getElementById('btn-reroll');
+		        let changedRejections = false;
+		        if (addRejectedMovieId(AppState.currentMovie)) {
+		            changedRejections = true;
+		            recordRejectionTaste(AppState.currentMovie);
+		        }
+		        if (Array.isArray(AppState.runnerUps)) {
+		            for (let i = 0; i < AppState.runnerUps.length; i++) {
+		                if (addRejectedMovieId(AppState.runnerUps[i])) changedRejections = true;
+		            }
+		        }
+		        if (changedRejections) persistSeenRejected();
+		        AppState.rerollNonce = Date.now();
+		        const btnReroll = document.getElementById('btn-reroll');
 	        if (btnReroll) {
 	            btnReroll.innerText = "REROLLING...";
 	            btnReroll.disabled = true;
