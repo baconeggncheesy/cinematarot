@@ -574,9 +574,16 @@
 	        </div>
 	      </section>
 
-      <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black pointer-events-none">
-        <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
-      </div>
+	      <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black pointer-events-none">
+	        <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
+	      </div>
+
+	      <div id="card-zoom-overlay" class="hidden fixed inset-0 z-50 bg-black/95 pointer-events-none items-center justify-center p-6">
+	        <div class="relative w-[70vw] max-w-[280px] aspect-[2/3] border border-neonRed bg-black shadow-neon overflow-hidden">
+	          <img id="card-zoom-img" src="" alt="" class="w-full h-full object-cover">
+	          <div id="card-zoom-label" class="absolute bottom-0 left-0 right-0 bg-black/85 border-t border-neonRed p-2 text-[10px] text-center uppercase tracking-widest text-white font-bold"></div>
+	        </div>
+	      </div>
 
 	      <div id="share-image-overlay" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
 	        <div id="share-image-loading" class="text-neonRed text-xs uppercase tracking-widest cursor-blink">Rendering card...</div>
@@ -1833,96 +1840,142 @@
         } catch (e) {}
       },
 
-      // --- NEW GENERATIVE TONE.JS SPREADSCORE ---
-      spreadScore: {
-        playing: false, synths: [], effects: [], loop: null,
-        start(drawnSpread, toneTags, spec) {
-          if (!AppState.audioEnabled || this.playing || typeof Tone === 'undefined') return;
-          this.playing = true;
+	      // --- GENERATIVE RESULT SCORE ---
+	      spreadScore: {
+	        playing: false, synths: [], effects: [], parts: [],
+	        start(drawnSpread, toneTags, spec) {
+	          if (!AppState.audioEnabled || this.playing || typeof Tone === 'undefined') return;
+	          try { Tone.start(); } catch (e) {}
+	          this.playing = true;
 
-          spec = spec || { key: "C", mode: "minor", bpm: 60, density: "sparse", instrument: "synth" };
-          Tone.Transport.bpm.value = spec.bpm;
-          
-          const reverb = new Tone.Reverb({ decay: 8, wet: 0.6 }).toDestination();
-          const delay = new Tone.FeedbackDelay("8n", 0.3).connect(reverb);
-          const filter = new Tone.Filter(2000, "lowpass").connect(delay);
-          const lfo = new Tone.LFO(0.1, 400, 3000).connect(filter.frequency).start();
+	          spec = spec || { key: "C", mode: "minor", bpm: 64, density: "sparse", instrument: "synth", rhythm: "slow", palette: "nocturne", tension: 50, motif: [0, 2, -1, 3] };
+	          Tone.Transport.bpm.value = spec.bpm;
+	          Tone.Transport.cancel(0);
+	          
+	          const tension = Math.max(0, Math.min(100, spec.tension || 50)) / 100;
+	          const reality = Math.max(0, Math.min(100, spec.reality || 50)) / 100;
+	          const humor = Math.max(0, Math.min(100, spec.humor || 50)) / 100;
+	          const obscurity = Math.max(0, Math.min(100, spec.obscurity || 50)) / 100;
+	          const warmth = Math.max(0, Math.min(100, spec.warmth || 50)) / 100;
 
-          this.effects = [reverb, delay, filter, lfo];
+	          const reverb = new Tone.Reverb({ decay: 3 + reality * 8, wet: 0.28 + reality * 0.35 }).toDestination();
+	          const delay = new Tone.FeedbackDelay(spec.rhythm === "urgent" ? "8n" : "4n", 0.18 + obscurity * 0.35).connect(reverb);
+	          const chorus = new Tone.Chorus(0.8 + reality * 3, 2.5, 0.2 + reality * 0.35).connect(delay).start();
+	          const filter = new Tone.Filter(650 + (1 - tension) * 3600, "lowpass").connect(chorus);
+	          const lfo = new Tone.LFO(0.04 + reality * 0.18, 450 + warmth * 900, 1600 + reality * 5200).connect(filter.frequency).start();
 
-          let oscType = "triangle";
-          if (spec.instrument === "fm") oscType = "fmsine";
-          if (spec.instrument === "am") oscType = "amsine";
+	          this.effects = [reverb, delay, chorus, filter, lfo];
 
-          const pad = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: oscType },
-            envelope: { attack: 3, decay: 2, sustain: 0.8, release: 5 }
-          }).connect(filter);
-          pad.volume.value = -12;
+	          let oscType = "triangle";
+	          if (spec.instrument === "fm") oscType = "fmsine";
+	          if (spec.instrument === "am") oscType = "amsine";
 
-          const arp = new Tone.Synth({
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.05, decay: 0.2, sustain: 0.1, release: 1 }
-          }).connect(delay);
-          arp.volume.value = -18;
-          
-          this.synths = [pad, arp];
+	          const pad = new Tone.PolySynth(Tone.Synth, {
+	            oscillator: { type: oscType },
+	            envelope: { attack: 1.8 + obscurity * 2.4, decay: 1.4, sustain: 0.72, release: 4 + reality * 3 }
+	          }).connect(filter);
+	          pad.volume.value = -16 + warmth * 4;
 
-          const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-          let rIdx = notes.indexOf(spec.key);
-          if (rIdx === -1) rIdx = 0;
-          
-          const scale = spec.mode === "major" ? [0, 2, 4, 5, 7, 9, 11] : [0, 2, 3, 5, 7, 8, 10];
-          
-          const getNote = (octave, deg) => {
-              const octShift = Math.floor(deg / 7);
-              const scaleDegree = ((deg % 7) + 7) % 7; 
+	          const motif = new Tone.Synth({
+	            oscillator: { type: spec.palette === "trickster" ? "triangle" : "sine" },
+	            envelope: { attack: 0.02, decay: 0.18 + humor * 0.12, sustain: 0.12, release: 0.8 + reality }
+	          }).connect(delay);
+	          motif.volume.value = -20 + humor * 5;
+
+	          const bass = new Tone.MonoSynth({
+	            oscillator: { type: spec.palette === "horror" ? "sawtooth" : "triangle" },
+	            filter: { Q: 1.4, type: "lowpass", rolloff: -24 },
+	            envelope: { attack: 0.04, decay: 0.3, sustain: 0.2, release: 1.2 },
+	            filterEnvelope: { attack: 0.03, decay: 0.4, sustain: 0.15, release: 1.2, baseFrequency: 80, octaves: 2.5 }
+	          }).connect(filter);
+	          bass.volume.value = -22 + tension * 5;
+
+	          const perc = new Tone.MembraneSynth({ pitchDecay: 0.04, octaves: 4, envelope: { attack: 0.001, decay: 0.25, sustain: 0.01, release: 0.2 } }).connect(delay);
+	          perc.volume.value = spec.rhythm === "urgent" ? -22 : -28;
+	          
+	          this.synths = [pad, motif, bass, perc];
+
+	          const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+	          let rIdx = notes.indexOf(spec.key);
+	          if (rIdx === -1) rIdx = 0;
+	          
+	          const scale = spec.mode === "major" ? [0, 2, 4, 5, 7, 9, 11] : [0, 2, 3, 5, 7, 8, 10];
+	          
+	          const getNote = (octave, deg) => {
+	              const octShift = Math.floor(deg / 7);
+	              const scaleDegree = ((deg % 7) + 7) % 7; 
               const semitones = scale[scaleDegree];
               const finalIdx = (rIdx + semitones) % 12;
               const finalOctave = octave + octShift + Math.floor((rIdx + semitones) / 12);
-              return notes[finalIdx] + finalOctave;
-          };
+	              return notes[finalIdx] + finalOctave;
+	          };
 
-          const prog = [0, 3, 4, 0]; // i, iv, v, i (minor) or I, IV, V, I (major)
-          let step = 0;
-          
-          this.loop = new Tone.Loop((time) => {
-              const chordDeg = prog[step % prog.length];
-              const chord = [getNote(3, chordDeg), getNote(3, chordDeg + 2), getNote(3, chordDeg + 4)];
-              
-              const vel = 0.6 + (step % 2) * 0.2; 
-              pad.triggerAttackRelease(chord, "1m", time, vel);
-              
-              if (spec.density === "dense") {
-                  arp.triggerAttackRelease(getNote(4, chordDeg + 2), "8n", time + Tone.Time("2n").toSeconds(), 0.5);
-                  arp.triggerAttackRelease(getNote(5, chordDeg + 4), "8n", time + Tone.Time("2n.").toSeconds(), 0.3);
-              }
-              step++;
-          }, "2m").start(0);
+	          const prog = spec.palette === "tender" ? [0, 4, 3, 5] : (spec.palette === "horror" ? [0, 1, 4, -1] : [0, 3, 4, 0]);
+	          const tarotShift = [];
+	          if (drawnSpread && drawnSpread.length) {
+	            for (let i = 0; i < drawnSpread.length; i++) {
+	              const draw = drawnSpread[i];
+	              const shift = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
+	              tarotShift.push(Math.round((shift.r + shift.t + shift.h - shift.w) / 40));
+	            }
+	          }
+	          const sourceMotif = Array.isArray(spec.motif) && spec.motif.length ? spec.motif : [0, 2, -1, 3];
+	          const motifDegs = sourceMotif.map((v, i) => v + (tarotShift[i % Math.max(1, tarotShift.length)] || 0));
+	          let step = 0;
+	          const pulseEvery = spec.rhythm === "urgent" ? "4n" : (spec.rhythm === "floating" ? "1m" : "2n");
 
-          Tone.Transport.start();
-        },
-        stop(fadeSec) {
-          if (!this.playing || typeof Tone === 'undefined') return;
-          fadeSec = fadeSec || 1.5;
-          Tone.Transport.stop();
-          if (this.loop) { this.loop.stop(); this.loop.dispose(); this.loop = null; }
-          
-          for (let i = 0; i < this.synths.length; i++) {
-              const s = this.synths[i];
-              s.releaseAll(); 
-              setTimeout(() => s.dispose(), fadeSec * 1000 + 500); 
-          }
+	          const chordPart = new Tone.Loop((time) => {
+	            const chordDeg = prog[step % prog.length];
+	            const addSixth = spec.palette === "trickster" || humor > 0.65;
+	            const chord = [getNote(3, chordDeg), getNote(3, chordDeg + 2), getNote(3, chordDeg + 4)];
+	            if (addSixth) chord.push(getNote(4, chordDeg + 5));
+	            pad.triggerAttackRelease(chord, "1m", time, 0.45 + warmth * 0.25);
+	            bass.triggerAttackRelease(getNote(2, chordDeg), spec.rhythm === "urgent" ? "4n" : "2n", time, 0.28 + tension * 0.25);
+	            step++;
+	          }, "1m").start(0);
+
+	          let motifStep = 0;
+	          const motifPart = new Tone.Loop((time) => {
+	            const deg = motifDegs[motifStep % motifDegs.length] + (motifStep % 3 === 2 ? 7 : 0);
+	            motif.triggerAttackRelease(getNote(4, deg), spec.rhythm === "urgent" ? "16n" : "8n", time, 0.22 + humor * 0.25);
+	            if (spec.density === "dense" || obscurity > 0.65) {
+	              motif.triggerAttackRelease(getNote(5, deg + 2), "16n", time + Tone.Time("8n").toSeconds(), 0.12 + reality * 0.18);
+	            }
+	            motifStep++;
+	          }, pulseEvery).start("0:2:0");
+
+	          const percPart = new Tone.Loop((time) => {
+	            if (spec.rhythm === "urgent" || tension > 0.62) perc.triggerAttackRelease("C1", "16n", time, 0.25 + tension * 0.22);
+	          }, spec.rhythm === "urgent" ? "4n" : "1m").start("0:1:0");
+
+	          this.parts = [chordPart, motifPart, percPart];
+
+	          Tone.Transport.start();
+	        },
+	        stop(fadeSec) {
+	          if (!this.playing || typeof Tone === 'undefined') return;
+	          fadeSec = fadeSec || 1.5;
+	          Tone.Transport.stop();
+	          Tone.Transport.cancel(0);
+	          for (let i = 0; i < this.parts.length; i++) {
+	              try { this.parts[i].stop(); this.parts[i].dispose(); } catch (e) {}
+	          }
+	          
+	          for (let i = 0; i < this.synths.length; i++) {
+	              const s = this.synths[i];
+	              if (s.releaseAll) s.releaseAll(); 
+	              setTimeout(() => s.dispose(), fadeSec * 1000 + 500); 
+	          }
           
           setTimeout(() => { 
               for (let i = 0; i < this.effects.length; i++) {
                   if(this.effects[i].dispose) this.effects[i].dispose(); 
               }
-          }, fadeSec * 1000 + 1000);
-          
-          this.synths = []; this.effects = []; this.playing = false;
-        }
-      }
+	          }, fadeSec * 1000 + 1000);
+	          
+	          this.parts = []; this.synths = []; this.effects = []; this.playing = false;
+	        }
+	      }
     };
 
     const TiltEngine = {
@@ -2080,9 +2133,9 @@
     function wheelOffset(i) { const N = wheelCards.length; if (N === 0) return 0; let diff = (i - wheelIndex) % N; if (diff > N / 2) diff -= N; else if (diff < -N / 2) diff += N; return diff; }
     function spinTo(index) { wheelTargetIndex = Math.round(wheelIndex) + Math.round(wheelOffset(index)); isSettling = true; AudioEngine.wheelHum.update(0.5); if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); playSynthBeep(400, 0.02, 'triangle'); }
     function spinWheel(dir) { wheelTargetIndex = Math.round(wheelIndex) + dir; isSettling = true; AudioEngine.wheelHum.update(0.5); if (wheelRAF === null) wheelRAF = requestAnimationFrame(runPhysics); const tone = ((Math.abs(wheelTargetIndex) % 12) + 12) % 12; playSynthBeep(320 + tone * 12, 0.02, 'triangle'); }
-    function advanceWheelToNextUndrawn(fromIndex) {
-        const N = wheelCards.length;
-        if (N === 0 || AppState.drawnSpread.length >= 3) return;
+	    function advanceWheelToNextUndrawn(fromIndex) {
+	        const N = wheelCards.length;
+	        if (N === 0 || AppState.drawnSpread.length >= 3) return;
         for (let step = 1; step < N; step++) {
             const nextIndex = (fromIndex + step) % N;
             const nextEl = document.getElementById('wheel-card-' + nextIndex);
@@ -2090,10 +2143,26 @@
                 spinTo(nextIndex);
                 return;
             }
-        }
-    }
-    
-    function updateWheel() {
+	        }
+	    }
+
+	    async function showCardZoom(card, isReversed, posName) {
+	      const overlay = document.getElementById('card-zoom-overlay');
+	      const img = document.getElementById('card-zoom-img');
+	      const label = document.getElementById('card-zoom-label');
+	      if (!overlay || !img || !label || !card) return;
+	      img.src = card.image;
+	      img.onerror = function() { tryJpegFallback(this, card.num); };
+	      img.className = 'w-full h-full object-cover transition-transform duration-300 ' + (isReversed ? 'rotate-180' : '');
+	      label.innerText = posName + ' / ' + card.name + (isReversed ? ' (REVERSED)' : '');
+	      overlay.classList.remove('hidden');
+	      overlay.classList.add('flex');
+	      await sleep(1200);
+	      overlay.classList.add('hidden');
+	      overlay.classList.remove('flex');
+	    }
+	    
+	    function updateWheel() {
         const tiltX = (window.TiltEngine && TiltEngine.x) || 0; const tiltY = (window.TiltEngine && TiltEngine.y) || 0;
         for (let i = 0; i < wheelCards.length; i++) {
             const el = document.getElementById('wheel-card-' + i); const offset = wheelOffset(i); const absOffset = Math.abs(offset);
@@ -2113,11 +2182,12 @@
         const isReversed = Math.random() >= 0.5; AppState.drawnSpread.push({ card: card, isReversed: isReversed, position: AppState.drawnSpread.length });
         const ind = document.getElementById('ind-' + card.id); const posName = AppState.drawnSpread.length === 1 ? "PAST" : AppState.drawnSpread.length === 2 ? "PRESENT" : "FUTURE";
         ind.innerText = posName + (isReversed ? ' (REV)' : '');
-        el.classList.add('flipped'); if (isReversed) el.classList.add('reversed-card'); el.parentElement.style.filter = "brightness(1.2)"; AudioEngine.wheelHum.silence();
-        AudioEngine.cardSound(card, isReversed); triggerGlitchEffect(card.glitch);
-        document.getElementById('draw-count').innerText = AppState.drawnSpread.length + "/3";
-        
-        const logicObj = isReversed ? card.reversed : card.upright;
+	        el.classList.add('flipped'); if (isReversed) el.classList.add('reversed-card'); el.parentElement.style.filter = "brightness(1.2)"; AudioEngine.wheelHum.silence();
+	        AudioEngine.cardSound(card, isReversed); triggerGlitchEffect(card.glitch);
+	        document.getElementById('draw-count').innerText = AppState.drawnSpread.length + "/3";
+	        await showCardZoom(card, isReversed, posName);
+	        
+	        const logicObj = isReversed ? card.reversed : card.upright;
         await typewriter('tarot-dialogue', '[' + posName + '] You drew ' + card.name + (isReversed ? ' Upside Down' : '') + '. ' + logicObj.hook, 15);
 
         if (AppState.drawnSpread.length === 3) {
@@ -2210,8 +2280,15 @@
     let progressInterval = null;
     function stopLoadingSequence() { if (progressInterval) clearInterval(progressInterval); progressInterval = null; const term = document.getElementById('loading-terminal'); if (term) term.classList.remove('cursor-blink'); }
 
-    async function initiateSubconsciousMatching() {
-      showScreen('screen-loading'); AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.6); startLoadingSequence();
+	    async function initiateSubconsciousMatching() {
+	      AudioEngine.spreadScore.stop(0.25);
+	      AppState.currentMovie = null;
+	      AppState.runnerUps = [];
+	      const loadingPct = document.getElementById('loading-pct');
+	      const loadingTerm = document.getElementById('loading-terminal');
+	      if (loadingPct) loadingPct.innerText = "0%";
+	      if (loadingTerm) loadingTerm.innerText = "Re-opening the aperture...";
+	      showScreen('screen-loading'); AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.6); startLoadingSequence();
       try {
         const TAROT_INFLUENCE = 0.3; const MAX_TAROT_SHIFT = 20; const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
         let tw = 0, tt = 0, tr = 0, th = 0;
@@ -2374,21 +2451,27 @@
 	    }
 	    
 	    function rerollCurrentSpectrum() { 
-	        if (AppState.currentMovie && AppState.currentMovie.id) { 
-	            const id = AppState.currentMovie.id;
-            if (!AppState.rejectedMovies.includes(id)) {
-                AppState.rejectedMovies.push(id); 
-	                recordRejectionTaste(AppState.currentMovie); 
-	                persistSeenRejected(); 
-	            }
-	            const btnReroll = document.getElementById('btn-reroll');
-	            if (btnReroll) {
-	                btnReroll.innerText = "REROLLING...";
-	                btnReroll.disabled = true;
-	                btnReroll.classList.add('opacity-50', 'pointer-events-none');
-	            }
-	            initiateSubconsciousMatching(); 
-	        } 
+	        closeShareImageOverlay();
+	        closeDeckCard();
+	        if (!AppState.currentMovie || !AppState.currentMovie.id) {
+	            const errorEl = document.getElementById('error-message');
+	            if (errorEl) errorEl.innerText = "Reroll could not find the current movie id. The app is not working correctly.";
+	            showScreen('screen-error');
+	            return;
+	        }
+	        const id = String(AppState.currentMovie.id);
+	        if (!AppState.rejectedMovies.map(String).includes(id)) {
+	            AppState.rejectedMovies.push(id); 
+	            recordRejectionTaste(AppState.currentMovie); 
+	            persistSeenRejected(); 
+	        }
+	        const btnReroll = document.getElementById('btn-reroll');
+	        if (btnReroll) {
+	            btnReroll.innerText = "REROLLING...";
+	            btnReroll.disabled = true;
+	            btnReroll.classList.add('opacity-50', 'pointer-events-none');
+	        }
+	        initiateSubconsciousMatching(); 
 	    }
 
     function dominantWord(name) {
