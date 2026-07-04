@@ -277,10 +277,13 @@
         <span class="w-2 h-2 rounded-full bg-neonRed animate-pulse shadow-neon-sm"></span>
         <span class="font-bold text-[10px] tracking-widest text-neutral-500">CINEMA ARCANA</span>
       </div>
-      <div class="flex items-center space-x-4 text-[10px] font-bold text-neutral-500">
-        <button onclick="openJournal()" id="journal-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
-          [JOURNAL]
-        </button>
+	      <div class="flex items-center space-x-3 text-[10px] font-bold text-neutral-500">
+	        <button onclick="openDeck()" id="deck-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
+	          [THE DECK]
+	        </button>
+	        <button onclick="openJournal()" id="journal-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
+	          [JOURNAL]
+	        </button>
         <button onclick="toggleAudio()" id="audio-toggle-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
           [AUDIO: ON]
         </button>
@@ -593,8 +596,8 @@
         </div>
       </section>
 
-      <section id="screen-journal" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
-        <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
+	      <section id="screen-journal" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
+	        <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
         <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
 
         <div class="grid grid-cols-3 gap-1.5 mb-4 text-[10px] font-bold tracking-wider">
@@ -616,10 +619,23 @@
         <div class="mt-4 pt-4 border-t border-neutral-900 space-y-2">
           <button onclick="showScreen('screen-intro')" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Back</button>
           <button onclick="requestClearHistory()" class="script-btn uppercase text-xs w-full text-center tracking-widest !text-neonRed hover:!border-neonRed">Clear History</button>
-        </div>
-      </section>
+	        </div>
+	      </section>
 
-    </main>
+	      <section id="screen-deck" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
+	        <div class="scene-heading text-xs">INT. THE DECK - CONTINUOUS</div>
+	        <div class="action text-xs mb-4">The full Cinematic Arcana, indexed for inspection.</div>
+
+	        <div id="deck-grid" class="grid grid-cols-3 gap-2 mb-4"></div>
+
+	        <div id="deck-detail" class="hidden border border-neutral-800 bg-darkGrey/80 p-3 mb-4"></div>
+
+	        <div class="mt-auto pt-4 border-t border-neutral-900">
+	          <button onclick="closeDeck()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Back</button>
+	        </div>
+	      </section>
+
+	    </main>
 
     <footer class="w-full text-center pt-4 pb-2 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase text-neutral-600 tracking-widest">
       <div>V 9.9.0 (ARCHIVE+TONE)</div>
@@ -932,13 +948,91 @@
 	    }
 
 	    let journalTab = 'recommended'; 
+	    let deckReturnScreen = 'screen-intro';
 
-    function openJournal() {
-      playSynthBeep(500, 0.05, 'square');
-      journalTab = 'recommended';
-      renderJournal();
-      showScreen('screen-journal');
-    }
+	    function openJournal() {
+	      playSynthBeep(500, 0.05, 'square');
+	      journalTab = 'recommended';
+	      renderJournal();
+	      showScreen('screen-journal');
+	    }
+
+	    function getVisibleScreenId() {
+	      const screens = ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal', 'screen-daily-game', 'screen-deck'];
+	      for (let i = 0; i < screens.length; i++) {
+	        const el = document.getElementById(screens[i]);
+	        if (el && !el.classList.contains('hidden')) return screens[i];
+	      }
+	      return 'screen-intro';
+	    }
+
+	    function htmlEscape(value) {
+	      return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+	    }
+
+	    function formatShift(shift) {
+	      const parts = [];
+	      const labels = { w: 'warmth', t: 'tempo', r: 'reality', h: 'humor' };
+	      for (const key in labels) {
+	        const val = shift && typeof shift[key] === 'number' ? shift[key] : 0;
+	        parts.push(labels[key] + ' ' + (val >= 0 ? '+' : '') + val);
+	      }
+	      return parts.join(' / ');
+	    }
+
+	    function openDeck() {
+	      const current = getVisibleScreenId();
+	      if (current !== 'screen-deck') deckReturnScreen = current;
+	      renderDeck();
+	      showScreen('screen-deck');
+	      playSynthBeep(500, 0.05, 'triangle');
+	    }
+
+	    function closeDeck() {
+	      showScreen(deckReturnScreen || 'screen-intro');
+	      playSynthBeep(300, 0.04, 'square');
+	    }
+
+	    function renderDeck() {
+	      const grid = document.getElementById('deck-grid');
+	      if (!grid) return;
+	      let html = '';
+	      for (let i = 0; i < AppState.tarotDeck.length; i++) {
+	        const card = AppState.tarotDeck[i];
+	        html += '<button onclick="showDeckCard(' + i + ')" class="text-left border border-neutral-900 bg-black hover:border-neonRed transition-colors p-1 group">';
+	        html += '<div class="aspect-[2/3] border border-neutral-800 bg-neutral-950 overflow-hidden mb-1"><img src="' + card.image + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="tryJpegFallback(this, \'' + htmlEscape(card.num) + '\')"></div>';
+	        html += '<div class="text-[8px] text-neonRed font-bold tracking-widest">' + htmlEscape(card.num) + '</div>';
+	        html += '<div class="text-[9px] text-neutral-300 uppercase leading-tight truncate">' + htmlEscape(card.name) + '</div>';
+	        html += '</button>';
+	      }
+	      grid.innerHTML = html;
+	      showDeckCard(0);
+	    }
+
+	    function showDeckCard(index) {
+	      const detail = document.getElementById('deck-detail');
+	      const card = AppState.tarotDeck[index];
+	      if (!detail || !card) return;
+	      detail.classList.remove('hidden');
+	      detail.innerHTML = `
+	        <div class="flex space-x-3">
+	          <div class="w-[96px] aspect-[2/3] flex-shrink-0 border border-neonRed bg-black overflow-hidden shadow-neon-sm">
+	            <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${htmlEscape(card.num)}')">
+	          </div>
+	          <div class="flex-1 min-w-0 font-mono">
+	            <div class="text-[9px] text-neonRed font-bold tracking-widest mb-1">[ ${htmlEscape(card.num)} ]</div>
+	            <div class="font-cinzel text-lg text-white uppercase leading-tight mb-2">${htmlEscape(card.name)}</div>
+	            <div class="text-[10px] text-neutral-400 leading-relaxed mb-2"><span class="text-neutral-200 font-bold">UPRIGHT:</span> ${htmlEscape(card.upright.hook)}</div>
+	            <div class="text-[10px] text-neutral-400 leading-relaxed mb-3"><span class="text-neutral-200 font-bold">REVERSED:</span> ${htmlEscape(card.reversed.hook)}</div>
+	            <div class="border border-neutral-900 bg-black/70 p-2 text-[9px] text-neutral-500 uppercase leading-relaxed">
+	              <div><span class="text-green-500">Upright Vector:</span> ${htmlEscape(formatShift(card.upright.shift))}</div>
+	              <div class="mt-1"><span class="text-orange-500">Reversed Vector:</span> ${htmlEscape(formatShift(card.reversed.shift))}</div>
+	            </div>
+	          </div>
+	        </div>
+	      `;
+	      playSynthBeep(360 + (index * 8), 0.03, 'triangle');
+	    }
 
     function setJournalTab(tab) {
       journalTab = tab;
@@ -1866,7 +1960,7 @@
       const leavingReview = screenId !== 'screen-spread-review' && reviewEl && !reviewEl.classList.contains('hidden');
       if (leavingReview && window.speechSynthesis && _speaking) { speechSynthesis.cancel(); _speaking = false; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ HEAR'; }
 
-      const screens = ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal', 'screen-daily-game'];
+	      const screens = ['screen-intro', 'screen-parameters', 'screen-game1', 'screen-game3', 'screen-spread-review', 'screen-loading', 'screen-result', 'screen-error', 'screen-journal', 'screen-daily-game', 'screen-deck'];
       for (let i = 0; i < screens.length; i++) {
         const el = document.getElementById(screens[i]);
         if (el) el.classList.add('hidden');
