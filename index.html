@@ -861,8 +861,8 @@
       else if (coordinates.obscurity <= 35) axisLabels.push('MAINSTREAM');
       if (coordinates.tempo >= 65) axisLabels.push('KINETIC');
       else if (coordinates.tempo <= 35) axisLabels.push('MEDITATIVE');
-      if (coordinates.warmth >= 65) axisLabels.push('WARM');
-      else if (coordinates.warmth <= 35) axisLabels.push('COLD');
+      if (coordinates.warmth >= 65) axisLabels.push('DREAD');
+      else if (coordinates.warmth <= 35) axisLabels.push('COZY');
       if (coordinates.humor >= 65) axisLabels.push('WITTY');
       else if (coordinates.humor <= 35) axisLabels.push('BLEAK');
 
@@ -871,6 +871,27 @@
       if (axisLabels.length > 0) message += ' | ' + axisLabels.slice(0, 3).join(' / ');
       if (coordinates.runtimeMax) message += ' | <= ' + Math.round(coordinates.runtimeMax) + ' MIN';
       return message + ' ]';
+    }
+
+    function applyTextMoodCorrections(coordinates, text) {
+      const out = Object.assign({}, coordinates || {});
+      const mood = String(text || '').toLowerCase();
+      const gutPunch = /punched|punch|gut[- ]?punch|stomach|devastat|wrecked|destroyed|shattered|haunted|crushed|hollow|wreck me|ruin me|emotionally/.test(mood) ||
+        (/credits roll|ending|final scene|end credits/.test(mood) && /feel|aftertaste|stomach|hollow|devastat|wrecked/.test(mood));
+
+      if (gutPunch) {
+        out.warmth = Math.max(Number(out.warmth) || 50, 88);
+        out.humor = Math.min(Number(out.humor) || 50, 12);
+        out.tempo = Math.max(Number(out.tempo) || 50, 55);
+        out.reality = Math.min(Number(out.reality) || 50, 45);
+        const genres = Array.isArray(out.genres) ? out.genres.slice() : [];
+        const upperGenres = genres.map(g => String(g).toUpperCase());
+        if (!upperGenres.includes('DRAMA')) genres.unshift('Drama');
+        if (!upperGenres.includes('THRILLER')) genres.push('Thriller');
+        out.genres = genres.slice(0, 3);
+      }
+
+      return out;
     }
 
     const STORAGE_KEYS = {
@@ -1547,7 +1568,7 @@
         if (rawText.indexOf('```') === 0) rawText = rawText.substring(3);
         if (rawText.endsWith('```')) rawText = rawText.substring(0, rawText.length - 3);
 
-        let coordinates = JSON.parse(rawText.trim());
+	        let coordinates = applyTextMoodCorrections(JSON.parse(rawText.trim()), text);
 
         const axes = ['warmth', 'tempo', 'reality', 'obscurity', 'humor'];
         for (let i = 0; i < axes.length; i++) {
