@@ -491,10 +491,11 @@
           </div>
         </div>
 
-        <div class="mt-4 pt-4 border-t border-neutral-900 sticky bottom-0 bg-black pb-2">
-            <button onclick="initiateSubconsciousMatching()" class="script-btn-primary uppercase text-xs tracking-widest border-green-500 text-green-400 shadow-[inset_0_0_10px_0_rgba(34,197,94,0.3)] hover:bg-green-500 hover:text-black transition-all">
-                [ ENGAGE ALGORITHM ]
-            </button>
+	        <div class="mt-4 pt-4 border-t border-neutral-900 sticky bottom-0 bg-black pb-2">
+	            <div id="prefetch-status" class="text-[9px] text-neutral-600 uppercase tracking-widest mb-2 min-h-4">Projection engine idle.</div>
+	            <button onclick="initiateSubconsciousMatching()" class="script-btn-primary uppercase text-xs tracking-widest border-green-500 text-green-400 shadow-[inset_0_0_10px_0_rgba(34,197,94,0.3)] hover:bg-green-500 hover:text-black transition-all">
+	                [ ENGAGE ALGORITHM ]
+	            </button>
         </div>
       </section>
 
@@ -693,10 +694,12 @@
       tasteAvoid: {},
       seenMovies: [],
 	      rejectedMovies: [],
-	      currentMovie: null,
-	      runnerUps: [], 
+		      currentMovie: null,
+		      runnerUps: [], 
 	      rerollNonce: 0,
-	      drawnSpread: [], 
+		      rerollAvoidTitles: [],
+		      matchPrefetch: null,
+		      drawnSpread: [], 
       fullInversion: false, 
       journal: [], 
       sceneCount: 0,
@@ -812,9 +815,11 @@
 	      10402: { w: 30, t: 40, r: 40, h: 50, a: 35, name: 'MUSIC' }
     };
 
-    const GENRE_NAME_TO_ID = Object.fromEntries(
-      Object.entries(GENRE_MAP).map(([id, data]) => [data.name, parseInt(id)])
-    );
+	    const GENRE_NAME_TO_ID = Object.fromEntries(
+	      Object.entries(GENRE_MAP).map(([id, data]) => [data.name, parseInt(id)])
+	    );
+	    GENRE_NAME_TO_ID.DOCUMENTARY = 99;
+	    GENRE_NAME_TO_ID.NONFICTION = 99;
 
     function renderGenreChips() {
       const container = document.getElementById('genre-chips-container');
@@ -2134,7 +2139,7 @@
     let wheelDragActive = false; let isSwipingWheel = false; let wheelTouchStartX = 0; let wheelTouchStartY = 0; let wheelDragStartIndex = 0; let wheelVelocityTracker = []; let wheelVelocity = 0; let wheelRAF = null; let wheelTargetIndex = 0; let isSettling = false;
 
     async function goToTarotGame() {
-      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; 
+	      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; AppState.rerollAvoidTitles = []; AppState.rerollNonce = 0; AppState.matchPrefetch = null;
       document.getElementById('tarot-proceed-btn').classList.add('hidden'); document.getElementById('draw-count').innerText = "0/3";
       initTarotWheel(); TiltEngine.recalibrate(); showScreen('screen-game3'); await sleep(300); typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
     }
@@ -2294,67 +2299,154 @@
         
         text = text.replace(/[*_`]/g, '').trim(); 
         
-	        el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); AppState.lastReadingText = text; const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ Hear';
+	        AppState.lastReadingText = text; startBackgroundMatchPrefetch(); el.classList.add('cursor-blink'); await typewriter('psychic-reading-text', text, 16); el.classList.remove('cursor-blink'); const sb = document.getElementById('reading-speak-btn'); if (sb) sb.innerText = '▶ Hear';
 	      } catch (err) { AppState.lastReadingText = null; el.innerHTML = '<span class="text-neonRed font-bold">[ THE READING SERVICE IS NOT WORKING ]</span><br><br><span class="text-neutral-400">The app could not get a real reading from the worker. Try again after the service recovers.</span>'; }
 	    }
 
 
     function startLoadingSequence() {
       if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') { Tone.start(); }
-      const logs = [ "Formatting margins...", "Evaluating structural boundaries...", "Applying 3-Card Spread vector shifts...", "Calculating Euclidean distances...", "Establishing secure uplink...", "Cross-referencing the archive...", "Compiling definitive match..." ];
-      let step = 0; const term = document.getElementById('loading-terminal'); const pct = document.getElementById('loading-pct'); pct.innerText = "0%"; term.innerText = logs[0]; term.classList.remove('cursor-blink');
+      const logs = [
+        { pct: 9, text: "Formatting margins..." },
+        { pct: 21, text: "Evaluating structural boundaries..." },
+        { pct: 36, text: "Applying 3-Card Spread vector shifts..." },
+        { pct: 52, text: "Calculating Euclidean distances..." },
+        { pct: 67, text: "Querying the live archive..." },
+        { pct: 81, text: "Filtering available projections..." },
+        { pct: 92, text: "Awaiting AI projection judge..." }
+      ];
+      let step = 0;
+      loadingTargetPct = 92;
+      const term = document.getElementById('loading-terminal');
+      const pct = document.getElementById('loading-pct');
+      if (pct) pct.innerText = "0%";
+      if (term) { term.innerText = logs[0].text; term.classList.remove('cursor-blink'); }
       progressInterval = setInterval(() => {
-        const currentPct = parseInt(pct.innerText); if (currentPct >= 100) return; const next = Math.min(100, currentPct + Math.floor(Math.random() * 6) + 2); pct.innerText = next + "%";
-        if (next < 100) { if (Math.random() > 0.6 && step < logs.length - 1) { step++; term.innerText = logs[step]; playSynthBeep(700, 0.02, 'square'); } } else { term.innerText = "[ DECRYPTING SUBCONSCIOUS TRUTHS... ]"; term.classList.add('cursor-blink'); playSynthBeep(220, 0.06, 'sine'); }
-      }, 180);
+        if (!pct || !term) return;
+        const currentPct = parseInt(pct.innerText, 10) || 0;
+        if (currentPct < loadingTargetPct) {
+          const distance = loadingTargetPct - currentPct;
+          const stepSize = Math.max(1, Math.min(4, Math.ceil(distance / 8)));
+          const next = Math.min(loadingTargetPct, currentPct + stepSize);
+          pct.innerText = next + "%";
+          while (step < logs.length - 1 && next >= logs[step + 1].pct) {
+            step++;
+            term.innerText = logs[step].text;
+            playSynthBeep(700, 0.02, 'square');
+          }
+        } else if (loadingTargetPct < 100) {
+          term.innerText = "[ WAITING ON LIVE WORKER RESPONSE... ]";
+          term.classList.add('cursor-blink');
+        }
+      }, 420);
     }
     
     let progressInterval = null;
-    function stopLoadingSequence() { if (progressInterval) clearInterval(progressInterval); progressInterval = null; const term = document.getElementById('loading-terminal'); if (term) term.classList.remove('cursor-blink'); }
+    let loadingTargetPct = 92;
+    function completeLoadingSequence() {
+      loadingTargetPct = 100;
+      const pct = document.getElementById('loading-pct');
+      const term = document.getElementById('loading-terminal');
+      if (pct) pct.innerText = "100%";
+      if (term) { term.innerText = "[ PROJECTION RECEIVED ]"; term.classList.remove('cursor-blink'); }
+      playSynthBeep(220, 0.06, 'sine');
+    }
+	    function stopLoadingSequence() { if (progressInterval) clearInterval(progressInterval); progressInterval = null; const term = document.getElementById('loading-terminal'); if (term) term.classList.remove('cursor-blink'); }
 
-	    async function initiateSubconsciousMatching() {
-	      AudioEngine.spreadScore.stop(0.25);
-	      AppState.currentMovie = null;
-	      AppState.runnerUps = [];
-	      const loadingPct = document.getElementById('loading-pct');
-	      const loadingTerm = document.getElementById('loading-terminal');
-	      if (loadingPct) loadingPct.innerText = "0%";
-	      if (loadingTerm) loadingTerm.innerText = "Re-opening the aperture...";
-	      showScreen('screen-loading'); AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.6); startLoadingSequence();
-      try {
-        const TAROT_INFLUENCE = 0.3; const MAX_TAROT_SHIFT = 20; const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
-        let tw = 0, tt = 0, tr = 0, th = 0;
-        
-        for (let i = 0; i < AppState.drawnSpread.length; i++) {
-            const draw = AppState.drawnSpread[i];
-            const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
-            tw += s.w * TAROT_INFLUENCE; tt += s.t * TAROT_INFLUENCE; tr += s.r * TAROT_INFLUENCE; th += s.h * TAROT_INFLUENCE;
-        }
-        
-        tw = clampShift(tw); tt = clampShift(tt); tr = clampShift(tr); th = clampShift(th);
-	        const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw)); const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt)); const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr)); const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th)); const finalObscurity = AppState.sliders.obscurity; const finalAftertaste = AppState.sliders.aftertaste;
-        
-        const spreadArr = [];
-        for (let i = 0; i < AppState.drawnSpread.length; i++) {
-            const draw = AppState.drawnSpread[i];
-            const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future';
-            spreadArr.push(pos + ': ' + draw.card.name + (draw.isReversed ? ' (Rev)' : ''));
-        }
-        const spreadSummary = spreadArr.join(', ');
+	    function buildMatchRequestContext() {
+	      const TAROT_INFLUENCE = 0.3; const MAX_TAROT_SHIFT = 20; const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
+	      let tw = 0, tt = 0, tr = 0, th = 0;
+	      
+	      for (let i = 0; i < AppState.drawnSpread.length; i++) {
+	          const draw = AppState.drawnSpread[i];
+	          const s = draw.isReversed ? draw.card.reversed.shift : draw.card.upright.shift;
+	          tw += s.w * TAROT_INFLUENCE; tt += s.t * TAROT_INFLUENCE; tr += s.r * TAROT_INFLUENCE; th += s.h * TAROT_INFLUENCE;
+	      }
+	      
+	      tw = clampShift(tw); tt = clampShift(tt); tr = clampShift(tr); th = clampShift(th);
+	      const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw)); const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt)); const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr)); const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th)); const finalObscurity = AppState.sliders.obscurity; const finalAftertaste = AppState.sliders.aftertaste;
+	      
+	      const spreadArr = [];
+	      for (let i = 0; i < AppState.drawnSpread.length; i++) {
+	          const draw = AppState.drawnSpread[i];
+	          const pos = i === 0 ? 'Past' : i === 1 ? 'Present' : 'Future';
+	          spreadArr.push(pos + ': ' + draw.card.name + (draw.isReversed ? ' (Rev)' : ''));
+	      }
+	      const spreadSummary = spreadArr.join(', ');
 
-        const payload = {
-	          type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor, aftertaste: finalAftertaste },
-          language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
-	          vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
-	          spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
-	          suggestedTitles: AppState.suggestedTitles, 
-	          manualOverride: AppState.manualOverrideText,
-	          rerollNonce: AppState.rerollNonce || 0
-	        };
-        const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data || data.error || !data.movie) { throw new Error((data && data.error) || "HTTP " + res.status); }
-        await revealResult(data, finalWarmth, finalTempo, finalReality, finalHumor);
+	      const payload = {
+	        type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor, aftertaste: finalAftertaste },
+	        language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
+	        vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
+	        spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
+	        suggestedTitles: AppState.suggestedTitles, 
+	        manualOverride: AppState.manualOverrideText,
+	        rerollNonce: AppState.rerollNonce || 0,
+	        rerollAvoidTitles: AppState.rerollAvoidTitles || []
+	      };
+
+	      return { payload: payload, payloadKey: JSON.stringify(payload), finalWarmth: finalWarmth, finalTempo: finalTempo, finalReality: finalReality, finalHumor: finalHumor };
+	    }
+
+	    async function requestMatchProjection(payload) {
+	      const res = await fetch(WORKER_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+	      const data = await res.json().catch(() => null);
+	      if (!res.ok || !data || data.error || !data.movie) { throw new Error((data && data.error) || "HTTP " + res.status); }
+	      return data;
+	    }
+
+	    function setPrefetchStatus(text, isError) {
+	      const el = document.getElementById('prefetch-status');
+	      if (!el) return;
+	      el.innerText = text;
+	      el.classList.toggle('text-neonRed', !!isError);
+	      el.classList.toggle('text-neutral-600', !isError);
+	    }
+
+	    function startBackgroundMatchPrefetch() {
+	      if (AppState.drawnSpread.length !== 3 || !AppState.lastReadingText) return;
+	      const context = buildMatchRequestContext();
+	      if (AppState.matchPrefetch && AppState.matchPrefetch.payloadKey === context.payloadKey) return;
+	      setPrefetchStatus('Projection engine warming in background...', false);
+	      const prefetch = { payloadKey: context.payloadKey, promise: null, data: null, error: null };
+	      prefetch.promise = requestMatchProjection(context.payload)
+	        .then(data => {
+	          prefetch.data = data;
+	          setPrefetchStatus('Projection candidate ready.', false);
+	          return data;
+	        })
+	        .catch(err => {
+	          prefetch.error = err;
+	          setPrefetchStatus('Background projection failed; Engage will show the error.', true);
+	          return null;
+	        });
+	      AppState.matchPrefetch = prefetch;
+	    }
+
+		    async function initiateSubconsciousMatching() {
+		      AudioEngine.spreadScore.stop(0.25);
+		      AppState.currentMovie = null;
+		      AppState.runnerUps = [];
+		      const context = buildMatchRequestContext();
+		      const loadingPct = document.getElementById('loading-pct');
+		      const loadingTerm = document.getElementById('loading-terminal');
+		      if (loadingPct) loadingPct.innerText = "0%";
+		      if (loadingTerm) loadingTerm.innerText = "Re-opening the aperture...";
+		      showScreen('screen-loading'); AudioEngine.heartbeat.start(); AudioEngine.muffle(380, 0.6); startLoadingSequence();
+	      try {
+		        let data = null;
+		        const prefetch = AppState.matchPrefetch;
+		        if (prefetch && prefetch.payloadKey === context.payloadKey) {
+		          if (prefetch.error) throw prefetch.error;
+		          data = prefetch.data || await prefetch.promise;
+		          if (prefetch.error) throw prefetch.error;
+		        } else {
+		          data = await requestMatchProjection(context.payload);
+		        }
+		        if (!data || !data.movie) throw new Error("The background projection returned no valid movie.");
+		        completeLoadingSequence();
+		        await sleep(450);
+		        await revealResult(data, context.finalWarmth, context.finalTempo, context.finalReality, context.finalHumor);
 	      } catch (err) {
 	        stopLoadingSequence();
 	        AudioEngine.heartbeat.stop();
@@ -2366,7 +2458,7 @@
     }
 
     async function revealResult(data, w, t, r, h) {
-      stopLoadingSequence(); document.getElementById('loading-pct').innerText = "100%";
+      stopLoadingSequence();
       const movie = data.movie; AppState.currentMovie = movie; AppState.runnerUps = data.runnerUps || [];
       const vibes = generateVibeWords(movie, w, t, r, h); const critique = { vibeTagline: movie.tagline || "A masterclass in shadow and light." };
 
@@ -2492,6 +2584,16 @@
 		        }
 		        return false;
 		    }
+
+		    function addRerollAvoidTitle(movie) {
+		        if (!movie) return;
+		        const title = String(movie.title || movie.name || movie.original_title || movie.original_name || '').trim();
+		        if (!title) return;
+		        if (!Array.isArray(AppState.rerollAvoidTitles)) AppState.rerollAvoidTitles = [];
+		        const exists = AppState.rerollAvoidTitles.some(existing => existing.toLowerCase() === title.toLowerCase());
+		        if (!exists) AppState.rerollAvoidTitles.push(title);
+		        if (AppState.rerollAvoidTitles.length > 20) AppState.rerollAvoidTitles = AppState.rerollAvoidTitles.slice(-20);
+		    }
 		    
 		    function rerollCurrentSpectrum() { 
 	        closeShareImageOverlay();
@@ -2507,9 +2609,11 @@
 		            changedRejections = true;
 		            recordRejectionTaste(AppState.currentMovie);
 		        }
+		        addRerollAvoidTitle(AppState.currentMovie);
 		        if (Array.isArray(AppState.runnerUps)) {
 		            for (let i = 0; i < AppState.runnerUps.length; i++) {
 		                if (addRejectedMovieId(AppState.runnerUps[i])) changedRejections = true;
+		                addRerollAvoidTitle(AppState.runnerUps[i]);
 		            }
 		        }
 		        if (changedRejections) persistSeenRejected();
