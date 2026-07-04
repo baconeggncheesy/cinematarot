@@ -605,9 +605,11 @@
 
 	      <section id="screen-journal" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-4">
 	        <div class="scene-heading text-xs">INT. THE ARCHIVE - CONTINUOUS</div>
-        <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
+	        <div class="action text-xs mb-4">Every projection this device has witnessed, logged in order.</div>
 
-        <div class="grid grid-cols-3 gap-1.5 mb-4 text-[10px] font-bold tracking-wider">
+	        <button onclick="showScreen('screen-intro')" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600 mb-3">Back</button>
+
+	        <div class="grid grid-cols-3 gap-1.5 mb-4 text-[10px] font-bold tracking-wider">
           <button onclick="setJournalTab('recommended')" id="journal-tab-recommended" class="script-btn active">RECOMMENDED</button>
           <button onclick="setJournalTab('seen')" id="journal-tab-seen" class="script-btn">SEEN</button>
           <button onclick="setJournalTab('passed')" id="journal-tab-passed" class="script-btn">PASSED</button>
@@ -621,11 +623,10 @@
             <button onclick="confirmClearHistory()" class="script-btn flex-1 text-[10px] text-neonRed border-neonRed font-bold">YES, CLEAR IT</button>
             <button onclick="cancelClearHistory()" class="script-btn flex-1 text-[10px] border-neutral-600">CANCEL</button>
           </div>
-        </div>
+	        </div>
 
-        <div class="mt-4 pt-4 border-t border-neutral-900 space-y-2">
-          <button onclick="showScreen('screen-intro')" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600">Back</button>
-          <button onclick="requestClearHistory()" class="script-btn uppercase text-xs w-full text-center tracking-widest !text-neonRed hover:!border-neonRed">Clear History</button>
+	        <div class="mt-4 pt-4 border-t border-neutral-900 space-y-2">
+	          <button onclick="requestClearHistory()" class="script-btn uppercase text-xs w-full text-center tracking-widest !text-neonRed hover:!border-neonRed">Clear History</button>
 	        </div>
 	      </section>
 
@@ -1150,22 +1151,26 @@
             titleClass = 'text-neutral-500 line-through';
         }
 
-        const titleText = entry.title + (entry.year ? ' (' + entry.year + ')' : '');
+	        const titleText = entry.title + (entry.year ? ' (' + entry.year + ')' : '');
+	        const safeTitle = htmlEscape(titleText);
+	        const safeDate = htmlEscape(entry.date || '');
+	        const safeSpread = htmlEscape(entry.spread || '');
+	        const letterboxdUrl = entry.id ? 'https://letterboxd.com/tmdb/' + encodeURIComponent(entry.id) : '#';
 
-        html += '<div class="flex items-center space-x-3 bg-darkGrey p-2 border border-neutral-900 relative group">';
-        html += '<button onclick="removeJournalEntry(' + index + ')" class="absolute top-1 right-1 text-neutral-600 hover:text-neonRed text-[12px] font-bold px-2 py-1 z-10" title="Remove from Journal">×</button>';
-        html += '<div class="w-[45px] aspect-[2/3] flex-shrink-0 border border-neutral-800 bg-black overflow-hidden">';
-        if (posterUrl) {
-            html += '<img src="' + posterUrl + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\'">';
-        }
-        html += '</div>';
-        html += '<div class="flex-1 min-w-0 font-mono pr-6">';
-        html += '<div class="font-bold text-xs uppercase truncate ' + titleClass + '">' + titleText + '</div>';
-        html += '<div class="text-[9px] text-neutral-500 mt-0.5">' + entry.date + '</div>';
-        html += '<div class="text-[9px] text-neutral-600 truncate">' + entry.spread + '</div>';
-        html += '</div>';
-        html += statusHtml;
-        html += '</div>';
+	        html += '<div class="flex items-center space-x-3 bg-darkGrey p-2 border border-neutral-900 relative group">';
+	        html += '<button onclick="removeJournalEntry(' + index + ')" class="absolute top-1 right-1 text-neutral-600 hover:text-neonRed text-[12px] font-bold px-2 py-1 z-10" title="Remove from Journal">×</button>';
+	        html += '<a href="' + letterboxdUrl + '" target="_blank" rel="noopener noreferrer" class="w-[45px] aspect-[2/3] flex-shrink-0 border border-neutral-800 bg-black overflow-hidden hover:border-neonRed transition-colors" title="Open on Letterboxd">';
+	        if (posterUrl) {
+	            html += '<img src="' + posterUrl + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\'">';
+	        }
+	        html += '</a>';
+	        html += '<a href="' + letterboxdUrl + '" target="_blank" rel="noopener noreferrer" class="flex-1 min-w-0 font-mono pr-6 block hover:text-neonRed transition-colors" title="Open on Letterboxd">';
+	        html += '<div class="font-bold text-xs uppercase truncate ' + titleClass + '">' + safeTitle + '</div>';
+	        html += '<div class="text-[9px] text-neutral-500 mt-0.5">' + safeDate + '</div>';
+	        html += '<div class="text-[9px] text-neutral-600 truncate">' + safeSpread + '</div>';
+	        html += '</a>';
+	        html += statusHtml;
+	        html += '</div>';
       }
       list.innerHTML = html;
     }
