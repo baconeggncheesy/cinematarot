@@ -398,11 +398,11 @@
 
       <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="scene-heading text-xs">INT. THE CORE SPECTRUM - GAME 01</div>
-        <div class="action text-xs">Five mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
+	        <div class="action text-xs">Six mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
         <div class="character text-xs">THE SYSTEM</div>
         <div class="parenthetical text-xs">(patiently)</div>
         <div class="dialogue cursor-blink text-xs" id="slider-dialogue"></div>
-        <div class="space-y-4 mt-6 pl-3 border-l border-neutral-800">
+	        <div class="space-y-3 mt-5 pl-3 border-l border-neutral-800">
           <div class="space-y-1">
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>COZY</span><span id="val-warmth" class="text-neonRed">50</span><span>DREAD</span></div>
             <input type="range" id="slider-warmth" min="1" max="100" value="50" oninput="updateSliderVal('warmth')">
@@ -419,11 +419,15 @@
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>MAINSTREAM</span><span id="val-obscurity" class="text-neonRed">50</span><span>OBSCURE</span></div>
             <input type="range" id="slider-obscurity" min="1" max="100" value="50" oninput="updateSliderVal('obscurity')">
           </div>
-          <div class="space-y-1">
-            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>BLEAK / NIHILISTIC</span><span id="val-humor" class="text-neonRed">50</span><span>WITTY / FUNNY</span></div>
-            <input type="range" id="slider-humor" min="1" max="100" value="50" oninput="updateSliderVal('humor')">
-          </div>
-        </div>
+	          <div class="space-y-1">
+	            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>BLEAK / NIHILISTIC</span><span id="val-humor" class="text-neonRed">50</span><span>WITTY / FUNNY</span></div>
+	            <input type="range" id="slider-humor" min="1" max="100" value="50" oninput="updateSliderVal('humor')">
+	          </div>
+	          <div class="space-y-1">
+	            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>COMFORT</span><span id="val-aftertaste" class="text-neonRed">50</span><span>RUIN ME</span></div>
+	            <input type="range" id="slider-aftertaste" min="1" max="100" value="50" oninput="updateSliderVal('aftertaste')">
+	          </div>
+	        </div>
 
         <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
@@ -593,7 +597,7 @@
 	      </div>
 
 	      <div id="deck-card-overlay" class="hidden fixed inset-0 bg-black/95 z-50 p-4 flex items-center justify-center">
-	        <div class="w-full max-w-md border border-neonRed bg-black shadow-neon p-3 relative max-h-[92vh] overflow-y-auto">
+	        <div class="w-full max-w-xl border border-neonRed bg-black shadow-neon p-3 relative max-h-[92vh] overflow-y-auto">
 	          <button onclick="closeDeckCard()" class="absolute top-2 right-2 text-neutral-500 hover:text-neonRed text-lg font-bold px-2 leading-none" aria-label="Close card detail">×</button>
 	          <div id="deck-card-detail"></div>
 	        </div>
@@ -678,7 +682,7 @@
       currentScreen: 'intro',
       language: 'any',
       era: 'any',
-      sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50 },
+	      sliders: { warmth: 50, tempo: 50, reality: 50, obscurity: 50, humor: 50, aftertaste: 50 },
       vibeGenreIds: [], 
       runtimeMax: null, 
       runtimeMin: null,
@@ -696,9 +700,10 @@
       journal: [], 
       sceneCount: 0,
       
-      daily: {
-          dateIndex: null,
-          guesses: [],
+	      daily: {
+	          version: 2,
+	          dateIndex: null,
+	          guesses: [],
           won: false,
           lost: false,
           movie: null,
@@ -787,23 +792,23 @@
     };
 
     const GENRE_MAP = {
-      18: { w: 50, t: 25, r: 10, h: 25, name: 'DRAMA' },
-      35: { w: 15, t: 65, r: 35, h: 95, name: 'COMEDY' },
-      53: { w: 85, t: 75, r: 30, h: 15, name: 'THRILLER' },
-      27: { w: 95, t: 70, r: 80, h: 10, name: 'HORROR' },
-      878: { w: 70, t: 60, r: 90, h: 30, name: 'SCI-FI' },
-      14: { w: 30, t: 50, r: 95, h: 50, name: 'FANTASY' },
-      10749: { w: 20, t: 30, r: 20, h: 60, name: 'ROMANCE' },
-      28: { w: 65, t: 95, r: 35, h: 40, name: 'ACTION' },
-      80: { w: 80, t: 65, r: 15, h: 20, name: 'CRIME' },
-      9648: { w: 75, t: 40, r: 55, h: 30, name: 'MYSTERY' },
-      36: { w: 45, t: 20, r: 5, h: 20, name: 'HISTORY' },
-      10752: { w: 90, t: 80, r: 10, h: 5, name: 'WAR' },
-      99: { w: 50, t: 15, r: 0, h: 35, name: 'DOC' },
-      10751: { w: 10, t: 40, r: 30, h: 70, name: 'FAMILY' },
-      12: { w: 40, t: 85, r: 50, h: 60, name: 'ADVENTURE' },
-      37: { w: 60, t: 50, r: 15, h: 30, name: 'WESTERN' },
-      10402: { w: 30, t: 40, r: 40, h: 50, name: 'MUSIC' }
+	      18: { w: 50, t: 25, r: 10, h: 25, a: 70, name: 'DRAMA' },
+	      35: { w: 15, t: 65, r: 35, h: 95, a: 25, name: 'COMEDY' },
+	      53: { w: 85, t: 75, r: 30, h: 15, a: 85, name: 'THRILLER' },
+	      27: { w: 95, t: 70, r: 80, h: 10, a: 90, name: 'HORROR' },
+	      878: { w: 70, t: 60, r: 90, h: 30, a: 70, name: 'SCI-FI' },
+	      14: { w: 30, t: 50, r: 95, h: 50, a: 45, name: 'FANTASY' },
+	      10749: { w: 20, t: 30, r: 20, h: 60, a: 35, name: 'ROMANCE' },
+	      28: { w: 65, t: 95, r: 35, h: 40, a: 55, name: 'ACTION' },
+	      80: { w: 80, t: 65, r: 15, h: 20, a: 80, name: 'CRIME' },
+	      9648: { w: 75, t: 40, r: 55, h: 30, a: 75, name: 'MYSTERY' },
+	      36: { w: 45, t: 20, r: 5, h: 20, a: 65, name: 'HISTORY' },
+	      10752: { w: 90, t: 80, r: 10, h: 5, a: 95, name: 'WAR' },
+	      99: { w: 50, t: 15, r: 0, h: 35, a: 55, name: 'DOC' },
+	      10751: { w: 10, t: 40, r: 30, h: 70, a: 15, name: 'FAMILY' },
+	      12: { w: 40, t: 85, r: 50, h: 60, a: 35, name: 'ADVENTURE' },
+	      37: { w: 60, t: 50, r: 15, h: 30, a: 65, name: 'WESTERN' },
+	      10402: { w: 30, t: 40, r: 40, h: 50, a: 35, name: 'MUSIC' }
     };
 
     const GENRE_NAME_TO_ID = Object.fromEntries(
@@ -865,6 +870,8 @@
       else if (coordinates.warmth <= 35) axisLabels.push('COZY');
       if (coordinates.humor >= 65) axisLabels.push('WITTY');
       else if (coordinates.humor <= 35) axisLabels.push('BLEAK');
+      if (coordinates.aftertaste >= 65) axisLabels.push('RUIN ME');
+      else if (coordinates.aftertaste <= 35) axisLabels.push('COMFORT');
 
       let message = '[ CALIBRATED';
       if (genreNames.length > 0) message += ': ' + genreNames.join(' + ');
@@ -881,9 +888,10 @@
 
       if (gutPunch) {
         out.warmth = Math.max(Number(out.warmth) || 50, 88);
-        out.humor = Math.min(Number(out.humor) || 50, 12);
-        out.tempo = Math.max(Number(out.tempo) || 50, 55);
-        out.reality = Math.min(Number(out.reality) || 50, 45);
+	        out.humor = Math.min(Number(out.humor) || 50, 12);
+	        out.tempo = Math.max(Number(out.tempo) || 50, 55);
+	        out.reality = Math.min(Number(out.reality) || 50, 45);
+	        out.aftertaste = Math.max(Number(out.aftertaste) || 50, 92);
         const genres = Array.isArray(out.genres) ? out.genres.slice() : [];
         const upperGenres = genres.map(g => String(g).toUpperCase());
         if (!upperGenres.includes('DRAMA')) genres.unshift('Drama');
@@ -894,14 +902,15 @@
       return out;
     }
 
-    const STORAGE_KEYS = {
-      seen: 'cinema_arcana_seen',
-      rejected: 'cinema_arcana_rejected',
-      journal: 'cinema_arcana_journal',
-      sceneCount: 'cinema_arcana_scene_count',
-      taste: 'cinema_arcana_taste',
-      daily: 'cinema_arcana_daily'
-    };
+	    const STORAGE_KEYS = {
+	      seen: 'cinema_arcana_seen',
+	      rejected: 'cinema_arcana_rejected',
+	      journal: 'cinema_arcana_journal',
+	      sceneCount: 'cinema_arcana_scene_count',
+	      taste: 'cinema_arcana_taste',
+	      daily: 'cinema_arcana_daily'
+	    };
+	    const DAILY_CACHE_VERSION = 2;
 
     function loadPersistedState() {
       try {
@@ -921,12 +930,12 @@
         const now = new Date();
         const currentDayIndex = Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000);
         
-        if (savedDaily && savedDaily.dateIndex === currentDayIndex) {
-            AppState.daily = savedDaily;
-        } else {
-            AppState.daily = { dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, scoreSpec: null };
-            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
-        }
+	        if (savedDaily && savedDaily.dateIndex === currentDayIndex && savedDaily.version === DAILY_CACHE_VERSION) {
+	            AppState.daily = savedDaily;
+	        } else {
+	            AppState.daily = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, scoreSpec: null };
+	            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
+	        }
 
       } catch (e) { }
       renderHitCounter(AppState.sceneCount || 0);
@@ -1048,9 +1057,9 @@
 		      const card = AppState.tarotDeck[index];
 		      if (!overlay || !detail || !card) return;
 		      detail.innerHTML = `
-		        <div class="flex space-x-3 pr-6">
-		          <div class="w-[104px] aspect-[2/3] flex-shrink-0 border border-neonRed bg-black overflow-hidden shadow-neon-sm">
-		            <img src="${card.image}" class="w-full h-full object-cover" onerror="tryJpegFallback(this, '${htmlEscape(card.num)}')">
+		        <div class="flex items-start gap-3 pr-6">
+		          <div class="w-[42vw] min-w-[150px] max-w-[220px] aspect-[2/3] flex-shrink-0 border border-neonRed bg-black overflow-hidden shadow-neon-sm">
+		            <img src="${card.image}" class="w-full h-full object-contain" onerror="tryJpegFallback(this, '${htmlEscape(card.num)}')">
 		          </div>
 		          <div class="flex-1 min-w-0 font-mono">
 		            <div class="text-[9px] text-neonRed font-bold tracking-widest mb-1">[ ${htmlEscape(card.num)} ]</div>
@@ -1570,7 +1579,7 @@
 
 	        let coordinates = applyTextMoodCorrections(JSON.parse(rawText.trim()), text);
 
-        const axes = ['warmth', 'tempo', 'reality', 'obscurity', 'humor'];
+	        const axes = ['warmth', 'tempo', 'reality', 'obscurity', 'humor', 'aftertaste'];
         for (let i = 0; i < axes.length; i++) {
           const axis = axes[i];
           if (coordinates[axis] !== undefined) {
@@ -1875,15 +1884,16 @@
 	          
 	          const tension = Math.max(0, Math.min(100, spec.tension || 50)) / 100;
 	          const reality = Math.max(0, Math.min(100, spec.reality || 50)) / 100;
-	          const humor = Math.max(0, Math.min(100, spec.humor || 50)) / 100;
-	          const obscurity = Math.max(0, Math.min(100, spec.obscurity || 50)) / 100;
-	          const warmth = Math.max(0, Math.min(100, spec.warmth || 50)) / 100;
+		          const humor = Math.max(0, Math.min(100, spec.humor || 50)) / 100;
+		          const obscurity = Math.max(0, Math.min(100, spec.obscurity || 50)) / 100;
+		          const warmth = Math.max(0, Math.min(100, spec.warmth || 50)) / 100;
+		          const aftertaste = Math.max(0, Math.min(100, spec.aftertaste || 50)) / 100;
 
-	          const reverb = new Tone.Reverb({ decay: 3 + reality * 8, wet: 0.28 + reality * 0.35 }).toDestination();
-	          const delay = new Tone.FeedbackDelay(spec.rhythm === "urgent" ? "8n" : "4n", 0.18 + obscurity * 0.35).connect(reverb);
-	          const chorus = new Tone.Chorus(0.8 + reality * 3, 2.5, 0.2 + reality * 0.35).connect(delay).start();
-	          const filter = new Tone.Filter(650 + (1 - tension) * 3600, "lowpass").connect(chorus);
-	          const lfo = new Tone.LFO(0.04 + reality * 0.18, 450 + warmth * 900, 1600 + reality * 5200).connect(filter.frequency).start();
+		          const reverb = new Tone.Reverb({ decay: 3 + reality * 8 + aftertaste * 4, wet: 0.28 + reality * 0.35 + aftertaste * 0.12 }).toDestination();
+		          const delay = new Tone.FeedbackDelay(spec.rhythm === "urgent" ? "8n" : "4n", 0.18 + obscurity * 0.35 + aftertaste * 0.12).connect(reverb);
+		          const chorus = new Tone.Chorus(0.8 + reality * 3, 2.5 + aftertaste * 1.5, 0.2 + reality * 0.35).connect(delay).start();
+		          const filter = new Tone.Filter(650 + (1 - tension) * 3600 - aftertaste * 240, "lowpass").connect(chorus);
+		          const lfo = new Tone.LFO(0.04 + reality * 0.18 + aftertaste * 0.08, 450 + warmth * 900, 1600 + reality * 5200).connect(filter.frequency).start();
 
 	          this.effects = [reverb, delay, chorus, filter, lfo];
 
@@ -1895,13 +1905,13 @@
 	            oscillator: { type: oscType },
 	            envelope: { attack: 1.8 + obscurity * 2.4, decay: 1.4, sustain: 0.72, release: 4 + reality * 3 }
 	          }).connect(filter);
-	          pad.volume.value = -16 + warmth * 4;
+		          pad.volume.value = -16 + warmth * 4 - aftertaste * 2;
 
 	          const motif = new Tone.Synth({
 	            oscillator: { type: spec.palette === "trickster" ? "triangle" : "sine" },
 	            envelope: { attack: 0.02, decay: 0.18 + humor * 0.12, sustain: 0.12, release: 0.8 + reality }
 	          }).connect(delay);
-	          motif.volume.value = -20 + humor * 5;
+		          motif.volume.value = -20 + humor * 5 - aftertaste * 2;
 
 	          const bass = new Tone.MonoSynth({
 	            oscillator: { type: spec.palette === "horror" ? "sawtooth" : "triangle" },
@@ -1909,7 +1919,7 @@
 	            envelope: { attack: 0.04, decay: 0.3, sustain: 0.2, release: 1.2 },
 	            filterEnvelope: { attack: 0.03, decay: 0.4, sustain: 0.15, release: 1.2, baseFrequency: 80, octaves: 2.5 }
 	          }).connect(filter);
-	          bass.volume.value = -22 + tension * 5;
+		          bass.volume.value = -22 + tension * 5 + aftertaste * 2;
 
 	          const perc = new Tone.MembraneSynth({ pitchDecay: 0.04, octaves: 4, envelope: { attack: 0.001, decay: 0.25, sustain: 0.01, release: 0.2 } }).connect(delay);
 	          perc.volume.value = spec.rhythm === "urgent" ? -22 : -28;
@@ -2321,7 +2331,7 @@
         }
         
         tw = clampShift(tw); tt = clampShift(tt); tr = clampShift(tr); th = clampShift(th);
-        const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw)); const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt)); const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr)); const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th)); const finalObscurity = AppState.sliders.obscurity;
+	        const finalWarmth = Math.max(1, Math.min(100, AppState.sliders.warmth + tw)); const finalTempo = Math.max(1, Math.min(100, AppState.sliders.tempo + tt)); const finalReality = Math.max(1, Math.min(100, AppState.sliders.reality + tr)); const finalHumor = Math.max(1, Math.min(100, AppState.sliders.humor + th)); const finalObscurity = AppState.sliders.obscurity; const finalAftertaste = AppState.sliders.aftertaste;
         
         const spreadArr = [];
         for (let i = 0; i < AppState.drawnSpread.length; i++) {
@@ -2332,7 +2342,7 @@
         const spreadSummary = spreadArr.join(', ');
 
         const payload = {
-          type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor },
+	          type: 'match', sliders: { warmth: finalWarmth, tempo: finalTempo, reality: finalReality, obscurity: finalObscurity, humor: finalHumor, aftertaste: finalAftertaste },
           language: AppState.language, era: AppState.era, runtimeMin: AppState.runtimeMin, runtimeMax: AppState.runtimeMax,
           vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
           spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
@@ -2752,7 +2762,7 @@
       const metaText = cleanCanvasText('GENRES: ' + genreNames + '  |  RUNTIME: ' + runtimeLabel + '  |  ERA: ' + AppState.era.toUpperCase());
       ctx.fillText(metaText, W / 2, cursorY); cursorY += 35;
       
-      const s = AppState.sliders; const sliderText = cleanCanvasText('WARMTH: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '%'); ctx.fillText(sliderText, W / 2, cursorY);
+      const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
 
       if (AppState.manualOverrideText) {
         cursorY += 40; ctx.fillStyle = '#FF003C'; ctx.font = 'italic 18px Courier New, monospace';
