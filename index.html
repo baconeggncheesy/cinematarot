@@ -556,21 +556,22 @@
             <div class="flex space-x-2 pt-1" id="script-notes-buttons">
               <button id="btn-seen" onclick="markMovieAsSeen()" class="script-btn flex-1 text-center text-[10px] tracking-widest text-green-500 hover:border-green-500 hover:text-green-400">SEEN</button>
               <button id="btn-pass" onclick="markMovieNotInterested()" class="script-btn flex-1 text-center text-[10px] tracking-widest text-orange-500 hover:border-orange-500 hover:text-orange-400">PASS</button>
-              <button onclick="rerollCurrentSpectrum()" class="script-btn flex-1 text-center font-bold text-[10px] tracking-widest !text-neonRed hover:!border-neonRed hover:!text-neonRed">REROLL</button>
+              <button id="btn-reroll" onclick="rerollCurrentSpectrum()" class="script-btn flex-1 text-center font-bold text-[10px] tracking-widest !text-neonRed hover:!border-neonRed hover:!text-neonRed">REROLL</button>
             </div>
           </div>
           
-          <div class="pt-2 font-mono">
-            <button onclick="shareReadingImage()" id="share-reading-btn" class="script-btn-primary uppercase text-xs tracking-widest w-full">Generate Share Reading Image</button>
-            <div id="share-reading-preview-wrap" class="hidden mt-3 border border-neutral-800 bg-black p-2">
-              <img id="share-reading-preview" src="" alt="Share preview" class="w-full max-h-[220px] object-contain">
-            </div>
-          </div>
-          <button onclick="recalibrate()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600 hover:border-white mt-2">Start Over</button>
-        </div>
-      </section>
+	          <div class="pt-2 font-mono">
+	            <button onclick="shareReadingImage()" id="share-reading-btn" class="script-btn-primary uppercase text-xs tracking-widest w-full">Generate Share Reading Image</button>
+	            <div id="share-reading-preview-wrap" class="hidden mt-3 border border-neutral-800 bg-black p-2">
+	              <img id="share-reading-preview" src="" alt="Share preview" class="w-full max-h-[220px] object-contain">
+	            </div>
+	          </div>
+	          <button onclick="openJournal()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600 hover:border-white">Open Journal</button>
+	          <button onclick="recalibrate()" class="script-btn uppercase text-xs w-full text-center tracking-widest border border-neutral-600 hover:border-white mt-2">Start Over</button>
+	        </div>
+	      </section>
 
-      <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black">
+      <div id="poster-reveal-overlay" class="hidden fixed inset-0 z-40 bg-black pointer-events-none">
         <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
       </div>
 
@@ -902,18 +903,27 @@
       try { localStorage.setItem(STORAGE_KEYS.taste, JSON.stringify(AppState.tasteAvoid)); } catch (e) {}
     }
 
-    function addJournalEntry(entry) {
-      AppState.journal.unshift(entry);
-      if (AppState.journal.length > 50) AppState.journal.length = 50; 
+	    function addJournalEntry(entry) {
+	      AppState.journal.unshift(entry);
+	      if (AppState.journal.length > 50) AppState.journal.length = 50; 
       AppState.sceneCount = (AppState.sceneCount || 0) + 1;
       try {
         localStorage.setItem(STORAGE_KEYS.journal, JSON.stringify(AppState.journal));
         localStorage.setItem(STORAGE_KEYS.sceneCount, String(AppState.sceneCount));
       } catch (e) {}
-      renderHitCounter(AppState.sceneCount);
-    }
+	      renderHitCounter(AppState.sceneCount);
+	    }
 
-    let journalTab = 'recommended'; 
+	    function addToSeenList(movieId) {
+	      if (!movieId) return;
+	      const id = String(movieId);
+	      const seen = AppState.seenMovies.map(String);
+	      if (!seen.includes(id)) AppState.seenMovies.push(id);
+	      AppState.rejectedMovies = AppState.rejectedMovies.filter(existingId => String(existingId) !== id);
+	      persistSeenRejected();
+	    }
+
+	    let journalTab = 'recommended'; 
 
     function openJournal() {
       playSynthBeep(500, 0.05, 'square');
@@ -2142,16 +2152,7 @@
 
       AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
       
-      const btnPass = document.getElementById('btn-pass');
-      if (btnPass) {
-          btnPass.innerText = "PASS";
-          btnPass.classList.remove('opacity-50', 'pointer-events-none');
-      }
-      const btnSeen = document.getElementById('btn-seen');
-      if (btnSeen) {
-          btnSeen.innerText = "SEEN";
-          btnSeen.classList.remove('opacity-50', 'pointer-events-none');
-      }
+	      resetResultActionButtons();
       
       AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
       
@@ -2164,6 +2165,27 @@
     function hideLetterbox() { const top = document.getElementById('letterbox-top'); const bot = document.getElementById('letterbox-bottom'); [top, bot].forEach(el => { if (!el) return; el.classList.remove('in'); el.classList.add('out'); setTimeout(() => { el.classList.remove('out'); }, 650); }); }
 
     const REVEAL_DURATION = 3.4;
+    function resetResultActionButtons() {
+      const btnPass = document.getElementById('btn-pass');
+      if (btnPass) {
+          btnPass.innerText = "PASS";
+          btnPass.disabled = false;
+          btnPass.classList.remove('opacity-50', 'pointer-events-none');
+      }
+      const btnSeen = document.getElementById('btn-seen');
+      if (btnSeen) {
+          btnSeen.innerText = "SEEN";
+          btnSeen.disabled = false;
+          btnSeen.classList.remove('opacity-50', 'pointer-events-none');
+      }
+      const btnReroll = document.getElementById('btn-reroll');
+      if (btnReroll) {
+          btnReroll.innerText = "REROLL";
+          btnReroll.disabled = false;
+          btnReroll.classList.remove('opacity-50', 'pointer-events-none');
+      }
+    }
+
     function showScreenWithFocusReveal(screenId) {
       showScreen(screenId);
       const overlay = document.getElementById('poster-reveal-overlay'); const overlayImg = document.getElementById('poster-reveal-img'); const realPoster = document.getElementById('movie-poster');
@@ -2185,21 +2207,22 @@
       setTimeout(() => { overlay.classList.add('hidden'); }, REVEAL_DURATION * 1000 + 100);
     }
     
-    function markMovieAsSeen() { 
-        if (AppState.currentMovie && AppState.currentMovie.id) { 
-            addToSeenList(AppState.currentMovie.id); 
-            playTypewriterDing();
+	    function markMovieAsSeen() { 
+	        if (AppState.currentMovie && AppState.currentMovie.id) { 
+	            addToSeenList(AppState.currentMovie.id); 
+	            playTypewriterDing();
             const btn = document.getElementById('btn-seen');
             if (btn) {
                 btn.innerText = "LOGGED";
                 btn.classList.add('opacity-50', 'pointer-events-none');
             }
-            const btnPass = document.getElementById('btn-pass');
-            if (btnPass) {
-                btnPass.classList.add('opacity-50', 'pointer-events-none');
-            }
-        } 
-    }
+	            const btnPass = document.getElementById('btn-pass');
+	            if (btnPass) {
+	                btnPass.classList.add('opacity-50', 'pointer-events-none');
+	                btnPass.disabled = true;
+	            }
+	        } 
+	    }
     
     function markMovieNotInterested() {
         if (AppState.currentMovie && AppState.currentMovie.id) {
@@ -2215,24 +2238,31 @@
                 btn.innerText = "PASSED";
                 btn.classList.add('opacity-50', 'pointer-events-none');
             }
-            const btnSeen = document.getElementById('btn-seen');
-            if (btnSeen) {
-                btnSeen.classList.add('opacity-50', 'pointer-events-none');
-            }
-        }
-    }
-    
-    function rerollCurrentSpectrum() { 
-        if (AppState.currentMovie && AppState.currentMovie.id) { 
-            const id = AppState.currentMovie.id;
+	            const btnSeen = document.getElementById('btn-seen');
+	            if (btnSeen) {
+	                btnSeen.classList.add('opacity-50', 'pointer-events-none');
+	                btnSeen.disabled = true;
+	            }
+	        }
+	    }
+	    
+	    function rerollCurrentSpectrum() { 
+	        if (AppState.currentMovie && AppState.currentMovie.id) { 
+	            const id = AppState.currentMovie.id;
             if (!AppState.rejectedMovies.includes(id)) {
                 AppState.rejectedMovies.push(id); 
-                recordRejectionTaste(AppState.currentMovie); 
-                persistSeenRejected(); 
-            }
-            initiateSubconsciousMatching(); 
-        } 
-    }
+	                recordRejectionTaste(AppState.currentMovie); 
+	                persistSeenRejected(); 
+	            }
+	            const btnReroll = document.getElementById('btn-reroll');
+	            if (btnReroll) {
+	                btnReroll.innerText = "REROLLING...";
+	                btnReroll.disabled = true;
+	                btnReroll.classList.add('opacity-50', 'pointer-events-none');
+	            }
+	            initiateSubconsciousMatching(); 
+	        } 
+	    }
 
     function dominantWord(name) {
       const stop = new Set(['THE', 'A', 'OF', 'WITH', 'NO']); const cleaned = name.replace(/\(.*?\)/g, '').replace(/[^A-Za-z ]/g, '').trim().toUpperCase();
