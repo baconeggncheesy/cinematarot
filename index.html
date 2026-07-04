@@ -898,11 +898,6 @@
 	        out.tempo = Math.max(Number(out.tempo) || 50, 55);
 	        out.reality = Math.min(Number(out.reality) || 50, 45);
 	        out.aftertaste = Math.max(Number(out.aftertaste) || 50, 92);
-        const genres = Array.isArray(out.genres) ? out.genres.slice() : [];
-        const upperGenres = genres.map(g => String(g).toUpperCase());
-        if (!upperGenres.includes('DRAMA')) genres.unshift('Drama');
-        if (!upperGenres.includes('THRILLER')) genres.push('Thriller');
-        out.genres = genres.slice(0, 3);
       }
 
       return out;
@@ -1594,45 +1589,9 @@
           }
         }
         
-        AppState.suggestedTitles = coordinates.suggestedTitles || [];
+	        AppState.suggestedTitles = [];
 
-        let detectedGenres = [];
-        if (coordinates.genres && Array.isArray(coordinates.genres)) {
-          for (let i = 0; i < coordinates.genres.length; i++) {
-            const name = coordinates.genres[i];
-            const id = GENRE_NAME_TO_ID[String(name).toUpperCase()];
-            if (id !== undefined) detectedGenres.push(id);
-          }
-        }
-
-        AppState.runtimeMax = null; AppState.runtimeMin = null;
-        if (typeof coordinates.runtimeMax === 'number' && coordinates.runtimeMax > 0) {
-          AppState.runtimeMax = Math.max(40, Math.min(240, Math.round(coordinates.runtimeMax)));
-        }
-        AppState.runtimeBand = AppState.runtimeMax ? 'custom' : 'any';
-        updateRuntimeUI();
-
-        let referenceGenres = [];
-        if (coordinates.referenceGenreIds && Array.isArray(coordinates.referenceGenreIds)) {
-          for (let i = 0; i < coordinates.referenceGenreIds.length; i++) {
-            const id = coordinates.referenceGenreIds[i];
-            if (GENRE_MAP[id]) referenceGenres.push(id);
-          }
-        }
-
-        const mergedMap = {};
-        const mergedList = [];
-        for (let i = 0; i < detectedGenres.length; i++) {
-          if (!mergedMap[detectedGenres[i]]) { mergedMap[detectedGenres[i]] = true; mergedList.push(detectedGenres[i]); }
-        }
-        for (let i = 0; i < referenceGenres.length; i++) {
-          if (!mergedMap[referenceGenres[i]]) { mergedMap[referenceGenres[i]] = true; mergedList.push(referenceGenres[i]); }
-        }
-
-        AppState.vibeGenreIds = mergedList.slice(0, 3);
-        renderGenreChips();
-
-        statusEl.innerText = describeCalibration(coordinates, AppState.vibeGenreIds);
+	        statusEl.innerText = describeCalibration(coordinates, AppState.vibeGenreIds);
         playSynthBeep(1200, 0.2, 'square'); triggerGlitchEffect('glitch-tear');
       } catch (err) {
         statusEl.innerText = "[ FAILED: " + err.message.slice(0, 50) + " ]";
@@ -2757,19 +2716,20 @@
       
       let html = '';
       for (let i = 0; i < AppState.runnerUps.length; i++) {
-        const movie = AppState.runnerUps[i];
-        const posterUrl = movie.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + movie.poster_path) : '';
-        const year = (movie.release_date || movie.first_air_date || '').split('-')[0];
-        const title = movie.title || movie.name || 'Untitled';
-        html += `
-          <div class="flex-1 min-w-0">
-            <div class="aspect-[2/3] bg-neutral-900 border border-neutral-800 overflow-hidden mb-1">
-              ${posterUrl ? '<img src="' + posterUrl + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\'">' : ''}
-            </div>
-            <div class="text-[8px] text-neutral-400 truncate">${title}</div>
-            <div class="text-[8px] text-neutral-600">${year}</div>
-          </div>
-        `;
+	        const movie = AppState.runnerUps[i];
+	        const posterUrl = movie.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + movie.poster_path) : '';
+	        const year = (movie.release_date || movie.first_air_date || '').split('-')[0];
+	        const title = movie.title || movie.name || 'Untitled';
+	        const letterboxdUrl = movie.id ? 'https://letterboxd.com/tmdb/' + encodeURIComponent(movie.id) : '#';
+	        html += `
+	          <a href="${letterboxdUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 min-w-0 block group" title="Open ${htmlEscape(title)} on Letterboxd">
+	            <div class="aspect-[2/3] bg-neutral-900 border border-neutral-800 overflow-hidden mb-1 group-hover:border-neonRed transition-colors">
+	              ${posterUrl ? '<img src="' + posterUrl + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\'">' : ''}
+	            </div>
+	            <div class="text-[8px] text-neutral-400 truncate group-hover:text-neonRed transition-colors">${htmlEscape(title)}</div>
+	            <div class="text-[8px] text-neutral-600">${year}</div>
+	          </a>
+	        `;
       }
       list.innerHTML = html;
       const rationale = document.getElementById('runner-ups-rationale');
