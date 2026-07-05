@@ -291,12 +291,37 @@
     </header>
 
     <main class="flex-1 relative pb-6">
+      <!-- FIRST-RUN EXPLAINER OVERLAY -->
+      <div id="intro-overlay" class="hidden fixed inset-0 bg-black/95 z-[60] p-5 flex-col items-center justify-center overflow-y-auto">
+        <div class="w-full max-w-md border border-neonRed/50 bg-darkGrey/70 shadow-neon-sm p-6 my-auto">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="font-cinzel text-2xl font-bold uppercase tracking-widest text-white leading-tight">Cinema Arcana</h2>
+            <button onclick="closeIntroOverlay()" class="text-neutral-500 hover:text-neonRed text-2xl font-bold leading-none ml-3 -mt-1" title="Close" aria-label="Close">&times;</button>
+          </div>
+          <p class="text-[10px] uppercase tracking-widest text-neonRed font-bold mb-4">Tarot For Movies</p>
+
+          <div class="space-y-3 text-[11px] leading-relaxed text-neutral-300 font-mono">
+            <p>A tarot reading that ends in a film. The app maps your mood, colors it with a three-card draw, and scours the whole history of cinema for the one movie that matches.</p>
+            <div class="pt-1">
+              <p class="text-neonRed font-bold uppercase text-[10px] tracking-widest mb-1">How it works</p>
+              <p class="text-neutral-400"><span class="text-neutral-200 font-bold">1.</span> Set six mood dials — or type what you want to feel — or pick up to four films you love and let the app read your taste from them.</p>
+              <p class="text-neutral-400 mt-1"><span class="text-neutral-200 font-bold">2.</span> Draw a three-card spread (Past, Present, Future). The cards nudge the reading.</p>
+              <p class="text-neutral-400 mt-1"><span class="text-neutral-200 font-bold">3.</span> Receive your projection: one film, an alignment reading, and runner-ups.</p>
+            </div>
+            <p class="text-neutral-500 pt-1">Reroll for a different pick, Pass to rule one out, and log favorites to your journal. There's also a daily guess-the-film game.</p>
+          </div>
+
+          <button onclick="closeIntroOverlay()" class="script-btn-primary uppercase text-xs tracking-widest w-full text-center mt-6">[ Begin ]</button>
+        </div>
+      </div>
+
       <section id="screen-intro" class="animate-fade-in flex flex-col justify-center min-h-[60vh]">
         <div class="text-center space-y-4 mb-12">
           <h1 class="font-cinzel text-4xl sm:text-5xl font-bold uppercase tracking-widest text-white border-y border-neutral-800 py-6 my-8">
             Cinema Arcana
           </h1>
           <p class="text-xs text-neutral-500">Tarot For Movies</p>
+          <button onclick="openIntroOverlay()" class="text-[9px] uppercase tracking-widest text-neutral-600 hover:text-neonRed border border-neutral-800 hover:border-neonRed px-3 py-1 mt-2 transition-colors">? What is this</button>
           <p class="text-[10px] uppercase mt-8 text-neutral-600"><span id="current-date"></span></p>
         </div>
         <div class="action text-xs leading-relaxed text-center px-4">
@@ -680,6 +705,7 @@
         </div>
       </div>
     </footer>
+    <div class="w-full text-center pb-3 text-[8px] uppercase tracking-widest text-neutral-700">© <span id="footer-year"></span> Cinema Arcana — Created by Cory Gallant</div>
   </div>
 
   <div id="notification-banner" class="fixed top-6 left-1/2 -translate-x-1/2 bg-neonRed text-white font-bold text-xs px-6 py-2 uppercase tracking-widest shadow-neon opacity-0 transition-opacity duration-300 pointer-events-none z-50">
@@ -1244,16 +1270,33 @@
       triggerGlitchEffect('glitch-shake'); playTypewriterDing(); journalTab = 'recommended'; setJournalTab('recommended');
     }
 
+	    function openIntroOverlay() {
+	      const ov = document.getElementById('intro-overlay');
+	      if (ov) { ov.classList.remove('hidden'); ov.classList.add('flex'); }
+	    }
+
+	    function closeIntroOverlay() {
+	      const ov = document.getElementById('intro-overlay');
+	      if (ov) { ov.classList.add('hidden'); ov.classList.remove('flex'); }
+	      try { localStorage.setItem('ca_intro_seen', '1'); } catch (e) {}
+	      if (typeof playSynthBeep === 'function') playSynthBeep(520, 0.04, 'triangle');
+	    }
+
 	    window.onload = function() {
 	      loadPersistedState(); renderGenreChips();
 	      document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+	      const fy = document.getElementById('footer-year'); if (fy) fy.innerText = new Date().getFullYear();
 	      typewriter('intro-dialogue', "Are you ready to project your subconscious?", 40);
+	      let introSeen = false;
+	      try { introSeen = localStorage.getItem('ca_intro_seen') === '1'; } catch (e) {}
+	      if (!introSeen) openIntroOverlay();
 	    };
 
 	    document.addEventListener('keydown', function(event) {
 	      if (event.key === 'Escape') {
 	        closeDeckCard();
 	        closeShareImageOverlay();
+	        closeIntroOverlay();
 	      }
 	    });
 
@@ -1428,6 +1471,7 @@
     }
 
     let seedSearchTimer = null;
+    let seedSearchLookup = {};
 
     function debounceSeedSearch() {
       if (seedSearchTimer) clearTimeout(seedSearchTimer);
@@ -1461,14 +1505,15 @@
 
         if (results.length > 0) {
           const top5 = results.slice(0, 5);
+          seedSearchLookup = {};
           let html = '';
           for (let i = 0; i < top5.length; i++) {
             const movie = top5[i];
             const title = movie.title || movie.name || 'Unknown';
             const year = (movie.release_date || movie.first_air_date || '').split('-')[0] || '';
             const display = year ? title + ' (' + year + ')' : title;
-            const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            html += '<div onclick="addFilmSeed(' + movie.id + ', \'' + safeTitle + '\', \'' + (year || '') + '\')" class="p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate">';
+            seedSearchLookup[String(movie.id)] = { id: movie.id, title: title, year: year, poster_path: movie.poster_path || null };
+            html += '<div onclick="addFilmSeed(' + movie.id + ')" class="p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate">';
             html += display;
             html += '</div>';
           }
@@ -1483,12 +1528,13 @@
       }
     }
 
-    function addFilmSeed(id, title, year) {
+    function addFilmSeed(id) {
       if (!AppState.filmSeeds) AppState.filmSeeds = [];
       if (AppState.filmSeeds.length >= 4) return;
       if (AppState.filmSeeds.some(function (f) { return String(f.id) === String(id); })) return;
 
-      AppState.filmSeeds.push({ id: id, title: title, year: year || '' });
+      const found = (seedSearchLookup && seedSearchLookup[String(id)]) ? seedSearchLookup[String(id)] : { id: id, title: 'Untitled', year: '', poster_path: null };
+      AppState.filmSeeds.push({ id: found.id, title: found.title, year: found.year || '', poster_path: found.poster_path || null });
 
       const inputEl = document.getElementById('seed-search-input');
       const resultsContainer = document.getElementById('seed-search-results');
@@ -2704,19 +2750,16 @@
 	            showScreen('screen-error');
 	            return;
 	        }
-		        let changedRejections = false;
-		        if (addRejectedMovieId(AppState.currentMovie)) {
-		            changedRejections = true;
-		            recordRejectionTaste(AppState.currentMovie);
-		        }
+		        // Reroll must NOT pass/reject the film — it only asks for a different
+		        // option. We add it to the session-only avoid list so the same title
+		        // isn't handed back on the next reroll, but it stays recommended-eligible
+		        // and never touches the rejected list or the taste profile.
 		        addRerollAvoidTitle(AppState.currentMovie);
 		        if (Array.isArray(AppState.runnerUps)) {
 		            for (let i = 0; i < AppState.runnerUps.length; i++) {
-		                if (addRejectedMovieId(AppState.runnerUps[i])) changedRejections = true;
 		                addRerollAvoidTitle(AppState.runnerUps[i]);
 		            }
 		        }
-		        if (changedRejections) persistSeenRejected();
 		        AppState.rerollNonce = Date.now();
 		        const btnReroll = document.getElementById('btn-reroll');
 	        if (btnReroll) {
@@ -2989,15 +3032,45 @@
       if (seedsForImage.length > 0) {
         // Divined by films: the four films replace the sliders and prompt entirely.
         cursorY += 5;
-        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace';
-        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 32;
-        ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
-        for (let i = 0; i < seedsForImage.length; i++) {
+        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
+        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 40;
+
+        const n = Math.min(seedsForImage.length, 4);
+        const gap = 30;
+        const posterW = Math.floor((W - 240 - gap * (n - 1)) / n); // 120px side margins
+        const posterH = Math.floor(posterW * 1.5);
+        const rowStartX = Math.floor((W - (posterW * n + gap * (n - 1))) / 2);
+
+        const seedImgs = await Promise.all(seedsForImage.slice(0, n).map(function (f) {
+          if (!f.poster_path) return Promise.resolve(null);
+          const url = WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + f.poster_path);
+          return loadImageWithJpegFallback(url).catch(function () { return null; });
+        }));
+
+        for (let i = 0; i < n; i++) {
           const f = seedsForImage[i];
-          const label = cleanCanvasText(f.year ? (f.title + ' (' + f.year + ')') : f.title);
-          ctx.fillText(label.length > 46 ? label.slice(0, 46) + '...' : label, W / 2, cursorY);
-          cursorY += 30;
+          const px = rowStartX + i * (posterW + gap);
+          const img = seedImgs[i];
+          if (img) {
+            ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.4)'; ctx.shadowBlur = 20;
+            ctx.drawImage(img, px, cursorY, posterW, posterH); ctx.restore();
+          } else {
+            ctx.save();
+            ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(px, cursorY, posterW, posterH);
+            ctx.fillStyle = '#888'; ctx.font = 'bold 16px Courier New, monospace'; ctx.textAlign = 'center';
+            const ft = cleanCanvasText(f.title || '');
+            ctx.fillText(ft.length > 14 ? ft.slice(0, 14) + '...' : ft, px + posterW / 2, cursorY + posterH / 2);
+            ctx.restore();
+          }
+          // Title + year caption under each poster
+          ctx.fillStyle = '#ccc'; ctx.font = '15px Courier New, monospace'; ctx.textAlign = 'center';
+          const cap = cleanCanvasText(f.title || '');
+          const capYear = cleanCanvasText(f.year || '');
+          ctx.fillText(cap.length > 18 ? cap.slice(0, 18) + '...' : cap, px + posterW / 2, cursorY + posterH + 26);
+          if (capYear) { ctx.fillStyle = '#666'; ctx.fillText(capYear, px + posterW / 2, cursorY + posterH + 48); }
         }
+        cursorY += posterH + 60;
+        ctx.textAlign = 'center';
       } else {
         const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
 
@@ -3009,6 +3082,7 @@
       }
 
       ctx.textAlign = 'center'; ctx.fillStyle = '#444'; ctx.font = '18px Courier New, monospace'; ctx.fillText('cinema-arcana - ' + new Date().toLocaleDateString(), W / 2, H - 60);
+      ctx.fillStyle = '#333'; ctx.font = '15px Courier New, monospace'; ctx.fillText('(c) ' + new Date().getFullYear() + ' CINEMA ARCANA - CREATED BY CORY GALLANT', W / 2, H - 32);
       return canvas.toDataURL('image/png');
     }
 
