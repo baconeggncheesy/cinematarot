@@ -2984,13 +2984,28 @@
       const runtimeLabel = AppState.runtimeBand === 'custom' ? '<=' + AppState.runtimeMax + 'MIN' : (AppState.runtimeBand || 'any').toUpperCase();
       const metaText = cleanCanvasText('GENRES: ' + genreNames + '  |  RUNTIME: ' + runtimeLabel + '  |  ERA: ' + AppState.era.toUpperCase());
       ctx.fillText(metaText, W / 2, cursorY); cursorY += 35;
-      
-      const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
 
-      if (AppState.manualOverrideText) {
-        cursorY += 40; ctx.fillStyle = '#FF003C'; ctx.font = 'italic 18px Courier New, monospace';
-        const overrideText = cleanCanvasText('OVERRIDE: "' + AppState.manualOverrideText.toUpperCase() + '"');
-        ctx.fillText(overrideText.length > 90 ? overrideText.slice(0, 90) + '...' : overrideText, W / 2, cursorY);
+      const seedsForImage = AppState.filmSeeds || [];
+      if (seedsForImage.length > 0) {
+        // Divined by films: the four films replace the sliders and prompt entirely.
+        cursorY += 5;
+        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace';
+        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 32;
+        ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
+        for (let i = 0; i < seedsForImage.length; i++) {
+          const f = seedsForImage[i];
+          const label = cleanCanvasText(f.year ? (f.title + ' (' + f.year + ')') : f.title);
+          ctx.fillText(label.length > 46 ? label.slice(0, 46) + '...' : label, W / 2, cursorY);
+          cursorY += 30;
+        }
+      } else {
+        const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
+
+        if (AppState.manualOverrideText) {
+          cursorY += 40; ctx.fillStyle = '#FF003C'; ctx.font = 'italic 18px Courier New, monospace';
+          const overrideText = cleanCanvasText('OVERRIDE: "' + AppState.manualOverrideText.toUpperCase() + '"');
+          ctx.fillText(overrideText.length > 90 ? overrideText.slice(0, 90) + '...' : overrideText, W / 2, cursorY);
+        }
       }
 
       ctx.textAlign = 'center'; ctx.fillStyle = '#444'; ctx.font = '18px Courier New, monospace'; ctx.fillText('cinema-arcana - ' + new Date().toLocaleDateString(), W / 2, H - 60);
