@@ -3033,12 +3033,10 @@
         // Divined by films: the four films replace the sliders and prompt entirely.
         cursorY += 5;
         ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
-        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 40;
+        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 36;
 
         const n = Math.min(seedsForImage.length, 4);
-        const gap = 30;
-        const posterW = Math.floor((W - 240 - gap * (n - 1)) / n); // 120px side margins
-        const posterH = Math.floor(posterW * 1.5);
+        const posterW = 120; const posterH = 180; const gap = 34;
         const rowStartX = Math.floor((W - (posterW * n + gap * (n - 1))) / 2);
 
         const seedImgs = await Promise.all(seedsForImage.slice(0, n).map(function (f) {
@@ -3052,24 +3050,20 @@
           const px = rowStartX + i * (posterW + gap);
           const img = seedImgs[i];
           if (img) {
-            ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.4)'; ctx.shadowBlur = 20;
+            ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.35)'; ctx.shadowBlur = 16;
             ctx.drawImage(img, px, cursorY, posterW, posterH); ctx.restore();
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(px, cursorY, posterW, posterH);
           } else {
-            ctx.save();
             ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(px, cursorY, posterW, posterH);
-            ctx.fillStyle = '#888'; ctx.font = 'bold 16px Courier New, monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#888'; ctx.font = 'bold 13px Courier New, monospace'; ctx.textAlign = 'center';
             const ft = cleanCanvasText(f.title || '');
-            ctx.fillText(ft.length > 14 ? ft.slice(0, 14) + '...' : ft, px + posterW / 2, cursorY + posterH / 2);
-            ctx.restore();
+            ctx.fillText(ft.length > 12 ? ft.slice(0, 12) + '...' : ft, px + posterW / 2, cursorY + posterH / 2);
           }
-          // Title + year caption under each poster
-          ctx.fillStyle = '#ccc'; ctx.font = '15px Courier New, monospace'; ctx.textAlign = 'center';
+          ctx.fillStyle = '#bbb'; ctx.font = '13px Courier New, monospace'; ctx.textAlign = 'center';
           const cap = cleanCanvasText(f.title || '');
-          const capYear = cleanCanvasText(f.year || '');
-          ctx.fillText(cap.length > 18 ? cap.slice(0, 18) + '...' : cap, px + posterW / 2, cursorY + posterH + 26);
-          if (capYear) { ctx.fillStyle = '#666'; ctx.fillText(capYear, px + posterW / 2, cursorY + posterH + 48); }
+          ctx.fillText(cap.length > 16 ? cap.slice(0, 16) + '...' : cap, px + posterW / 2, cursorY + posterH + 22);
         }
-        cursorY += posterH + 60;
+        cursorY += posterH + 40;
         ctx.textAlign = 'center';
       } else {
         const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
