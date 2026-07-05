@@ -404,26 +404,32 @@
         <div class="dialogue cursor-blink text-xs" id="slider-dialogue"></div>
 	        <div class="space-y-3 mt-5 pl-3 border-l border-neutral-800">
           <div class="space-y-1">
+            <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Mood</div>
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>COZY</span><span id="val-warmth" class="text-neonRed">50</span><span>DREAD</span></div>
             <input type="range" id="slider-warmth" min="1" max="100" value="50" oninput="updateSliderVal('warmth')">
           </div>
           <div class="space-y-1">
+            <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Pace</div>
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>MEDITATIVE</span><span id="val-tempo" class="text-neonRed">50</span><span>KINETIC</span></div>
             <input type="range" id="slider-tempo" min="1" max="100" value="50" oninput="updateSliderVal('tempo')">
           </div>
           <div class="space-y-1">
+            <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Reality</div>
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>GROUNDED</span><span id="val-reality" class="text-neonRed">50</span><span>SURREAL</span></div>
             <input type="range" id="slider-reality" min="1" max="100" value="50" oninput="updateSliderVal('reality')">
           </div>
           <div class="space-y-1">
+            <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Reach</div>
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>MAINSTREAM</span><span id="val-obscurity" class="text-neonRed">50</span><span>OBSCURE</span></div>
             <input type="range" id="slider-obscurity" min="1" max="100" value="50" oninput="updateSliderVal('obscurity')">
           </div>
 	          <div class="space-y-1">
+	            <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Tone</div>
 	            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>BLEAK / NIHILISTIC</span><span id="val-humor" class="text-neonRed">50</span><span>WITTY / FUNNY</span></div>
 	            <input type="range" id="slider-humor" min="1" max="100" value="50" oninput="updateSliderVal('humor')">
 	          </div>
 	          <div class="space-y-1">
+	            <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Aftertaste</div>
 	            <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>COMFORT</span><span id="val-aftertaste" class="text-neonRed">50</span><span>RUIN ME</span></div>
 	            <input type="range" id="slider-aftertaste" min="1" max="100" value="50" oninput="updateSliderVal('aftertaste')">
 	          </div>
@@ -441,6 +447,16 @@
           <div class="mt-4">
             <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Lock a Genre Manually (Optional)</div>
             <div id="genre-chips-container" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <div class="mt-4">
+            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Divine By Films: Pick Up To Four You Love</div>
+            <div id="seed-chips-container" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <div id="seed-search-section" class="relative">
+              <input type="text" id="seed-search-input" oninput="debounceSeedSearch()" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search a film to add...">
+              <div id="seed-search-results" class="absolute top-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mt-1"></div>
+            </div>
+            <div id="seed-status" class="text-[9px] text-neutral-500 mt-2 uppercase leading-tight"></div>
           </div>
         </div>
 
@@ -690,6 +706,7 @@
       runtimeBand: 'any',
       manualOverrideText: null, 
       suggestedTitles: [], 
+      filmSeeds: [],
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
@@ -1408,6 +1425,114 @@
             searchSection.classList.remove('hidden');
             endSection.classList.add('hidden');
         }
+    }
+
+    let seedSearchTimer = null;
+
+    function debounceSeedSearch() {
+      if (seedSearchTimer) clearTimeout(seedSearchTimer);
+      seedSearchTimer = setTimeout(executeSeedSearch, 400);
+    }
+
+    async function executeSeedSearch() {
+      const inputEl = document.getElementById('seed-search-input');
+      const resultsContainer = document.getElementById('seed-search-results');
+      if (!inputEl || !resultsContainer) return;
+      const input = inputEl.value.trim();
+
+      if (input.length < 2) { resultsContainer.classList.add('hidden'); return; }
+      if ((AppState.filmSeeds || []).length >= 4) {
+        resultsContainer.innerHTML = '<div class="p-3 text-[10px] text-neutral-600 uppercase">Four films locked. Remove one to add another.</div>';
+        resultsContainer.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch(WORKER_BASE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'search', query: input })
+        });
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+
+        const chosen = new Set((AppState.filmSeeds || []).map(function (f) { return String(f.id); }));
+        const results = (data.results || []).filter(function (m) { return !chosen.has(String(m.id)); });
+
+        if (results.length > 0) {
+          const top5 = results.slice(0, 5);
+          let html = '';
+          for (let i = 0; i < top5.length; i++) {
+            const movie = top5[i];
+            const title = movie.title || movie.name || 'Unknown';
+            const year = (movie.release_date || movie.first_air_date || '').split('-')[0] || '';
+            const display = year ? title + ' (' + year + ')' : title;
+            const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            html += '<div onclick="addFilmSeed(' + movie.id + ', \'' + safeTitle + '\', \'' + (year || '') + '\')" class="p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate">';
+            html += display;
+            html += '</div>';
+          }
+          resultsContainer.innerHTML = html;
+          resultsContainer.classList.remove('hidden');
+        } else {
+          resultsContainer.innerHTML = '<div class="p-3 text-[10px] text-neutral-600 uppercase">No signal found...</div>';
+          resultsContainer.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function addFilmSeed(id, title, year) {
+      if (!AppState.filmSeeds) AppState.filmSeeds = [];
+      if (AppState.filmSeeds.length >= 4) return;
+      if (AppState.filmSeeds.some(function (f) { return String(f.id) === String(id); })) return;
+
+      AppState.filmSeeds.push({ id: id, title: title, year: year || '' });
+
+      const inputEl = document.getElementById('seed-search-input');
+      const resultsContainer = document.getElementById('seed-search-results');
+      if (inputEl) inputEl.value = '';
+      if (resultsContainer) { resultsContainer.innerHTML = ''; resultsContainer.classList.add('hidden'); }
+
+      playSynthBeep(900, 0.05, 'triangle');
+      renderFilmSeeds();
+    }
+
+    function removeFilmSeed(id) {
+      AppState.filmSeeds = (AppState.filmSeeds || []).filter(function (f) { return String(f.id) !== String(id); });
+      playSynthBeep(320, 0.05, 'square');
+      renderFilmSeeds();
+    }
+
+    function renderFilmSeeds() {
+      const container = document.getElementById('seed-chips-container');
+      const status = document.getElementById('seed-status');
+      const seeds = AppState.filmSeeds || [];
+
+      if (container) {
+        let html = '';
+        for (let i = 0; i < seeds.length; i++) {
+          const f = seeds[i];
+          const label = f.year ? (f.title + ' (' + f.year + ')') : f.title;
+          const safeLabel = String(label).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          html += '<span class="inline-flex items-center gap-1 bg-darkGrey border border-neonRed/50 text-neutral-200 text-[10px] font-mono uppercase px-2 py-1">';
+          html += '<span class="truncate max-w-[160px]">' + safeLabel + '</span>';
+          html += '<button onclick="removeFilmSeed(' + f.id + ')" class="text-neutral-500 hover:text-neonRed font-bold ml-0.5" title="Remove">&times;</button>';
+          html += '</span>';
+        }
+        container.innerHTML = html;
+      }
+
+      if (status) {
+        if (seeds.length === 0) {
+          status.innerText = '';
+        } else if (seeds.length < 4) {
+          status.innerText = seeds.length + ' of 4 chosen — the reading will be divined from these.';
+        } else {
+          status.innerText = 'Four films locked. The projection will be tuned to their shared spirit.';
+        }
+      }
     }
 
     function debounceDailySearch() {
@@ -2354,6 +2479,7 @@
 	        vibeGenreIds: AppState.vibeGenreIds, seenMovies: AppState.seenMovies, rejectedMovies: AppState.rejectedMovies,
 	        spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
 	        suggestedTitles: AppState.suggestedTitles, 
+	        filmSeeds: (AppState.filmSeeds || []).map(function (f) { return f.id; }),
 	        manualOverride: AppState.manualOverrideText,
 	        rerollNonce: AppState.rerollNonce || 0,
 	        rerollAvoidTitles: AppState.rerollAvoidTitles || []
