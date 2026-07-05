@@ -3031,13 +3031,18 @@
       const seedsForImage = AppState.filmSeeds || [];
       if (seedsForImage.length > 0) {
         // Divined by films: the four films replace the sliders and prompt entirely.
-        cursorY += 5;
-        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
-        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 36;
-
+        // Anchor this row to a FIXED position near the bottom so it can never collide
+        // with the footer credit (drawn at H-60 and H-32), regardless of layout above.
         const n = Math.min(seedsForImage.length, 4);
         const posterW = 120; const posterH = 180; const gap = 34;
         const rowStartX = Math.floor((W - (posterW * n + gap * (n - 1))) / 2);
+
+        const captionBaseline = H - 150;                 // ~90px clearance above credit
+        const posterTop = captionBaseline - 22 - posterH; // caption sits 22px under poster
+        const headerY = posterTop - 18;
+
+        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
+        ctx.fillText('DIVINED FROM', W / 2, headerY);
 
         const seedImgs = await Promise.all(seedsForImage.slice(0, n).map(function (f) {
           if (!f.poster_path) return Promise.resolve(null);
@@ -3051,19 +3056,18 @@
           const img = seedImgs[i];
           if (img) {
             ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.35)'; ctx.shadowBlur = 16;
-            ctx.drawImage(img, px, cursorY, posterW, posterH); ctx.restore();
-            ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(px, cursorY, posterW, posterH);
+            ctx.drawImage(img, px, posterTop, posterW, posterH); ctx.restore();
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(px, posterTop, posterW, posterH);
           } else {
-            ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(px, cursorY, posterW, posterH);
+            ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(px, posterTop, posterW, posterH);
             ctx.fillStyle = '#888'; ctx.font = 'bold 13px Courier New, monospace'; ctx.textAlign = 'center';
             const ft = cleanCanvasText(f.title || '');
-            ctx.fillText(ft.length > 12 ? ft.slice(0, 12) + '...' : ft, px + posterW / 2, cursorY + posterH / 2);
+            ctx.fillText(ft.length > 12 ? ft.slice(0, 12) + '...' : ft, px + posterW / 2, posterTop + posterH / 2);
           }
           ctx.fillStyle = '#bbb'; ctx.font = '13px Courier New, monospace'; ctx.textAlign = 'center';
           const cap = cleanCanvasText(f.title || '');
-          ctx.fillText(cap.length > 16 ? cap.slice(0, 16) + '...' : cap, px + posterW / 2, cursorY + posterH + 22);
+          ctx.fillText(cap.length > 16 ? cap.slice(0, 16) + '...' : cap, px + posterW / 2, captionBaseline);
         }
-        cursorY += posterH + 40;
         ctx.textAlign = 'center';
       } else {
         const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
