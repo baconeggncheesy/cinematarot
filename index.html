@@ -2263,55 +2263,70 @@
 	    }
 
 
+    let progressInterval = null;
+    let loadingPctFloat = 0;
+    let loadingCeiling = 99;
+    let loadingComplete = false;
+
     function startLoadingSequence() {
       if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') { Tone.start(); }
       const logs = [
-        { pct: 9, text: "Formatting margins..." },
-        { pct: 21, text: "Evaluating structural boundaries..." },
-        { pct: 36, text: "Applying 3-Card Spread vector shifts..." },
-        { pct: 52, text: "Calculating Euclidean distances..." },
-        { pct: 67, text: "Querying the live archive..." },
-        { pct: 81, text: "Filtering available projections..." },
-        { pct: 92, text: "Awaiting AI projection judge..." }
+        { pct: 8,  text: "Formatting margins..." },
+        { pct: 20, text: "Evaluating structural boundaries..." },
+        { pct: 34, text: "Applying 3-Card Spread vector shifts..." },
+        { pct: 50, text: "Calculating Euclidean distances..." },
+        { pct: 66, text: "Querying the live archive..." },
+        { pct: 80, text: "Filtering available projections..." },
+        { pct: 90, text: "The projection judge deliberates..." }
       ];
-      let step = 0;
-      loadingTargetPct = 92;
+      loadingPctFloat = 0;
+      loadingCeiling = 99;
+      loadingComplete = false;
+      let lastLogShown = 0;
+
       const term = document.getElementById('loading-terminal');
       const pct = document.getElementById('loading-pct');
       if (pct) pct.innerText = "0%";
       if (term) { term.innerText = logs[0].text; term.classList.remove('cursor-blink'); }
+
       progressInterval = setInterval(() => {
         if (!pct || !term) return;
-        const currentPct = parseInt(pct.innerText, 10) || 0;
-        if (currentPct < loadingTargetPct) {
-          const distance = loadingTargetPct - currentPct;
-          const stepSize = Math.max(1, Math.min(4, Math.ceil(distance / 8)));
-          const next = Math.min(loadingTargetPct, currentPct + stepSize);
-          pct.innerText = next + "%";
-          while (step < logs.length - 1 && next >= logs[step + 1].pct) {
-            step++;
-            term.innerText = logs[step].text;
+        // Ease toward the ceiling: fast at first, slower as it approaches — never frozen.
+        const gap = loadingCeiling - loadingPctFloat;
+        if (gap > 0.1) {
+          loadingPctFloat = Math.min(loadingCeiling, loadingPctFloat + Math.max(gap * 0.06, 0.3));
+        }
+        const shown = Math.floor(loadingPctFloat);
+        pct.innerText = shown + "%";
+
+        for (let i = lastLogShown + 1; i < logs.length; i++) {
+          if (shown >= logs[i].pct) {
+            term.innerText = logs[i].text;
+            lastLogShown = i;
             playSynthBeep(700, 0.02, 'square');
           }
-        } else if (loadingTargetPct < 100) {
-          term.innerText = "[ WAITING ON LIVE WORKER RESPONSE... ]";
-          term.classList.add('cursor-blink');
         }
-      }, 420);
+        if (!loadingComplete && shown >= 90) term.classList.add('cursor-blink');
+      }, 170);
     }
-    
-    let progressInterval = null;
-    let loadingTargetPct = 92;
+
     function completeLoadingSequence() {
-      loadingTargetPct = 100;
+      loadingComplete = true;
+      loadingCeiling = 100;
+      loadingPctFloat = 100;
       const pct = document.getElementById('loading-pct');
       const term = document.getElementById('loading-terminal');
       if (pct) pct.innerText = "100%";
       if (term) { term.innerText = "[ PROJECTION RECEIVED ]"; term.classList.remove('cursor-blink'); }
       playSynthBeep(220, 0.06, 'sine');
     }
-	    function stopLoadingSequence() { if (progressInterval) clearInterval(progressInterval); progressInterval = null; const term = document.getElementById('loading-terminal'); if (term) term.classList.remove('cursor-blink'); }
 
+    function stopLoadingSequence() {
+      if (progressInterval) clearInterval(progressInterval);
+      progressInterval = null;
+      const term = document.getElementById('loading-terminal');
+      if (term) term.classList.remove('cursor-blink');
+    }
 	    function buildMatchRequestContext() {
 	      const TAROT_INFLUENCE = 0.3; const MAX_TAROT_SHIFT = 20; const clampShift = (v) => Math.max(-MAX_TAROT_SHIFT, Math.min(MAX_TAROT_SHIFT, v));
 	      let tw = 0, tt = 0, tr = 0, th = 0;
