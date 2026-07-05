@@ -287,6 +287,9 @@
         <button onclick="toggleAudio()" id="audio-toggle-btn" class="hover:text-white transition-colors uppercase focus:outline-none">
           [AUDIO: ON]
         </button>
+        <button onclick="openIntroOverlay()" id="help-btn" class="hover:text-white transition-colors uppercase focus:outline-none" title="What is this / how to use" aria-label="Help">
+          [?]
+        </button>
       </div>
     </header>
 
@@ -321,7 +324,6 @@
             Cinema Arcana
           </h1>
           <p class="text-xs text-neutral-500">Tarot For Movies</p>
-          <button onclick="openIntroOverlay()" class="text-[9px] uppercase tracking-widest text-neutral-600 hover:text-neonRed border border-neutral-800 hover:border-neonRed px-3 py-1 mt-2 transition-colors">? What is this</button>
           <p class="text-[10px] uppercase mt-8 text-neutral-600"><span id="current-date"></span></p>
         </div>
         <div class="action text-xs leading-relaxed text-center px-4">
@@ -365,7 +367,7 @@
           <div class="flex space-x-2">
             <input type="text" id="daily-search-input" oninput="debounceDailySearch()" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for a title...">
           </div>
-          <div id="daily-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1">
+          <div id="daily-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
             <!-- Populated by JS -->
           </div>
         </div>
@@ -478,8 +480,8 @@
             <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Divine By Films: Pick Up To Four You Love</div>
             <div id="seed-chips-container" class="flex flex-wrap gap-1.5 mb-2"></div>
             <div id="seed-search-section" class="relative">
-              <input type="text" id="seed-search-input" oninput="debounceSeedSearch()" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search a film to add...">
-              <div id="seed-search-results" class="absolute top-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mt-1"></div>
+              <input type="text" id="seed-search-input" oninput="debounceSeedSearch()" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search a film (add a year to narrow, e.g. the passenger 1975)">
+              <div id="seed-search-results" class="absolute top-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[260px] overflow-y-auto z-50 hidden shadow-xl mt-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
             </div>
             <div id="seed-status" class="text-[9px] text-neutral-500 mt-2 uppercase leading-tight"></div>
           </div>
@@ -1492,25 +1494,47 @@
       }
 
       try {
+        // Let the user disambiguate by year, e.g. "the passenger 1975".
+        let queryText = input;
+        let queryYear = null;
+        const yearMatch = input.match(/\b(19|20)\d{2}\b/);
+        if (yearMatch) {
+          queryYear = yearMatch[0];
+          queryText = input.replace(yearMatch[0], '').trim();
+        }
+
         const res = await fetch(WORKER_BASE_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'search', query: input })
+          body: JSON.stringify({ type: 'search', query: queryText || input })
         });
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
 
         const chosen = new Set((AppState.filmSeeds || []).map(function (f) { return String(f.id); }));
-        const results = (data.results || []).filter(function (m) { return !chosen.has(String(m.id)); });
+        let results = (data.results || []).filter(function (m) { return !chosen.has(String(m.id)); });
+
+        results.forEach(function (m) {
+          const y = (m.release_date || m.first_air_date || '').split('-')[0] || '';
+          m._year = y;
+          m._score = (m.vote_count || 0);
+          if (queryYear && y === queryYear) m._score += 1000000;      // exact year wins
+          else if (queryYear && y && Math.abs(parseInt(y, 10) - parseInt(queryYear, 10)) <= 1) m._score += 200000;
+        });
+        // If a year was given and we have exact matches, show only those.
+        if (queryYear && results.some(function (m) { return m._year === queryYear; })) {
+          results = results.filter(function (m) { return m._year === queryYear; });
+        }
+        results.sort(function (a, b) { return b._score - a._score; });
 
         if (results.length > 0) {
-          const top5 = results.slice(0, 5);
+          const topN = results.slice(0, 8);
           seedSearchLookup = {};
           let html = '';
-          for (let i = 0; i < top5.length; i++) {
-            const movie = top5[i];
+          for (let i = 0; i < topN.length; i++) {
+            const movie = topN[i];
             const title = movie.title || movie.name || 'Unknown';
-            const year = (movie.release_date || movie.first_air_date || '').split('-')[0] || '';
+            const year = movie._year || '';
             const display = year ? title + ' (' + year + ')' : title;
             seedSearchLookup[String(movie.id)] = { id: movie.id, title: title, year: year, poster_path: movie.poster_path || null };
             html += '<div onclick="addFilmSeed(' + movie.id + ')" class="p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate">';
@@ -3030,45 +3054,17 @@
 
       const seedsForImage = AppState.filmSeeds || [];
       if (seedsForImage.length > 0) {
-        // Divined by films: the four films replace the sliders and prompt entirely.
-        // Anchor this row to a FIXED position near the bottom so it can never collide
-        // with the footer credit (drawn at H-60 and H-32), regardless of layout above.
-        const n = Math.min(seedsForImage.length, 4);
-        const posterW = 120; const posterH = 180; const gap = 34;
-        const rowStartX = Math.floor((W - (posterW * n + gap * (n - 1))) / 2);
-
-        const captionBaseline = H - 150;                 // ~90px clearance above credit
-        const posterTop = captionBaseline - 22 - posterH; // caption sits 22px under poster
-        const headerY = posterTop - 18;
-
+        // Divined by films: list the films as text (replaces sliders + prompt).
+        cursorY += 8;
         ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
-        ctx.fillText('DIVINED FROM', W / 2, headerY);
-
-        const seedImgs = await Promise.all(seedsForImage.slice(0, n).map(function (f) {
-          if (!f.poster_path) return Promise.resolve(null);
-          const url = WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + f.poster_path);
-          return loadImageWithJpegFallback(url).catch(function () { return null; });
-        }));
-
-        for (let i = 0; i < n; i++) {
+        ctx.fillText('DIVINED FROM', W / 2, cursorY); cursorY += 34;
+        ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
+        for (let i = 0; i < seedsForImage.length; i++) {
           const f = seedsForImage[i];
-          const px = rowStartX + i * (posterW + gap);
-          const img = seedImgs[i];
-          if (img) {
-            ctx.save(); ctx.shadowColor = 'rgba(255,0,60,0.35)'; ctx.shadowBlur = 16;
-            ctx.drawImage(img, px, posterTop, posterW, posterH); ctx.restore();
-            ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(px, posterTop, posterW, posterH);
-          } else {
-            ctx.strokeStyle = '#444'; ctx.lineWidth = 2; ctx.strokeRect(px, posterTop, posterW, posterH);
-            ctx.fillStyle = '#888'; ctx.font = 'bold 13px Courier New, monospace'; ctx.textAlign = 'center';
-            const ft = cleanCanvasText(f.title || '');
-            ctx.fillText(ft.length > 12 ? ft.slice(0, 12) + '...' : ft, px + posterW / 2, posterTop + posterH / 2);
-          }
-          ctx.fillStyle = '#bbb'; ctx.font = '13px Courier New, monospace'; ctx.textAlign = 'center';
-          const cap = cleanCanvasText(f.title || '');
-          ctx.fillText(cap.length > 16 ? cap.slice(0, 16) + '...' : cap, px + posterW / 2, captionBaseline);
+          const label = cleanCanvasText(f.year ? (f.title + ' (' + f.year + ')') : f.title);
+          ctx.fillText(label.length > 46 ? label.slice(0, 46) + '...' : label, W / 2, cursorY);
+          cursorY += 30;
         }
-        ctx.textAlign = 'center';
       } else {
         const s = AppState.sliders; const sliderText = cleanCanvasText('DREAD: ' + s.warmth + '% | TEMPO: ' + s.tempo + '% | REALITY: ' + s.reality + '% | OBSCURE: ' + s.obscurity + '% | HUMOR: ' + s.humor + '% | RUIN: ' + s.aftertaste + '%'); ctx.fillText(sliderText, W / 2, cursorY);
 
