@@ -815,7 +815,7 @@
       sceneCount: 0,
       
 	      daily: {
-	          version: 3,
+	          version: 4,
 	          dateIndex: null,
 	          guesses: [],
           won: false,
@@ -824,11 +824,11 @@
           scoreSpec: null
       },
 	      oracle: {
-	          version: 3, dateIndex: null, guesses: [], won: false, lost: false,
+	          version: 4, dateIndex: null, guesses: [], won: false, lost: false,
 	          movie: null, riddle: '', scoreSpec: null
 	      },
 	      frame: {
-	          version: 3, dateIndex: null, guesses: [], won: false, lost: false,
+	          version: 4, dateIndex: null, guesses: [], won: false, lost: false,
 	          movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null
 	      },
 	      activeDailyTab: 'reel',
@@ -1033,7 +1033,7 @@
 	      frame: 'cinema_arcana_frame',
 	      streak: 'cinema_arcana_streak'
 	    };
-	    const DAILY_CACHE_VERSION = 3;
+	    const DAILY_CACHE_VERSION = 4;
 
     function loadPersistedState() {
       try {
