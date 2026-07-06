@@ -2015,8 +2015,19 @@
         const st = AppState.oracle;
         if (!st.movie) return;
         const isOver = st.won || st.lost;
+        const g = st.guesses.length;
         renderGuessBoxes('oracle-guess-boxes', st.guesses, GAME_MAX_GUESSES.oracle, st.won, st.guessIds, st.movie.id);
-        document.getElementById('oracle-riddle').innerText = st.riddle || 'The cards are silent.';
+
+        const mv = st.movie;
+        let riddleHtml = '<div class="mb-4">' + escapeHtml(st.riddle || 'The cards are silent.') + '</div>';
+        // Progressive factual clues unlock with each wrong guess.
+        riddleHtml += '<div class="space-y-1 text-left mt-4">';
+        const yrGen = (mv.year || '????') + (mv.genres && mv.genres.length ? ' • ' + mv.genres.slice(0, 2).join(', ') : '');
+        riddleHtml += oracleClueRow('Era & Genre', yrGen, (g >= 1 || isOver));
+        riddleHtml += oracleClueRow('The Auteur', mv.director || 'Unknown', (g >= 2 || isOver));
+        riddleHtml += oracleClueRow('A Face', (mv.cast && mv.cast.length ? mv.cast[0] : 'Unknown'), (g >= 3 || isOver));
+        riddleHtml += '</div>';
+        document.getElementById('oracle-riddle').innerHTML = riddleHtml;
 
         const posterReveal = document.getElementById('oracle-poster-reveal');
         const searchSection = document.getElementById('oracle-search-section');
@@ -2043,6 +2054,13 @@
         }
     }
 
+    function oracleClueRow(label, value, unlocked) {
+        return '<div class="clue-item ' + (unlocked ? 'active' : 'opacity-20 blur-[2px]') + '">'
+            + '<div class="clue-label">' + label + '</div>'
+            + '<div class="not-italic font-mono text-[11px]">' + (unlocked ? escapeHtml(value) : 'Locked — guess to reveal') + '</div>'
+            + '</div>';
+    }
+
     function renderFrameUI() {
         const st = AppState.frame;
         if (!st.movie) return;
@@ -2050,25 +2068,37 @@
         const guessCount = st.guesses.length;
         renderGuessBoxes('frame-guess-boxes', st.guesses, GAME_MAX_GUESSES.frame, st.won, st.guessIds, st.movie.id);
 
-        // Progressive reveal: tagline (always) -> dialogue (after 1st miss) -> screencap (after 2nd miss).
+        // Progressive reveal: tagline (always) -> dialogue + facts (after 1st miss)
+        // -> screencap + director (after 2nd miss) -> a face (after 3rd miss).
         const cluesEl = document.getElementById('frame-clues');
+        const mv = st.movie;
         let html = '';
-        const showDialogue = (guessCount >= 1 || isOver) && st.dialogue;
+        const showDialogue = (guessCount >= 1 || isOver);
         const showFrame = (guessCount >= 2 || isOver) && st.backdropUrl;
+        const showFace = (guessCount >= 3 || isOver);
 
         html += '<div class="clue-item active"><div class="clue-label">Tagline</div><div class="italic">"' + (st.tagline ? escapeHtml(st.tagline) : 'No tagline on record — trust the whisper.') + '"</div></div>';
+
+        const yrGen = (mv.year || '????') + (mv.genres && mv.genres.length ? ' • ' + mv.genres.slice(0, 2).join(', ') : '');
+        html += '<div class="clue-item ' + (showDialogue ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">Era & Genre</div><div class="font-mono text-[11px]">' + (showDialogue ? escapeHtml(yrGen) : 'Locked') + '</div></div>';
 
         if (st.dialogue) {
             html += '<div class="clue-item ' + (showDialogue ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Whispered Line</div><div class="italic">' + (showDialogue ? '"' + escapeHtml(st.dialogue) + '"' : 'Locked') + '</div></div>';
         }
 
-        html += '<div class="clue-item ' + (showFrame ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Single Frame</div>';
+        html += '<div class="clue-item ' + (showFrame ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">The Auteur & A Single Frame</div>';
         if (showFrame) {
-            html += '<div class="mt-2 w-full max-w-[280px] mx-auto border border-neutral-800 overflow-hidden"><img src="' + st.backdropUrl + '" class="w-full ' + (isOver ? '' : 'blur-[6px] contrast-125') + '"></div>';
+            html += '<div class="font-mono text-[11px] mb-2">Directed by ' + escapeHtml(mv.director || 'Unknown') + '</div>';
+            html += '<div class="w-full max-w-[280px] mx-auto border border-neutral-800 overflow-hidden"><img src="' + st.backdropUrl + '" class="w-full ' + (isOver ? '' : 'blur-[6px] contrast-125') + '"></div>';
+        } else if (mv.director) {
+            html += '<div class="font-mono text-[11px]">Directed by ' + (showDialogue ? escapeHtml(mv.director) : 'Locked') + '</div>';
         } else {
             html += '<div>Locked</div>';
         }
         html += '</div>';
+
+        html += '<div class="clue-item ' + (showFace ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Face</div><div class="font-mono text-[11px]">' + (showFace ? escapeHtml(mv.cast && mv.cast.length ? mv.cast[0] : 'Unknown') : 'Locked') + '</div></div>';
+
         cluesEl.innerHTML = html;
 
         const searchSection = document.getElementById('frame-search-section');
