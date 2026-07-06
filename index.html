@@ -265,6 +265,8 @@
     .daily-box.filled { border-color: #FF003C; color: #FF003C; }
     .daily-box.won { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.1); }
     .clue-item { border-left: 2px solid #333; padding-left: 12px; margin-bottom: 12px; font-size: 11px; color: #a3a3a3; transition: all 0.5s ease; }
+    .daily-tab { color: #737373; background: transparent; transition: all 0.2s ease; }
+    .daily-tab.active { color: #fff; border-color: #FF003C; background: rgba(255,0,60,0.08); }
     .clue-item.active { border-color: #FF003C; color: #e5e5e5; }
     .clue-label { font-size: 9px; text-transform: uppercase; color: #FF003C; font-weight: bold; margin-bottom: 2px; letter-spacing: 0.1em; }
   </style>
@@ -351,6 +353,13 @@
 
       <!-- DAILY GAME SCREEN -->
       <section id="screen-daily-game" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-2">
+        <div class="flex justify-center gap-1 mb-4 text-[9px] font-bold uppercase tracking-widest">
+          <button onclick="switchDailyTab('reel')" id="tab-reel" class="daily-tab px-3 py-1.5 border border-neutral-700">The Reel</button>
+          <button onclick="switchDailyTab('oracle')" id="tab-oracle" class="daily-tab px-3 py-1.5 border border-neutral-700">The Oracle</button>
+          <button onclick="switchDailyTab('frame')" id="tab-frame" class="daily-tab px-3 py-1.5 border border-neutral-700">One Frame</button>
+        </div>
+
+        <div id="daily-tab-reel" class="daily-tab-panel flex flex-col flex-1">
         <div class="scene-heading text-xs text-center border-none mb-2">INT. THE GLOBAL ARCHIVE - DAILY</div>
         <div class="action text-[10px] text-center mb-6 px-4">The machine has locked onto a single frequency. Six spoiler-free clues to deduce the title.</div>
 
@@ -374,7 +383,8 @@
 
         <div id="daily-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
             <div id="daily-end-message" class="text-neonRed font-bold text-xs uppercase tracking-widest mb-2"></div>
-            <div id="daily-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-4"></div>
+            <div id="daily-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
+            <div id="daily-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
             <button onclick="shareDailyResult()" id="share-daily-btn" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">
               [ COPY RESULT TO CLIPBOARD ]
             </button>
@@ -382,6 +392,50 @@
               Back to Main Terminal
             </button>
         </div>
+        <div id="reel-next-nudge" class="hidden mt-3 text-center">
+          <button onclick="switchDailyTab('oracle')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → Consult The Oracle</button>
+        </div>
+        </div><!-- /daily-tab-reel -->
+
+        <div id="daily-tab-oracle" class="daily-tab-panel hidden flex-col flex-1">
+          <div class="scene-heading text-xs text-center border-none mb-2">INT. THE ORACLE - DAILY</div>
+          <div class="action text-[10px] text-center mb-5 px-4">A different film hides behind the veil. The cards speak only in riddle. Name it.</div>
+          <div class="flex justify-center space-x-2 mb-5" id="oracle-guess-boxes"></div>
+          <div id="oracle-riddle" class="font-serif italic text-neutral-200 text-sm leading-relaxed text-center px-5 mb-4 flex-1"></div>
+          <div id="oracle-poster-reveal" class="hidden flex justify-center mb-4"></div>
+          <div id="oracle-search-section" class="relative mt-auto">
+            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Name the Film:</div>
+            <input type="text" id="oracle-search-input" oninput="debounceGameSearch('oracle')" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for a title...">
+            <div id="oracle-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
+          </div>
+          <div id="oracle-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
+            <div id="oracle-end-message" class="font-bold text-xs uppercase tracking-widest mb-2"></div>
+            <div id="oracle-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
+            <div id="oracle-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
+            <button onclick="shareGameResult('oracle')" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">[ COPY RESULT TO CLIPBOARD ]</button>
+            <div id="oracle-next-nudge" class="mb-3"><button onclick="switchDailyTab('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → One Frame</button></div>
+            <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">Back to Main Terminal</button>
+          </div>
+        </div><!-- /daily-tab-oracle -->
+
+        <div id="daily-tab-frame" class="daily-tab-panel hidden flex-col flex-1">
+          <div class="scene-heading text-xs text-center border-none mb-2">INT. ONE FRAME - DAILY</div>
+          <div class="action text-[10px] text-center mb-5 px-4">A third film, glimpsed sidelong. A tagline, then a whisper, then a single frame. Name it.</div>
+          <div class="flex justify-center space-x-2 mb-5" id="frame-guess-boxes"></div>
+          <div id="frame-clues" class="space-y-3 mb-4 flex-1 px-2"></div>
+          <div id="frame-search-section" class="relative mt-auto">
+            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Name the Film:</div>
+            <input type="text" id="frame-search-input" oninput="debounceGameSearch('frame')" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for a title...">
+            <div id="frame-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
+          </div>
+          <div id="frame-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
+            <div id="frame-end-message" class="font-bold text-xs uppercase tracking-widest mb-2"></div>
+            <div id="frame-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
+            <div id="frame-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
+            <button onclick="shareGameResult('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">[ COPY RESULT TO CLIPBOARD ]</button>
+            <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">Back to Main Terminal</button>
+          </div>
+        </div><!-- /daily-tab-frame -->
       </section>
 
       <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
@@ -484,6 +538,16 @@
               <div id="seed-search-results" class="absolute top-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[260px] overflow-y-auto z-50 hidden shadow-xl mt-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
             </div>
             <div id="seed-status" class="text-[9px] text-neutral-500 mt-2 uppercase leading-tight"></div>
+          </div>
+
+          <div class="mt-4">
+            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Divine By An Actor You Love</div>
+            <div id="actor-chip-container" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <div id="actor-search-section" class="relative">
+              <input type="text" id="actor-search-input" oninput="debounceActorSearch()" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search an actor...">
+              <div id="actor-search-results" class="absolute top-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[260px] overflow-y-auto z-50 hidden shadow-xl mt-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
+            </div>
+            <div id="actor-status" class="text-[9px] text-neutral-500 mt-2 uppercase leading-tight"></div>
           </div>
         </div>
 
@@ -735,6 +799,7 @@
       manualOverrideText: null, 
       suggestedTitles: [], 
       filmSeeds: [],
+      personSeed: null,
       lastReadingText: null,
       tasteAvoid: {},
       seenMovies: [],
@@ -758,6 +823,15 @@
           movie: null,
           scoreSpec: null
       },
+	      oracle: {
+	          version: 2, dateIndex: null, guesses: [], won: false, lost: false,
+	          movie: null, riddle: '', scoreSpec: null
+	      },
+	      frame: {
+	          version: 2, dateIndex: null, guesses: [], won: false, lost: false,
+	          movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null
+	      },
+	      activeDailyTab: 'reel',
       
       tarotDeck: [
         { id: 'tramp', name: 'The Tramp (The Fool)', num: '0', image: 'assets/0-tramp.jpeg', audio: 'freq-tramp', glitch: 'glitch-shake',
@@ -954,7 +1028,10 @@
 	      journal: 'cinema_arcana_journal',
 	      sceneCount: 'cinema_arcana_scene_count',
 	      taste: 'cinema_arcana_taste',
-	      daily: 'cinema_arcana_daily'
+	      daily: 'cinema_arcana_daily',
+	      oracle: 'cinema_arcana_oracle',
+	      frame: 'cinema_arcana_frame',
+	      streak: 'cinema_arcana_streak'
 	    };
 	    const DAILY_CACHE_VERSION = 2;
 
@@ -983,6 +1060,20 @@
 	            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
 	        }
 
+	        const savedOracle = JSON.parse(localStorage.getItem(STORAGE_KEYS.oracle) || 'null');
+	        if (savedOracle && savedOracle.dateIndex === currentDayIndex && savedOracle.version === DAILY_CACHE_VERSION) {
+	            AppState.oracle = savedOracle;
+	        } else {
+	            AppState.oracle = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, riddle: '', scoreSpec: null };
+	        }
+
+	        const savedFrame = JSON.parse(localStorage.getItem(STORAGE_KEYS.frame) || 'null');
+	        if (savedFrame && savedFrame.dateIndex === currentDayIndex && savedFrame.version === DAILY_CACHE_VERSION) {
+	            AppState.frame = savedFrame;
+	        } else {
+	            AppState.frame = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null };
+	        }
+
       } catch (e) { }
       renderHitCounter(AppState.sceneCount || 0);
     }
@@ -996,6 +1087,14 @@
     
     function persistDailyState() {
         try { localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily)); } catch (e) {}
+    }
+
+    function persistOracleState() {
+        try { localStorage.setItem(STORAGE_KEYS.oracle, JSON.stringify(AppState.oracle)); } catch (e) {}
+    }
+
+    function persistFrameState() {
+        try { localStorage.setItem(STORAGE_KEYS.frame, JSON.stringify(AppState.frame)); } catch (e) {}
     }
 
     function recordRejectionTaste(movie) {
@@ -1317,7 +1416,7 @@
         playTypewriterDing();
         showScreen('screen-loading');
         
-        if (!AppState.daily.movie) {
+        if (!AppState.daily.movie || !AppState.oracle.movie || !AppState.frame.movie) {
             try {
                 const res = await fetch(WORKER_BASE_URL, {
                     method: 'POST',
@@ -1328,12 +1427,28 @@
                 if (!res.ok) throw new Error("Could not connect to Global Archive.");
                 const data = await res.json();
                 
-                if (data.movie) {
-                    AppState.daily.movie = data.movie;
-                    AppState.daily.scoreSpec = data.scoreSpec;
+                if (data.reel && data.reel.movie) {
+                    AppState.daily.movie = data.reel.movie;
+                    AppState.daily.scoreSpec = data.reel.scoreSpec;
                     persistDailyState();
                 } else {
                     throw new Error("No media returned from archive.");
+                }
+
+                if (data.oracle && data.oracle.movie) {
+                    AppState.oracle.movie = data.oracle.movie;
+                    AppState.oracle.riddle = data.oracle.riddle || '';
+                    AppState.oracle.scoreSpec = data.oracle.scoreSpec;
+                    persistOracleState();
+                }
+
+                if (data.frame && data.frame.movie) {
+                    AppState.frame.movie = data.frame.movie;
+                    AppState.frame.tagline = data.frame.tagline || '';
+                    AppState.frame.dialogue = data.frame.dialogue || '';
+                    AppState.frame.backdropUrl = data.frame.backdropUrl || '';
+                    AppState.frame.scoreSpec = data.frame.scoreSpec;
+                    persistFrameState();
                 }
             } catch(e) {
                 document.getElementById('error-message').innerText = e.message;
@@ -1342,7 +1457,7 @@
             }
         }
         
-        renderDailyGameUI();
+        switchDailyTab(AppState.activeDailyTab || 'reel');
         showScreen('screen-daily-game');
     }
 
@@ -1410,8 +1525,8 @@
         let html = '';
         
         html += '<div class="clue-item active">';
-        html += '<div class="clue-label">Clue 1: Origin & Frequency</div>';
-        html += '<div>Year: ' + year + ' • Genres: ' + genres + '</div>';
+        html += '<div class="clue-label">Clue 1: Frequency</div>';
+        html += '<div>Genres: ' + genres + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c2Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
@@ -1430,8 +1545,8 @@
         html += '</div>';
         
         html += '<div class="clue-item ' + (c5Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 5: The Auteur</div>';
-        html += '<div>' + (c5Active ? 'Directed by: ' + dirStr : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 5: Era & The Auteur</div>';
+        html += '<div>' + (c5Active ? 'Year: ' + year + ' • Directed by: ' + dirStr : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c6Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
@@ -1466,9 +1581,14 @@
             }
             
             ansEl.innerText = m.title || m.name || 'UNKNOWN';
+            renderStreakReadout('daily-streak-readout', 'reel');
+            const reelNudge = document.getElementById('reel-next-nudge');
+            if (reelNudge) reelNudge.classList.remove('hidden');
         } else {
             searchSection.classList.remove('hidden');
             endSection.classList.add('hidden');
+            const reelNudge = document.getElementById('reel-next-nudge');
+            if (reelNudge) reelNudge.classList.add('hidden');
         }
     }
 
@@ -1559,6 +1679,8 @@
 
       const found = (seedSearchLookup && seedSearchLookup[String(id)]) ? seedSearchLookup[String(id)] : { id: id, title: 'Untitled', year: '', poster_path: null };
       AppState.filmSeeds.push({ id: found.id, title: found.title, year: found.year || '', poster_path: found.poster_path || null });
+      // Film and actor seeding are distinct modes — clear any actor pick.
+      if (AppState.personSeed) { AppState.personSeed = null; if (typeof renderActorSeed === 'function') renderActorSeed(); }
 
       const inputEl = document.getElementById('seed-search-input');
       const resultsContainer = document.getElementById('seed-search-results');
@@ -1602,6 +1724,103 @@
         } else {
           status.innerText = 'Four films locked. The projection will be tuned to their shared spirit.';
         }
+      }
+    }
+
+    let actorSearchTimer = null;
+    let actorSearchLookup = {};
+
+    function debounceActorSearch() {
+      if (actorSearchTimer) clearTimeout(actorSearchTimer);
+      actorSearchTimer = setTimeout(executeActorSearch, 400);
+    }
+
+    async function executeActorSearch() {
+      const inputEl = document.getElementById('actor-search-input');
+      const resultsContainer = document.getElementById('actor-search-results');
+      if (!inputEl || !resultsContainer) return;
+      const input = inputEl.value.trim();
+
+      if (input.length < 2) { resultsContainer.classList.add('hidden'); return; }
+      if (AppState.personSeed) {
+        resultsContainer.innerHTML = '<div class="p-3 text-[10px] text-neutral-600 uppercase">An actor is already locked. Remove them to choose another.</div>';
+        resultsContainer.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch(WORKER_BASE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'personSearch', query: input })
+        });
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+        const results = data.results || [];
+
+        if (results.length > 0) {
+          actorSearchLookup = {};
+          let html = '';
+          for (let i = 0; i < results.length; i++) {
+            const p = results[i];
+            actorSearchLookup[String(p.id)] = { id: p.id, name: p.name };
+            const kf = p.knownFor ? (' — ' + p.knownFor) : '';
+            const safeKf = String(kf).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += '<div onclick="setActorSeed(' + p.id + ')" class="p-3 cursor-pointer hover:bg-neutral-800 border-b border-neutral-800 last:border-0">';
+            html += '<div class="text-[11px] font-bold uppercase text-neutral-200 truncate">' + String(p.name).replace(/</g, '&lt;') + '</div>';
+            if (kf) html += '<div class="text-[9px] text-neutral-500 truncate normal-case">Known for' + safeKf + '</div>';
+            html += '</div>';
+          }
+          resultsContainer.innerHTML = html;
+          resultsContainer.classList.remove('hidden');
+        } else {
+          resultsContainer.innerHTML = '<div class="p-3 text-[10px] text-neutral-600 uppercase">No performer found...</div>';
+          resultsContainer.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function setActorSeed(id) {
+      const found = (actorSearchLookup && actorSearchLookup[String(id)]) ? actorSearchLookup[String(id)] : { id: id, name: 'Unknown' };
+      AppState.personSeed = { id: found.id, name: found.name };
+      // Actor and film seeding are distinct modes — clear any film picks.
+      if (AppState.filmSeeds && AppState.filmSeeds.length > 0) { AppState.filmSeeds = []; if (typeof renderFilmSeeds === 'function') renderFilmSeeds(); }
+
+      const inputEl = document.getElementById('actor-search-input');
+      const resultsContainer = document.getElementById('actor-search-results');
+      if (inputEl) inputEl.value = '';
+      if (resultsContainer) { resultsContainer.innerHTML = ''; resultsContainer.classList.add('hidden'); }
+
+      playSynthBeep(900, 0.05, 'triangle');
+      renderActorSeed();
+    }
+
+    function removeActorSeed() {
+      AppState.personSeed = null;
+      playSynthBeep(320, 0.05, 'square');
+      renderActorSeed();
+    }
+
+    function renderActorSeed() {
+      const container = document.getElementById('actor-chip-container');
+      const status = document.getElementById('actor-status');
+      const p = AppState.personSeed;
+
+      if (container) {
+        if (p) {
+          const safeName = String(p.name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          container.innerHTML = '<span class="inline-flex items-center gap-1 bg-darkGrey border border-neonRed/50 text-neutral-200 text-[10px] font-mono uppercase px-2 py-1">'
+            + '<span class="truncate max-w-[200px]">' + safeName + '</span>'
+            + '<button onclick="removeActorSeed()" class="text-neutral-500 hover:text-neonRed font-bold ml-0.5" title="Remove">&times;</button>'
+            + '</span>';
+        } else {
+          container.innerHTML = '';
+        }
+      }
+      if (status) {
+        status.innerText = p ? 'The projection will echo the spirit of their filmography.' : '';
       }
     }
 
@@ -1657,6 +1876,239 @@
         }
     }
 
+    function loadStreak(gameKey) {
+        try {
+            const s = JSON.parse(localStorage.getItem(STORAGE_KEYS.streak + '_' + gameKey) || 'null');
+            if (s && typeof s.current === 'number') return s;
+        } catch (e) {}
+        return { current: 0, max: 0, lastDayIndex: null, lastResult: null };
+    }
+
+    function recordStreak(gameKey, won, dayIndex) {
+        const s = loadStreak(gameKey);
+        if (typeof dayIndex !== 'number') return s;
+        if (s.lastDayIndex === dayIndex) return s; // once per day per game
+
+        if (won) {
+            if (s.lastResult === 'won' && s.lastDayIndex === dayIndex - 1) s.current = s.current + 1;
+            else s.current = 1;
+            if (s.current > s.max) s.max = s.current;
+            s.lastResult = 'won';
+        } else {
+            s.current = 0;
+            s.lastResult = 'lost';
+        }
+        s.lastDayIndex = dayIndex;
+        try { localStorage.setItem(STORAGE_KEYS.streak + '_' + gameKey, JSON.stringify(s)); } catch (e) {}
+        return s;
+    }
+
+    function renderStreakReadout(elId, gameKey) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        const s = loadStreak(gameKey);
+        el.innerText = 'STREAK: ' + s.current + '  •  BEST: ' + s.max;
+    }
+
+    // ---- Three-game daily: tab switching ----
+    function switchDailyTab(tab) {
+        AppState.activeDailyTab = tab;
+        ['reel', 'oracle', 'frame'].forEach(function (t) {
+            const panel = document.getElementById('daily-tab-' + t);
+            const btn = document.getElementById('tab-' + t);
+            if (panel) panel.classList.toggle('hidden', t !== tab);
+            if (btn) btn.classList.toggle('active', t === tab);
+        });
+        if (tab === 'reel') renderDailyGameUI();
+        else if (tab === 'oracle') renderOracleUI();
+        else if (tab === 'frame') renderFrameUI();
+    }
+
+    // ---- Generalized guess search for oracle/frame ----
+    let gameSearchTimers = { oracle: null, frame: null };
+    function debounceGameSearch(gameKey) {
+        if (gameSearchTimers[gameKey]) clearTimeout(gameSearchTimers[gameKey]);
+        gameSearchTimers[gameKey] = setTimeout(function () { executeGameSearch(gameKey); }, 400);
+    }
+
+    async function executeGameSearch(gameKey) {
+        const input = document.getElementById(gameKey + '-search-input').value.trim();
+        const resultsContainer = document.getElementById(gameKey + '-search-results');
+        if (input.length < 2) { resultsContainer.classList.add('hidden'); return; }
+        try {
+            const res = await fetch(WORKER_BASE_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'search', query: input })
+            });
+            if (!res.ok) throw new Error('Search failed');
+            const data = await res.json();
+            resultsContainer.innerHTML = '';
+            if (data.results && data.results.length > 0) {
+                data.results.slice(0, 6).forEach(function (movie) {
+                    const title = movie.title || movie.name || 'Unknown';
+                    const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                    const div = document.createElement('div');
+                    div.className = 'p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate';
+                    div.setAttribute('onclick', "submitGameGuess('" + gameKey + "', " + movie.id + ", '" + safeTitle + "')");
+                    div.innerText = title;
+                    resultsContainer.appendChild(div);
+                });
+                resultsContainer.classList.remove('hidden');
+            } else {
+                resultsContainer.innerHTML = '<div class="p-3 text-[10px] text-neutral-600 uppercase">No signal found...</div>';
+                resultsContainer.classList.remove('hidden');
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function gameStateFor(gameKey) { return gameKey === 'oracle' ? AppState.oracle : AppState.frame; }
+    function persistGameState(gameKey) { if (gameKey === 'oracle') persistOracleState(); else persistFrameState(); }
+    const GAME_MAX_GUESSES = { oracle: 4, frame: 4 };
+
+    function submitGameGuess(gameKey, guessedId, guessedTitle) {
+        const st = gameStateFor(gameKey);
+        const m = st.movie;
+        if (!m || st.won || st.lost) return;
+        document.getElementById(gameKey + '-search-input').value = '';
+        document.getElementById(gameKey + '-search-results').classList.add('hidden');
+
+        st.guesses.push(guessedTitle);
+        if (guessedId === m.id) {
+            st.won = true;
+            playSynthBeep(600, 0.1, 'sine');
+            setTimeout(function () { playSynthBeep(800, 0.2, 'sine'); }, 150);
+            recordStreak(gameKey, true, st.dateIndex);
+            if (st.scoreSpec) AudioEngine.spreadScore.start(null, null, st.scoreSpec);
+        } else if (st.guesses.length >= GAME_MAX_GUESSES[gameKey]) {
+            st.lost = true;
+            recordStreak(gameKey, false, st.dateIndex);
+            triggerGlitchEffect('glitch-shake');
+            playArcanaSound('freq-heavy');
+        } else {
+            playSynthBeep(200, 0.1, 'square');
+        }
+        persistGameState(gameKey);
+        if (gameKey === 'oracle') renderOracleUI(); else renderFrameUI();
+    }
+
+    function renderGuessBoxes(containerId, guesses, maxGuesses, won, correctTitle) {
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.innerHTML = '';
+        for (let i = 0; i < maxGuesses; i++) {
+            const isGuessed = i < guesses.length;
+            const isCorrect = isGuessed && won && i === guesses.length - 1;
+            let cls = 'daily-box ';
+            if (isCorrect) cls += 'won ';
+            else if (isGuessed) cls += 'filled ';
+            const box = document.createElement('div');
+            box.className = cls;
+            c.appendChild(box);
+        }
+    }
+
+    function renderOracleUI() {
+        const st = AppState.oracle;
+        if (!st.movie) return;
+        const isOver = st.won || st.lost;
+        renderGuessBoxes('oracle-guess-boxes', st.guesses, GAME_MAX_GUESSES.oracle, st.won);
+        document.getElementById('oracle-riddle').innerText = st.riddle || 'The cards are silent.';
+
+        const posterReveal = document.getElementById('oracle-poster-reveal');
+        const searchSection = document.getElementById('oracle-search-section');
+        const endSection = document.getElementById('oracle-end-section');
+        const nextNudge = document.getElementById('oracle-next-nudge');
+
+        if (isOver) {
+            searchSection.classList.add('hidden');
+            endSection.classList.remove('hidden');
+            const msg = document.getElementById('oracle-end-message');
+            if (st.won) { msg.innerText = '[ VISION CLARIFIED ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-green-500'; }
+            else { msg.innerText = '[ THE VEIL HELD ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-neonRed'; }
+            document.getElementById('oracle-answer-reveal').innerText = st.movie.title || 'UNKNOWN';
+            renderStreakReadout('oracle-streak-readout', 'oracle');
+            if (st.movie.poster_path) {
+                posterReveal.classList.remove('hidden');
+                posterReveal.innerHTML = '<img src="' + WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + st.movie.poster_path) + '" class="w-[100px] border border-neutral-700">';
+            }
+            if (nextNudge) nextNudge.classList.remove('hidden');
+        } else {
+            searchSection.classList.remove('hidden');
+            endSection.classList.add('hidden');
+            posterReveal.classList.add('hidden');
+        }
+    }
+
+    function renderFrameUI() {
+        const st = AppState.frame;
+        if (!st.movie) return;
+        const isOver = st.won || st.lost;
+        const guessCount = st.guesses.length;
+        renderGuessBoxes('frame-guess-boxes', st.guesses, GAME_MAX_GUESSES.frame, st.won);
+
+        // Progressive reveal: tagline (always) -> dialogue (after 1st miss) -> screencap (after 2nd miss).
+        const cluesEl = document.getElementById('frame-clues');
+        let html = '';
+        const showDialogue = (guessCount >= 1 || isOver) && st.dialogue;
+        const showFrame = (guessCount >= 2 || isOver) && st.backdropUrl;
+
+        html += '<div class="clue-item active"><div class="clue-label">Tagline</div><div class="italic">"' + (st.tagline ? escapeHtml(st.tagline) : 'No tagline on record — trust the whisper.') + '"</div></div>';
+
+        if (st.dialogue) {
+            html += '<div class="clue-item ' + (showDialogue ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Whispered Line</div><div class="italic">' + (showDialogue ? '"' + escapeHtml(st.dialogue) + '"' : 'Locked') + '</div></div>';
+        }
+
+        html += '<div class="clue-item ' + (showFrame ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Single Frame</div>';
+        if (showFrame) {
+            html += '<div class="mt-2 w-full max-w-[280px] mx-auto border border-neutral-800 overflow-hidden"><img src="' + st.backdropUrl + '" class="w-full ' + (isOver ? '' : 'blur-[6px] contrast-125') + '"></div>';
+        } else {
+            html += '<div>Locked</div>';
+        }
+        html += '</div>';
+        cluesEl.innerHTML = html;
+
+        const searchSection = document.getElementById('frame-search-section');
+        const endSection = document.getElementById('frame-end-section');
+        if (isOver) {
+            searchSection.classList.add('hidden');
+            endSection.classList.remove('hidden');
+            const msg = document.getElementById('frame-end-message');
+            if (st.won) { msg.innerText = '[ FRAME IDENTIFIED ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-green-500'; }
+            else { msg.innerText = '[ PROJECTION LOST ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-neonRed'; }
+            document.getElementById('frame-answer-reveal').innerText = st.movie.title || 'UNKNOWN';
+            renderStreakReadout('frame-streak-readout', 'frame');
+        } else {
+            searchSection.classList.remove('hidden');
+            endSection.classList.add('hidden');
+        }
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function shareGameResult(gameKey) {
+        const st = gameStateFor(gameKey);
+        const d = new Date();
+        const dateStr = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + String(d.getUTCFullYear()).slice(2);
+        const label = gameKey === 'oracle' ? 'Oracle' : 'One Frame';
+        const max = GAME_MAX_GUESSES[gameKey];
+        let grid = '';
+        for (let i = 0; i < max; i++) {
+            const isGuessed = i < st.guesses.length;
+            const isCorrect = isGuessed && st.won && i === st.guesses.length - 1;
+            if (isCorrect) grid += '🟩 '; else if (isGuessed) grid += '🟥 '; else grid += '⬛ ';
+        }
+        const attempts = st.won ? st.guesses.length : 'X';
+        const shareText = 'CINEMA ARCANA [' + label + '] - ' + dateStr + '\nAttempts: ' + attempts + '/' + max + '\n' + grid.trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(shareText).then(function () {
+                alert('Result copied to clipboard.');
+            }).catch(function () {});
+        }
+    }
+
+
     function submitDailyGuess(guessedId, guessedTitle) {
         document.getElementById('daily-search-input').value = '';
         document.getElementById('daily-search-results').classList.add('hidden');
@@ -1668,6 +2120,7 @@
         
         if (guessedId === m.id) {
             AppState.daily.won = true;
+            recordStreak('reel', true, AppState.daily.dateIndex);
             playSynthBeep(600, 0.1, 'sine');
             setTimeout(() => playSynthBeep(800, 0.2, 'sine'), 150);
             
@@ -1677,6 +2130,7 @@
             }
         } else if (AppState.daily.guesses.length >= 6) {
             AppState.daily.lost = true;
+            recordStreak('reel', false, AppState.daily.dateIndex);
             triggerGlitchEffect('glitch-shake');
             playArcanaSound('freq-heavy');
         } else {
@@ -2550,6 +3004,7 @@
 	        spread: spreadSummary, readingText: AppState.lastReadingText, tasteAvoid: AppState.tasteAvoid,
 	        suggestedTitles: AppState.suggestedTitles, 
 	        filmSeeds: (AppState.filmSeeds || []).map(function (f) { return f.id; }),
+	        personSeed: AppState.personSeed ? AppState.personSeed.id : null,
 	        manualOverride: AppState.manualOverrideText,
 	        rerollNonce: AppState.rerollNonce || 0,
 	        rerollAvoidTitles: AppState.rerollAvoidTitles || []
@@ -3053,7 +3508,16 @@
       ctx.fillText(metaText, W / 2, cursorY); cursorY += 35;
 
       const seedsForImage = AppState.filmSeeds || [];
-      if (seedsForImage.length > 0) {
+      if (AppState.personSeed) {
+        // Divined by actor.
+        cursorY += 8;
+        ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
+        ctx.fillText('DIVINED FROM THE WORK OF', W / 2, cursorY); cursorY += 34;
+        ctx.fillStyle = '#ccc'; ctx.font = '18px Courier New, monospace';
+        const an = cleanCanvasText(AppState.personSeed.name || '');
+        ctx.fillText(an.length > 46 ? an.slice(0, 46) + '...' : an, W / 2, cursorY);
+        cursorY += 30;
+      } else if (seedsForImage.length > 0) {
         // Divined by films: list the films as text (replaces sliders + prompt).
         cursorY += 8;
         ctx.fillStyle = '#FF003C'; ctx.font = 'bold 18px Courier New, monospace'; ctx.textAlign = 'center';
