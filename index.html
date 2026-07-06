@@ -1469,7 +1469,7 @@
         boxesContainer.innerHTML = '';
         for (let i = 0; i < 6; i++) {
             const isGuessed = i < AppState.daily.guesses.length;
-            const isCorrect = isGuessed && AppState.daily.guesses[i] === (m.title || m.name);
+            const isCorrect = isGuessed && AppState.daily.guessIds && AppState.daily.guessIds[i] === m.id;
             const isWonBox = AppState.daily.won && isCorrect;
             
             let boxClass = "daily-box ";
@@ -1525,8 +1525,8 @@
         let html = '';
         
         html += '<div class="clue-item active">';
-        html += '<div class="clue-label">Clue 1: Frequency</div>';
-        html += '<div>Genres: ' + genres + '</div>';
+        html += '<div class="clue-label">Clue 1: Origin & Frequency</div>';
+        html += '<div>Year: ' + year + ' • Genres: ' + genres + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c2Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
@@ -1545,8 +1545,8 @@
         html += '</div>';
         
         html += '<div class="clue-item ' + (c5Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 5: Era & The Auteur</div>';
-        html += '<div>' + (c5Active ? 'Year: ' + year + ' • Directed by: ' + dirStr : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 5: The Auteur</div>';
+        html += '<div>' + (c5Active ? 'Directed by: ' + dirStr : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c6Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
@@ -1946,11 +1946,13 @@
             if (data.results && data.results.length > 0) {
                 data.results.slice(0, 6).forEach(function (movie) {
                     const title = movie.title || movie.name || 'Unknown';
+                    const yr = (movie.release_date || movie.first_air_date || '').split('-')[0] || '';
+                    const display = yr ? title + ' (' + yr + ')' : title;
                     const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                     const div = document.createElement('div');
                     div.className = 'p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate';
                     div.setAttribute('onclick', "submitGameGuess('" + gameKey + "', " + movie.id + ", '" + safeTitle + "')");
-                    div.innerText = title;
+                    div.innerText = display;
                     resultsContainer.appendChild(div);
                 });
                 resultsContainer.classList.remove('hidden');
@@ -1973,6 +1975,8 @@
         document.getElementById(gameKey + '-search-results').classList.add('hidden');
 
         st.guesses.push(guessedTitle);
+        if (!st.guessIds) st.guessIds = [];
+        st.guessIds.push(guessedId);
         if (guessedId === m.id) {
             st.won = true;
             playSynthBeep(600, 0.1, 'sine');
@@ -1991,13 +1995,13 @@
         if (gameKey === 'oracle') renderOracleUI(); else renderFrameUI();
     }
 
-    function renderGuessBoxes(containerId, guesses, maxGuesses, won, correctTitle) {
+    function renderGuessBoxes(containerId, guesses, maxGuesses, won, guessIds, answerId) {
         const c = document.getElementById(containerId);
         if (!c) return;
         c.innerHTML = '';
         for (let i = 0; i < maxGuesses; i++) {
             const isGuessed = i < guesses.length;
-            const isCorrect = isGuessed && won && i === guesses.length - 1;
+            const isCorrect = isGuessed && guessIds && answerId != null && guessIds[i] === answerId;
             let cls = 'daily-box ';
             if (isCorrect) cls += 'won ';
             else if (isGuessed) cls += 'filled ';
@@ -2011,7 +2015,7 @@
         const st = AppState.oracle;
         if (!st.movie) return;
         const isOver = st.won || st.lost;
-        renderGuessBoxes('oracle-guess-boxes', st.guesses, GAME_MAX_GUESSES.oracle, st.won);
+        renderGuessBoxes('oracle-guess-boxes', st.guesses, GAME_MAX_GUESSES.oracle, st.won, st.guessIds, st.movie.id);
         document.getElementById('oracle-riddle').innerText = st.riddle || 'The cards are silent.';
 
         const posterReveal = document.getElementById('oracle-poster-reveal');
@@ -2044,7 +2048,7 @@
         if (!st.movie) return;
         const isOver = st.won || st.lost;
         const guessCount = st.guesses.length;
-        renderGuessBoxes('frame-guess-boxes', st.guesses, GAME_MAX_GUESSES.frame, st.won);
+        renderGuessBoxes('frame-guess-boxes', st.guesses, GAME_MAX_GUESSES.frame, st.won, st.guessIds, st.movie.id);
 
         // Progressive reveal: tagline (always) -> dialogue (after 1st miss) -> screencap (after 2nd miss).
         const cluesEl = document.getElementById('frame-clues');
@@ -2096,7 +2100,7 @@
         let grid = '';
         for (let i = 0; i < max; i++) {
             const isGuessed = i < st.guesses.length;
-            const isCorrect = isGuessed && st.won && i === st.guesses.length - 1;
+            const isCorrect = isGuessed && st.guessIds && st.guessIds[i] === st.movie.id;
             if (isCorrect) grid += '🟩 '; else if (isGuessed) grid += '🟥 '; else grid += '⬛ ';
         }
         const attempts = st.won ? st.guesses.length : 'X';
@@ -2117,6 +2121,8 @@
         if (!m) return;
         
         AppState.daily.guesses.push(guessedTitle);
+        if (!AppState.daily.guessIds) AppState.daily.guessIds = [];
+        AppState.daily.guessIds.push(guessedId);
         
         if (guessedId === m.id) {
             AppState.daily.won = true;
@@ -2148,7 +2154,7 @@
         let grid = "";
         for (let i = 0; i < 6; i++) {
             const isGuessed = i < AppState.daily.guesses.length;
-            const isCorrect = isGuessed && AppState.daily.guesses[i] === (AppState.daily.movie.title || AppState.daily.movie.name);
+            const isCorrect = isGuessed && AppState.daily.guessIds && AppState.daily.guessIds[i] === AppState.daily.movie.id;
             
             if (isCorrect) grid += "🟩 ";
             else if (isGuessed) grid += "🟥 ";
