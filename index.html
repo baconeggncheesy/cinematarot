@@ -470,6 +470,14 @@
               <button onclick="setRuntime('epic')" id="runtime-epic" class="script-btn flex justify-between"><span>EPIC</span><span class="text-neutral-600">135+</span></button>
             </div>
           </div>
+          <div>
+            <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">4. Critical Floor</div>
+            <div class="grid grid-cols-3 gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="setRating('any')" id="rating-any" class="script-btn active flex justify-between"><span>ANY</span><span class="text-neutral-600">ALL</span></button>
+              <button onclick="setRating('7')" id="rating-7" class="script-btn flex justify-between"><span>GOOD</span><span class="text-neutral-600">7+</span></button>
+              <button onclick="setRating('8')" id="rating-8" class="script-btn flex justify-between"><span>GREAT</span><span class="text-neutral-600">8+</span></button>
+            </div>
+          </div>
         </div>
         <div class="transition text-[10px]">CUT TO:</div>
         <div class="mt-2">
@@ -674,6 +682,39 @@
               <button id="btn-reroll" onclick="rerollCurrentSpectrum()" class="script-btn flex-1 text-center font-bold text-[10px] tracking-widest !text-neonRed hover:!border-neonRed hover:!text-neonRed">REROLL</button>
             </div>
           </div>
+
+          <div id="adjuster-panel" class="bg-darkGrey/90 border border-dashed border-neutral-700 p-4 space-y-3 relative font-mono">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[9px] tracking-wider text-neutral-400 uppercase font-bold">Refine The Projection</span>
+              <span id="adjuster-active-readout" class="text-[8px] text-neonRed uppercase tracking-widest text-right leading-tight max-w-[55%]"></span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider">
+              <button onclick="applyAdjuster('shorter')" class="script-btn text-center">&laquo; SHORTER</button>
+              <button onclick="applyAdjuster('longer')" class="script-btn text-center">LONGER &raquo;</button>
+              <button onclick="applyAdjuster('older')" class="script-btn text-center">&laquo; OLDER</button>
+              <button onclick="applyAdjuster('newer')" class="script-btn text-center">NEWER &raquo;</button>
+              <button onclick="applyAdjuster('deeper')" class="script-btn text-center">DEEPER CUT</button>
+              <button onclick="applyAdjuster('popular')" class="script-btn text-center">MORE KNOWN</button>
+              <button onclick="applyAdjuster('higher')" class="script-btn text-center">HIGHER RATED</button>
+              <button onclick="applyAdjuster('country')" class="script-btn text-center">ELSEWHERE</button>
+              <button onclick="applyAdjuster('closer')" class="script-btn text-center">STAY CLOSE</button>
+              <button onclick="applyAdjuster('surprise')" class="script-btn text-center">SURPRISE ME</button>
+            </div>
+            <div>
+              <div class="font-bold mb-1.5 uppercase text-[9px] text-neutral-500">Rule Out A Genre</div>
+              <div id="ruleout-genre-chips" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div>
+              <button onclick="toggleMoreAdjusters()" id="more-adjusters-toggle" class="text-[9px] text-neutral-500 hover:text-neonRed uppercase tracking-widest focus:outline-none">+ More adjusters</button>
+              <div id="more-adjusters" class="hidden grid grid-cols-2 gap-1.5 text-[9px] font-bold tracking-wider mt-2">
+                <button onclick="applyAdjuster('lighter')" class="script-btn text-center">LIGHTER</button>
+                <button onclick="applyAdjuster('darker')" class="script-btn text-center">DARKER</button>
+                <button onclick="applyAdjuster('weirder')" class="script-btn text-center">WEIRDER</button>
+                <button onclick="applyAdjuster('grounded')" class="script-btn text-center">GROUNDED</button>
+              </div>
+            </div>
+            <button onclick="clearAdjusters()" id="clear-adjusters-btn" class="hidden text-[8px] text-neutral-600 hover:text-neonRed uppercase tracking-widest focus:outline-none">&#8635; Clear all adjusters</button>
+          </div>
           
 	          <div class="pt-2 font-mono">
 	            <button onclick="shareReadingImage()" id="share-reading-btn" class="script-btn-primary uppercase text-xs tracking-widest w-full">Generate Share Reading Image</button>
@@ -808,6 +849,9 @@
 		      runnerUps: [], 
 	      rerollNonce: 0,
 		      rerollAvoidTitles: [],
+		      ratingMin: null,
+		      ratingBand: 'any',
+		      adjust: { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 },
 		      matchPrefetch: null,
 		      drawnSpread: [], 
       fullInversion: false, 
@@ -2729,7 +2773,7 @@
       if (target) target.classList.remove('hidden');
     }
 
-    async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateRuntimeUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
+    async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateRuntimeUI(); updateRatingUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
 
     function setParameter(key, value) { AppState[key] = value; playSynthBeep(400, 0.05, 'square'); updateParameterUI(key, value); }
     
@@ -2753,6 +2797,24 @@
         AppState.runtimeMax = b.max; 
         playSynthBeep(300, 0.05, 'square'); 
         updateRuntimeUI(); 
+    }
+
+    const RATING_BANDS = { any: null, '7': 7, '8': 8 };
+    function updateRatingUI() {
+        const bands = ['any', '7', '8'];
+        for (let i = 0; i < bands.length; i++) {
+            const el = document.getElementById('rating-' + bands[i]);
+            if (el) {
+                if (bands[i] === AppState.ratingBand) el.classList.add('active');
+                else el.classList.remove('active');
+            }
+        }
+    }
+    function setRating(band) {
+        AppState.ratingBand = RATING_BANDS.hasOwnProperty(band) ? band : 'any';
+        AppState.ratingMin = RATING_BANDS[AppState.ratingBand];
+        playSynthBeep(300, 0.05, 'square');
+        updateRatingUI();
     }
 
     function updateParameterUI(key, val) {
@@ -2783,7 +2845,7 @@
     let wheelDragActive = false; let isSwipingWheel = false; let wheelTouchStartX = 0; let wheelTouchStartY = 0; let wheelDragStartIndex = 0; let wheelVelocityTracker = []; let wheelVelocity = 0; let wheelRAF = null; let wheelTargetIndex = 0; let isSettling = false;
 
     async function goToTarotGame() {
-	      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; AppState.rerollAvoidTitles = []; AppState.rerollNonce = 0; AppState.matchPrefetch = null;
+	      playTypewriterDing(); AppState.drawnSpread = []; AppState.fullInversion = false; AppState.rerollAvoidTitles = []; AppState.rerollNonce = 0; AppState.matchPrefetch = null; resetAdjusters();
       document.getElementById('tarot-proceed-btn').classList.add('hidden'); document.getElementById('draw-count').innerText = "0/3";
       initTarotWheel(); TiltEngine.recalibrate(); showScreen('screen-game3'); await sleep(300); typewriter('tarot-dialogue', "The Cinema Tarot wheel is set. Swipe to spin. Tap to lock. Tap again to draw.");
     }
@@ -3043,7 +3105,9 @@
 	        personSeed: AppState.personSeed ? AppState.personSeed.id : null,
 	        manualOverride: AppState.manualOverrideText,
 	        rerollNonce: AppState.rerollNonce || 0,
-	        rerollAvoidTitles: AppState.rerollAvoidTitles || []
+	        rerollAvoidTitles: AppState.rerollAvoidTitles || [],
+	        ratingMin: AppState.ratingMin,
+	        adjust: AppState.adjust || {}
 	      };
 
 	      return { payload: payload, payloadKey: JSON.stringify(payload), finalWarmth: finalWarmth, finalTempo: finalTempo, finalReality: finalReality, finalHumor: finalHumor };
@@ -3143,6 +3207,8 @@
       AppState.currentToneTags = Array.isArray(data.toneTags) ? data.toneTags : [];
       
 	      resetResultActionButtons();
+	      refreshAdjusterPanel();
+	      if (data && data.adjustersLoosened) flashNotice('Loosening the reading to find a match\u2026');
       
       AudioEngine.heartbeat.stop(0.4); flashCueMark(); showLetterbox(); showScreenWithFocusReveal('screen-result');
       
@@ -3283,6 +3349,156 @@
 	            btnReroll.classList.add('opacity-50', 'pointer-events-none');
 	        }
 	        initiateSubconsciousMatching(); 
+	    }
+
+	    function resetAdjusters() {
+	      AppState.adjust = { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 };
+	    }
+
+	    function refreshAdjusterPanel() {
+	      renderRuleOutGenreChips();
+	      updateAdjusterReadout();
+	    }
+
+	    function triggerAdjustReroll() {
+	      closeShareImageOverlay();
+	      closeDeckCard();
+	      if (!AppState.currentMovie || !AppState.currentMovie.id) return;
+	      addRerollAvoidTitle(AppState.currentMovie);
+	      if (Array.isArray(AppState.runnerUps)) {
+	        for (let i = 0; i < AppState.runnerUps.length; i++) addRerollAvoidTitle(AppState.runnerUps[i]);
+	      }
+	      AppState.rerollNonce = Date.now();
+	      updateAdjusterReadout();
+	      playSynthBeep(520, 0.04, 'triangle');
+	      initiateSubconsciousMatching();
+	    }
+
+	    function applyAdjuster(kind) {
+	      const m = AppState.currentMovie;
+	      if (!m) return;
+	      const a = AppState.adjust;
+	      const cy = new Date().getFullYear();
+	      const curYear = parseInt(String(m.release_date || m.first_air_date || '').slice(0, 4), 10) || null;
+	      const curRuntime = Number(m.runtime) || null;
+	      const curRating = Number(m.vote_average) || 0;
+
+	      switch (kind) {
+	        case 'shorter':
+	          a.runtimeMax = Math.max(40, (a.runtimeMax || curRuntime || 120) - 15);
+	          a.runtimeMin = null;
+	          break;
+	        case 'longer':
+	          a.runtimeMin = (a.runtimeMin || curRuntime || 100) + 15;
+	          a.runtimeMax = null;
+	          break;
+	        case 'older': {
+	          const base = Math.min(a.yearLte != null ? a.yearLte : 9999, curYear != null ? curYear : 9999);
+	          a.yearLte = Math.max(1900, (base === 9999 ? cy : base) - 8);
+	          a.yearGte = null;
+	          break;
+	        }
+	        case 'newer': {
+	          const base = Math.max(a.yearGte != null ? a.yearGte : 0, curYear != null ? curYear : 0);
+	          a.yearGte = Math.min(cy, (base === 0 ? cy : base) + 8);
+	          a.yearLte = null;
+	          break;
+	        }
+	        case 'deeper': a.obscurityBias = Math.min(45, (a.obscurityBias || 0) + 15); break;
+	        case 'popular': a.obscurityBias = Math.max(-45, (a.obscurityBias || 0) - 15); break;
+	        case 'higher': {
+	          const base = Math.max(a.ratingMin || 0, curRating);
+	          a.ratingMin = Math.min(9, Math.round((base + 0.4) * 10) / 10);
+	          break;
+	        }
+	        case 'closer': a.closeness = -1; break;
+	        case 'surprise': a.closeness = 1; break;
+	        case 'country': a.differentLanguageThan = m.original_language || 'en'; break;
+	        case 'lighter': a.tone = 1; break;
+	        case 'darker': a.tone = -1; break;
+	        case 'weirder': a.weird = 1; break;
+	        case 'grounded': a.weird = -1; break;
+	        default: return;
+	      }
+	      triggerAdjustReroll();
+	    }
+
+	    function toggleRuleOutGenre(id) {
+	      const a = AppState.adjust;
+	      a.ruledOutGenreIds = (a.ruledOutGenreIds || []).map(String);
+	      const s = String(id);
+	      const i = a.ruledOutGenreIds.indexOf(s);
+	      if (i >= 0) a.ruledOutGenreIds.splice(i, 1);
+	      else a.ruledOutGenreIds.push(s);
+	      renderRuleOutGenreChips();
+	      triggerAdjustReroll();
+	    }
+
+	    function renderRuleOutGenreChips() {
+	      const c = document.getElementById('ruleout-genre-chips');
+	      if (!c) return;
+	      const ruled = (AppState.adjust.ruledOutGenreIds || []).map(String);
+	      const genres = [];
+	      for (const id in GENRE_MAP) genres.push({ id: parseInt(id), name: GENRE_MAP[id].name });
+	      genres.sort((a, b) => a.name.localeCompare(b.name));
+	      let html = '';
+	      for (let i = 0; i < genres.length; i++) {
+	        const g = genres[i];
+	        const active = ruled.includes(String(g.id));
+	        html += '<button onclick="toggleRuleOutGenre(' + g.id + ')" class="script-btn text-[8px] px-1.5 py-0.5 ' + (active ? 'active !text-neonRed !border-neonRed' : '') + '">' + (active ? '\u2715 ' : '') + g.name + '</button>';
+	      }
+	      c.innerHTML = html;
+	    }
+
+	    function updateAdjusterReadout() {
+	      const a = AppState.adjust || {};
+	      const parts = [];
+	      if (a.runtimeMax) parts.push('\u2264' + a.runtimeMax + 'm');
+	      if (a.runtimeMin) parts.push('\u2265' + a.runtimeMin + 'm');
+	      if (a.yearLte) parts.push('pre-' + (a.yearLte + 1));
+	      if (a.yearGte) parts.push(a.yearGte + '+');
+	      if (a.ratingMin) parts.push('\u2605' + a.ratingMin + '+');
+	      if (a.obscurityBias > 0) parts.push('deeper cut');
+	      if (a.obscurityBias < 0) parts.push('bigger');
+	      if (a.closeness < 0) parts.push('stay close');
+	      if (a.closeness > 0) parts.push('surprise');
+	      if (a.differentLanguageThan) parts.push('\u2260' + String(a.differentLanguageThan).toUpperCase());
+	      if (a.tone > 0) parts.push('lighter');
+	      if (a.tone < 0) parts.push('darker');
+	      if (a.weird > 0) parts.push('weirder');
+	      if (a.weird < 0) parts.push('grounded');
+	      const ruled = (a.ruledOutGenreIds || []);
+	      for (let i = 0; i < ruled.length; i++) {
+	        if (GENRE_MAP[ruled[i]]) parts.push('no ' + GENRE_MAP[ruled[i]].name);
+	      }
+	      const readout = document.getElementById('adjuster-active-readout');
+	      const clearBtn = document.getElementById('clear-adjusters-btn');
+	      if (readout) readout.innerText = parts.length ? ('ACTIVE: ' + parts.join(' \u00B7 ')) : '';
+	      if (clearBtn) clearBtn.classList.toggle('hidden', parts.length === 0);
+	    }
+
+	    function toggleMoreAdjusters() {
+	      const more = document.getElementById('more-adjusters');
+	      const toggle = document.getElementById('more-adjusters-toggle');
+	      if (!more) return;
+	      const nowHidden = more.classList.toggle('hidden');
+	      if (toggle) toggle.innerText = nowHidden ? '+ More adjusters' : '\u2212 Fewer adjusters';
+	      playSynthBeep(360, 0.03, 'square');
+	    }
+
+	    function clearAdjusters() {
+	      resetAdjusters();
+	      renderRuleOutGenreChips();
+	      updateAdjusterReadout();
+	      triggerAdjustReroll();
+	    }
+
+	    function flashNotice(text) {
+	      const b = document.getElementById('notification-banner');
+	      if (!b) return;
+	      b.innerText = text;
+	      b.style.opacity = '1';
+	      setTimeout(function () { b.style.opacity = '0'; }, 2400);
 	    }
 
     function dominantWord(name) {
