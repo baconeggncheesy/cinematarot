@@ -46,6 +46,7 @@
       height: 100vh;
       height: -webkit-fill-available;
       height: 100dvh;
+      height: var(--app-height, 100dvh);
     }
     
     .crt::after {
@@ -1437,7 +1438,20 @@
 	      if (typeof playSynthBeep === 'function') playSynthBeep(520, 0.04, 'triangle');
 	    }
 
+	    // iOS Safari: measure the actually-visible viewport (excludes the collapsing
+	    // toolbars) and feed it to the shell so it never falls short and leaves a
+	    // black band. Runs on load, and whenever the bar collapses or the device rotates.
+	    function setAppHeight() {
+	      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+	      if (vh) document.documentElement.style.setProperty('--app-height', vh + 'px');
+	    }
+	    setAppHeight();
+	    window.addEventListener('resize', setAppHeight);
+	    window.addEventListener('orientationchange', function () { setTimeout(setAppHeight, 250); });
+	    if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+
 	    window.onload = function() {
+	      setAppHeight();
 	      loadPersistedState(); renderGenreChips();
 	      document.getElementById('current-date').innerText = new Date().toLocaleDateString();
 	      const fy = document.getElementById('footer-year'); if (fy) fy.innerText = new Date().getFullYear();
