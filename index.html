@@ -37,6 +37,16 @@
     ::-webkit-scrollbar-track { background: #000; }
     ::-webkit-scrollbar-thumb { background: #FF003C; border-radius: 0px; }
     body { font-size: 14px; line-height: 1.4; transition: filter 0.3s ease, transform 0.3s ease; }
+
+    /* iOS Safari: 100% height resolves to the layout viewport, which is shorter
+       than the visible area once the toolbars are accounted for, leaving a dead
+       black band at the bottom. Pin the scroll shell to the dynamic viewport,
+       with -webkit-fill-available for older iOS that predates dvh. */
+    #app-shell {
+      height: 100vh;
+      height: -webkit-fill-available;
+      height: 100dvh;
+    }
     
     .crt::after {
       content: " ";
@@ -272,7 +282,7 @@
   </style>
 </head>
 <body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
-  <div class="relative h-full w-full max-w-lg mx-auto bg-black flex flex-col justify-between pt-4 pb-6 px-6 border-x border-neutral-900 overflow-y-auto">
+  <div id="app-shell" class="relative h-full w-full max-w-lg mx-auto bg-black flex flex-col justify-between pt-4 pb-10 px-6 border-x border-neutral-900 overflow-y-auto">
     
     <header class="w-full flex items-center justify-between pb-4 mb-4 border-b border-neutral-900">
       <div class="flex items-center space-x-2">
