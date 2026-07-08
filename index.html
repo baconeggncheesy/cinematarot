@@ -42,11 +42,19 @@
        than the visible area once the toolbars are accounted for, leaving a dead
        black band at the bottom. Pin the scroll shell to the dynamic viewport,
        with -webkit-fill-available for older iOS that predates dvh. */
-    #app-shell {
+    #app-body {
       height: 100vh;
       height: -webkit-fill-available;
       height: 100dvh;
       height: var(--app-height, 100dvh);
+    }
+    #app-shell {
+      height: 100%;
+    }
+    #ca-diag {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
+      background: #FF003C; color: #000; font: bold 11px/1.3 monospace;
+      padding: 4px 6px; text-align: center; pointer-events: none; white-space: pre-wrap;
     }
     
     .crt::after {
@@ -283,6 +291,7 @@
   </style>
 </head>
 <body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
+  <div id="ca-diag">measuring…</div>
   <div id="app-shell" class="relative h-full w-full max-w-lg mx-auto bg-black flex flex-col pt-4 pb-10 px-6 border-x border-neutral-900 overflow-y-auto">
     
     <header class="w-full flex items-center justify-between pb-4 mb-4 border-b border-neutral-900">
@@ -1444,6 +1453,19 @@
 	    function setAppHeight() {
 	      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
 	      if (vh) document.documentElement.style.setProperty('--app-height', vh + 'px');
+	      try {
+	        const shell = document.getElementById('app-shell');
+	        const body = document.getElementById('app-body');
+	        const diag = document.getElementById('ca-diag');
+	        if (diag) {
+	          const sr = shell ? Math.round(shell.getBoundingClientRect().height) : 0;
+	          const ss = shell ? shell.scrollHeight : 0;
+	          const br = body ? Math.round(body.getBoundingClientRect().height) : 0;
+	          diag.textContent =
+	            'screen ' + window.screen.height + ' | inner ' + window.innerHeight +
+	            ' | visual ' + Math.round(vh) + '\nbody ' + br + ' | shell ' + sr + ' | shellScroll ' + ss;
+	        }
+	      } catch (e) {}
 	    }
 	    setAppHeight();
 	    window.addEventListener('resize', setAppHeight);
