@@ -1569,6 +1569,15 @@
       return match ? match[0].trim() : overview.substring(0, 100) + '...';
     }
 
+    function formatGameGenres(movie) {
+      if (!movie || !Array.isArray(movie.genres) || movie.genres.length === 0) return 'UNKNOWN';
+      const names = movie.genres.map(function (genre) {
+        if (typeof genre === 'string') return genre;
+        return genre && genre.name ? genre.name : '';
+      }).filter(Boolean);
+      return names.length ? names.join(', ') : 'UNKNOWN';
+    }
+
     async function openDailyGame() {
         playTypewriterDing();
         showScreen('screen-loading');
@@ -1644,7 +1653,7 @@
         }
 
         const year = (m.release_date || m.first_air_date || '').split('-')[0] || '----';
-        const genres = m.genres ? m.genres.map(g => g.name).join(', ') : 'UNKNOWN';
+        const genres = formatGameGenres(m);
         const runtime = m.runtime ? m.runtime : '--';
         const rating = m.vote_average ? m.vote_average.toFixed(1) : '--';
         const premise = getOneSentencePlot(m.overview);
