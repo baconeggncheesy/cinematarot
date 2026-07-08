@@ -49,7 +49,13 @@
       height: var(--app-height, 100dvh);
     }
     #app-shell {
-      height: 100%;
+      height: var(--app-height, 100dvh);
+      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
     }
     /* Center each screen's content when it fits, but fall back to top-aligned
        (fully scrollable, nothing hidden under the header) when a screen is
@@ -57,6 +63,41 @@
        from being pushed off-screen. */
     #app-shell > main { display: flex; flex-direction: column; min-height: 0; }
     #app-shell > main { justify-content: safe center; }
+    #app-body[data-screen="screen-game1"] #app-shell > main { justify-content: flex-start; }
+    #screen-game1 {
+      justify-content: flex-start;
+      min-height: auto;
+      padding-top: 0.25rem;
+      padding-bottom: 2rem;
+    }
+    @media (max-width: 480px), (max-height: 760px) {
+      #app-shell {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+      #screen-game1 .scene-heading,
+      #screen-game1 .action,
+      #screen-game1 .character,
+      #screen-game1 .parenthetical,
+      #screen-game1 #slider-dialogue {
+        display: none;
+      }
+      #screen-game1 .slider-stack {
+        margin-top: 0;
+        row-gap: 0.6rem;
+      }
+      #screen-game1 .manual-override {
+        margin-top: 1rem;
+        padding-top: 1rem;
+      }
+      #screen-game1 .optional-input-block {
+        margin-top: 0.75rem;
+      }
+      #screen-game1 .transition {
+        margin-top: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+    }
     
     .crt::after {
       content: " ";
@@ -292,7 +333,7 @@
   </style>
 </head>
 <body id="app-body" class="h-full bg-black text-neutral-200 font-mono antialiased overflow-hidden crt">
-  <div id="app-shell" class="relative h-full w-full max-w-lg mx-auto bg-black flex flex-col pt-4 pb-10 px-6 border-x border-neutral-900 overflow-y-auto">
+  <div id="app-shell" class="relative w-full max-w-lg mx-auto bg-black flex flex-col px-6 border-x border-neutral-900">
     
     <header class="w-full flex items-center justify-between pb-4 mb-4 border-b border-neutral-900">
       <div class="flex items-center space-x-2">
@@ -505,13 +546,13 @@
         </div>
       </section>
 
-      <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
+      <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-start min-h-0">
         <div class="scene-heading text-xs">INT. THE CORE SPECTRUM - GAME 01</div>
 	        <div class="action text-xs">Six mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
         <div class="character text-xs">THE SYSTEM</div>
         <div class="parenthetical text-xs">(patiently)</div>
         <div class="dialogue cursor-blink text-xs" id="slider-dialogue"></div>
-	        <div class="space-y-3 mt-5 pl-3 border-l border-neutral-800">
+		        <div class="slider-stack space-y-3 mt-5 pl-3 border-l border-neutral-800">
           <div class="space-y-1">
             <div class="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Mood</div>
             <div class="flex justify-between text-[9px] font-bold text-neutral-400"><span>COZY</span><span id="val-warmth" class="text-neonRed">50</span><span>DREAD</span></div>
@@ -544,7 +585,7 @@
 	          </div>
 	        </div>
 
-        <div class="mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
+        <div class="manual-override mt-8 pt-4 border-t border-neutral-900 w-full pl-3">
           <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Override Manually: Tell Me What You Want To Feel Or See</div>
           <div class="flex space-x-2">
             <input type="text" id="vibe-input" class="flex-1 bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="e.g. I want to feel like I'm drowning...">
@@ -553,12 +594,12 @@
           </div>
           <div id="vibe-status" class="text-[9px] text-neutral-500 mt-2 uppercase min-h-6 leading-tight"></div>
 
-          <div class="mt-4">
+          <div class="optional-input-block mt-4">
             <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Lock a Genre Manually (Optional)</div>
             <div id="genre-chips-container" class="flex flex-wrap gap-1.5"></div>
           </div>
 
-          <div class="mt-4">
+          <div class="optional-input-block mt-4">
             <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Divine By Films: Pick Up To Four You Love</div>
             <div id="seed-chips-container" class="flex flex-wrap gap-1.5 mb-2"></div>
             <div id="seed-search-section" class="relative">
@@ -568,7 +609,7 @@
             <div id="seed-status" class="text-[9px] text-neutral-500 mt-2 uppercase leading-tight"></div>
           </div>
 
-          <div class="mt-4">
+          <div class="optional-input-block mt-4">
             <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Or Divine By An Actor You Love</div>
             <div id="actor-chip-container" class="flex flex-wrap gap-1.5 mb-2"></div>
             <div id="actor-search-section" class="relative">
@@ -1457,7 +1498,10 @@
 	    setAppHeight();
 	    window.addEventListener('resize', setAppHeight);
 	    window.addEventListener('orientationchange', function () { setTimeout(setAppHeight, 250); });
-	    if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+	    if (window.visualViewport) {
+	      window.visualViewport.addEventListener('resize', setAppHeight);
+	      window.visualViewport.addEventListener('scroll', setAppHeight);
+	    }
 
 	    window.onload = function() {
 	      setAppHeight();
@@ -2802,9 +2846,12 @@
         if (el) el.classList.add('hidden');
       }
       
-      const target = document.getElementById(screenId); 
-      if (target) target.classList.remove('hidden');
-    }
+	      const target = document.getElementById(screenId); 
+	      if (target) target.classList.remove('hidden');
+	      document.body.setAttribute('data-screen', screenId);
+	      const shell = document.getElementById('app-shell');
+	      if (shell) shell.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+	    }
 
     async function startCalibrator() { playTypewriterDing(); TiltEngine.enable(); showScreen('screen-parameters'); updateParameterUI('language', AppState.language); updateParameterUI('era', AppState.era); updateRuntimeUI(); updateRatingUI(); await sleep(300); typewriter('param-dialogue', "Define your structural boundaries before we begin writing the script."); }
 
