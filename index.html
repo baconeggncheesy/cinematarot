@@ -1190,7 +1190,7 @@
 	      frame: 'cinema_arcana_frame',
 	      streak: 'cinema_arcana_streak'
 	    };
-	    const DAILY_CACHE_VERSION = 6;
+    const DAILY_CACHE_VERSION = 7;
 
     function loadPersistedState() {
       try {
@@ -1586,6 +1586,7 @@
                 
                 if (data.reel && data.reel.movie) {
                     AppState.daily.movie = data.reel.movie;
+                    AppState.daily.dateIndex = data.reel.dayIndex;
                     AppState.daily.scoreSpec = data.reel.scoreSpec;
                     persistDailyState();
                 } else {
@@ -1594,6 +1595,7 @@
 
                 if (data.oracle && data.oracle.movie) {
                     AppState.oracle.movie = data.oracle.movie;
+                    AppState.oracle.dateIndex = data.oracle.dayIndex;
                     AppState.oracle.riddle = data.oracle.riddle || '';
                     AppState.oracle.scoreSpec = data.oracle.scoreSpec;
                     persistOracleState();
@@ -1601,6 +1603,7 @@
 
                 if (data.frame && data.frame.movie) {
                     AppState.frame.movie = data.frame.movie;
+                    AppState.frame.dateIndex = data.frame.dayIndex;
                     AppState.frame.tagline = data.frame.tagline || '';
                     AppState.frame.dialogue = data.frame.dialogue || '';
                     AppState.frame.backdropUrl = data.frame.backdropUrl || '';
@@ -3895,8 +3898,13 @@
       }
       const genreNames = genreNamesArr.join(' + ') || 'NONE';
       const runtimeLabel = AppState.runtimeBand === 'custom' ? '<=' + AppState.runtimeMax + 'MIN' : (AppState.runtimeBand || 'any').toUpperCase();
-      const metaText = cleanCanvasText('GENRES: ' + genreNames + '  |  RUNTIME: ' + runtimeLabel + '  |  ERA: ' + AppState.era.toUpperCase());
+      const languageLabels = { any: 'GLOBAL', english: 'ENGLISH', foreign: 'FOREIGN' };
+      const ratingLabels = { any: 'ANY', bad: 'BAD <5', '6': 'DECENT 6+', '7': 'GOOD 7+', '8': 'GREAT 8+' };
+      const languageLabel = languageLabels[AppState.language] || 'GLOBAL';
+      const ratingLabel = ratingLabels[AppState.ratingBand] || 'ANY';
+      const metaText = cleanCanvasText('ORIGIN: ' + languageLabel + '  |  RUNTIME: ' + runtimeLabel + '  |  ERA: ' + AppState.era.toUpperCase() + '  |  RATING: ' + ratingLabel);
       ctx.fillText(metaText, W / 2, cursorY); cursorY += 35;
+      ctx.fillText(cleanCanvasText('GENRES: ' + genreNames), W / 2, cursorY); cursorY += 35;
 
       const seedsForImage = AppState.filmSeeds || [];
       if (AppState.personSeed) {
