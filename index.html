@@ -964,7 +964,7 @@
 		      ratingMin: null,
 		      ratingMax: null,
 		      ratingBand: 'any',
-		      adjust: { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 },
+		      adjust: { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, obscurityFloor: null, obscurityCeiling: null, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 },
 		      matchPrefetch: null,
 		      drawnSpread: [], 
       fullInversion: false, 
@@ -3503,7 +3503,7 @@
 	    }
 
 	    function resetAdjusters() {
-	      AppState.adjust = { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 };
+	      AppState.adjust = { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, obscurityFloor: null, obscurityCeiling: null, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 };
 	    }
 
 	    function refreshAdjusterPanel() {
@@ -3533,6 +3533,7 @@
 	      const curYear = parseInt(String(m.release_date || m.first_air_date || '').slice(0, 4), 10) || null;
 	      const curRuntime = Number(m.runtime) || null;
 	      const curRating = Number(m.vote_average) || 0;
+	      const curObscurity = estimateClientObscurityScore(m);
 
 	      switch (kind) {
 	        case 'shorter':
@@ -3555,8 +3556,16 @@
 	          a.yearLte = null;
 	          break;
 	        }
-	        case 'deeper': a.obscurityBias = Math.min(45, (a.obscurityBias || 0) + 15); break;
-	        case 'popular': a.obscurityBias = Math.max(-45, (a.obscurityBias || 0) - 15); break;
+	        case 'deeper':
+	          a.obscurityBias = Math.min(45, (a.obscurityBias || 0) + 15);
+	          a.obscurityFloor = Math.min(98, Math.max(a.obscurityFloor || 0, curObscurity + 10));
+	          a.obscurityCeiling = null;
+	          break;
+	        case 'popular':
+	          a.obscurityBias = Math.max(-45, (a.obscurityBias || 0) - 15);
+	          a.obscurityCeiling = Math.max(2, Math.min(a.obscurityCeiling == null ? 100 : a.obscurityCeiling, curObscurity - 10));
+	          a.obscurityFloor = null;
+	          break;
 	        case 'higher': {
 	          const base = Math.max(a.ratingMin || 0, curRating);
 	          a.ratingMin = Math.min(9, Math.round((base + 0.4) * 10) / 10);
@@ -3572,6 +3581,20 @@
 	        default: return;
 	      }
 	      triggerAdjustReroll();
+	    }
+
+	    function estimateClientMainstreamScore(movie) {
+	      const popularity = Math.max(0, Math.min(1000, Number(movie && movie.popularity) || 0));
+	      const votes = Math.max(0, Math.min(100000, Number(movie && movie.vote_count) || 0));
+	      const avg = Math.max(0, Math.min(10, Number(movie && movie.vote_average) || 0));
+	      const popularityScore = Math.min(100, Math.log10(popularity + 1) * 42);
+	      const voteScore = Math.min(100, Math.log10(votes + 1) * 25);
+	      const acclaimBoost = votes > 5000 && avg >= 7 ? 8 : 0;
+	      return Math.max(0, Math.min(100, Math.round(popularityScore * 0.45 + voteScore * 0.5 + acclaimBoost)));
+	    }
+
+	    function estimateClientObscurityScore(movie) {
+	      return 100 - estimateClientMainstreamScore(movie);
 	    }
 
 	    function toggleRuleOutGenre(id) {
@@ -3609,8 +3632,8 @@
 	      if (a.yearLte) parts.push('pre-' + (a.yearLte + 1));
 	      if (a.yearGte) parts.push(a.yearGte + '+');
 	      if (a.ratingMin) parts.push('\u2605' + a.ratingMin + '+');
-	      if (a.obscurityBias > 0) parts.push('deeper cut');
-	      if (a.obscurityBias < 0) parts.push('bigger');
+	      if (a.obscurityBias > 0) parts.push('deeper cut' + (a.obscurityFloor ? ' \u2265' + a.obscurityFloor : ''));
+	      if (a.obscurityBias < 0) parts.push('bigger' + (a.obscurityCeiling ? ' \u2264' + a.obscurityCeiling : ''));
 	      if (a.closeness < 0) parts.push('stay close');
 	      if (a.closeness > 0) parts.push('surprise');
 	      if (a.differentLanguageThan) parts.push('\u2260' + String(a.differentLanguageThan).toUpperCase());
