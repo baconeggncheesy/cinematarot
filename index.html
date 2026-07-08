@@ -93,7 +93,6 @@
         padding-left: 1rem;
         padding-right: 1rem;
       }
-      #screen-game1 .action,
       #screen-game1 .character,
       #screen-game1 .parenthetical,
       #screen-game1 #slider-dialogue {
@@ -107,6 +106,13 @@
         letter-spacing: 0.08em;
         color: #e5e5e5;
         border-bottom: 1px dashed #333;
+      }
+      #screen-game1 .action {
+        display: block;
+        margin-bottom: 0.85rem;
+        font-size: 0.68rem;
+        line-height: 1.45;
+        color: #a3a3a3;
       }
       #screen-game1 .slider-stack {
         margin-top: 0;
@@ -148,6 +154,23 @@
     .transition { text-align: right; text-transform: uppercase; font-weight: bold; margin-top: 1.5rem; margin-bottom: 1rem; color: #FF003C; }
     .cursor-blink::after { content: "█"; animation: blink 0.8s infinite; color: #FF003C; margin-left: 4px; }
     @keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+    #card-zoom-overlay {
+      top: var(--visual-viewport-top, 0px);
+      bottom: auto;
+      min-height: 0;
+      height: var(--visual-viewport-height, 100dvh);
+      padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+    }
+    #card-zoom-frame {
+      width: min(72vw, 300px);
+      height: min(78vh, 78dvh, 450px);
+      max-height: calc(var(--visual-viewport-height, 100dvh) - 2rem);
+      aspect-ratio: 2 / 3;
+    }
+    #card-zoom-img {
+      object-fit: cover;
+    }
     
     input[type="range"] {
       -webkit-appearance: none;
@@ -573,8 +596,8 @@
       </section>
 
       <section id="screen-game1" class="hidden animate-fade-in flex flex-col justify-start min-h-0">
-        <div class="scene-heading text-xs">INT. YOUR APARTMENT - NIGHT</div>
-	        <div class="action text-xs">Six mechanical levers sit on the terminal. They establish the user's subconscious baselines.</div>
+        <div class="scene-heading text-xs">INT. YOUR APARTMENT - THE CORE SPECTRUM</div>
+	        <div class="action text-xs">The room goes quiet. Six levers wait for a feeling. Set the emotional weather before the deck is drawn.</div>
         <div class="character text-xs">THE SYSTEM</div>
         <div class="parenthetical text-xs">(patiently)</div>
         <div class="dialogue cursor-blink text-xs" id="slider-dialogue"></div>
@@ -818,8 +841,8 @@
 	        <img id="poster-reveal-img" src="" alt="" class="poster-reveal-img">
 	      </div>
 
-	      <div id="card-zoom-overlay" class="hidden fixed inset-0 z-50 bg-black/95 pointer-events-none items-center justify-center p-6">
-	        <div class="relative w-[70vw] max-w-[280px] aspect-[2/3] border border-neonRed bg-black shadow-neon overflow-hidden">
+	      <div id="card-zoom-overlay" class="hidden fixed inset-x-0 z-50 bg-black/95 pointer-events-none items-center justify-center p-6">
+	        <div id="card-zoom-frame" class="relative border border-neonRed bg-black shadow-neon overflow-hidden">
 	          <img id="card-zoom-img" src="" alt="" class="w-full h-full object-cover">
 	          <div id="card-zoom-label" class="absolute bottom-0 left-0 right-0 bg-black/85 border-t border-neonRed p-2 text-[10px] text-center uppercase tracking-widest text-white font-bold"></div>
 	        </div>
@@ -2841,6 +2864,21 @@
     function playTypewriterDing() { playSynthBeep(1200, 0.1, 'sine'); setTimeout(() => playSynthBeep(1500, 0.1, 'sine'), 50); }
     function triggerGlitchEffect(glitchClass) { const body = document.getElementById('app-body'); body.classList.add(glitchClass); setTimeout(() => body.classList.remove(glitchClass), 500); }
 
+    function updateVisualViewportVars() {
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      document.documentElement.style.setProperty('--visual-viewport-height', Math.max(320, height) + 'px');
+      document.documentElement.style.setProperty('--visual-viewport-top', offsetTop + 'px');
+    }
+    updateVisualViewportVars();
+    window.addEventListener('resize', updateVisualViewportVars);
+    window.addEventListener('orientationchange', () => setTimeout(updateVisualViewportVars, 250));
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateVisualViewportVars);
+      window.visualViewport.addEventListener('scroll', updateVisualViewportVars);
+    }
+
     function showScreen(screenId) {
       const resultEl = document.getElementById('screen-result');
       const leavingResult = screenId !== 'screen-result' && resultEl && !resultEl.classList.contains('hidden');
@@ -2983,6 +3021,7 @@
 	      const img = document.getElementById('card-zoom-img');
 	      const label = document.getElementById('card-zoom-label');
 	      if (!overlay || !img || !label || !card) return;
+	      updateVisualViewportVars();
 	      img.src = card.image;
 	      img.onerror = function() { tryJpegFallback(this, card.num); };
 	      img.className = 'w-full h-full object-cover transition-transform duration-300 ' + (isReversed ? 'rotate-180' : '');
