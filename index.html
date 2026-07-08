@@ -51,12 +51,12 @@
     #app-shell {
       height: 100%;
     }
-    /* Center each screen's content so leftover space (when a screen is shorter
-       than the phone) splits into small top/bottom margins instead of a black
-       void at the bottom. margin:auto centers when there's room and collapses to
-       0 when the content overflows, so tall screens still scroll cleanly. */
+    /* Center each screen's content when it fits, but fall back to top-aligned
+       (fully scrollable, nothing hidden under the header) when a screen is
+       taller than the viewport. "safe" centering is what prevents the overflow
+       from being pushed off-screen. */
     #app-shell > main { display: flex; flex-direction: column; min-height: 0; }
-    #app-shell > main > section { margin-top: auto; margin-bottom: auto; }
+    #app-shell > main { justify-content: safe center; }
     
     .crt::after {
       content: " ";
