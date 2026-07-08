@@ -582,8 +582,10 @@
           </div>
           <div>
             <div class="font-bold mb-1 uppercase text-[10px] text-neutral-500">4. Critical Floor</div>
-            <div class="grid grid-cols-3 gap-1.5 text-[9px] font-bold tracking-wider">
+            <div class="grid grid-cols-5 gap-1.5 text-[8px] font-bold tracking-wider">
               <button onclick="setRating('any')" id="rating-any" class="script-btn active flex justify-between"><span>ANY</span><span class="text-neutral-600">ALL</span></button>
+              <button onclick="setRating('bad')" id="rating-bad" class="script-btn flex justify-between"><span>BAD</span><span class="text-neutral-600">&lt;5</span></button>
+              <button onclick="setRating('6')" id="rating-6" class="script-btn flex justify-between"><span>DECENT</span><span class="text-neutral-600">6+</span></button>
               <button onclick="setRating('7')" id="rating-7" class="script-btn flex justify-between"><span>GOOD</span><span class="text-neutral-600">7+</span></button>
               <button onclick="setRating('8')" id="rating-8" class="script-btn flex justify-between"><span>GREAT</span><span class="text-neutral-600">8+</span></button>
             </div>
@@ -960,6 +962,7 @@
 	      rerollNonce: 0,
 		      rerollAvoidTitles: [],
 		      ratingMin: null,
+		      ratingMax: null,
 		      ratingBand: 'any',
 		      adjust: { runtimeMin: null, runtimeMax: null, yearLte: null, yearGte: null, obscurityBias: 0, ruledOutGenreIds: [], differentLanguageThan: null, ratingMin: null, closeness: 0, tone: 0, weird: 0 },
 		      matchPrefetch: null,
@@ -2926,9 +2929,15 @@
         updateRuntimeUI(); 
     }
 
-    const RATING_BANDS = { any: null, '7': 7, '8': 8 };
+    const RATING_BANDS = {
+        any: { min: null, max: null },
+        bad: { min: null, max: 5 },
+        '6': { min: 6, max: null },
+        '7': { min: 7, max: null },
+        '8': { min: 8, max: null }
+    };
     function updateRatingUI() {
-        const bands = ['any', '7', '8'];
+        const bands = ['any', 'bad', '6', '7', '8'];
         for (let i = 0; i < bands.length; i++) {
             const el = document.getElementById('rating-' + bands[i]);
             if (el) {
@@ -2939,7 +2948,8 @@
     }
     function setRating(band) {
         AppState.ratingBand = RATING_BANDS.hasOwnProperty(band) ? band : 'any';
-        AppState.ratingMin = RATING_BANDS[AppState.ratingBand];
+        AppState.ratingMin = RATING_BANDS[AppState.ratingBand].min;
+        AppState.ratingMax = RATING_BANDS[AppState.ratingBand].max;
         playSynthBeep(300, 0.05, 'square');
         updateRatingUI();
     }
@@ -3235,6 +3245,7 @@
 	        rerollNonce: AppState.rerollNonce || 0,
 	        rerollAvoidTitles: AppState.rerollAvoidTitles || [],
 	        ratingMin: AppState.ratingMin,
+	        ratingMax: AppState.ratingMax,
 	        adjust: AppState.adjust || {}
 	      };
 
