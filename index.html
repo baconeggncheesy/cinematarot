@@ -465,7 +465,6 @@
       <section id="screen-daily-game" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-2">
         <div class="flex justify-center gap-1 mb-4 text-[9px] font-bold uppercase tracking-widest">
           <button onclick="switchDailyTab('reel')" id="tab-reel" class="daily-tab px-3 py-1.5 border border-neutral-700">The Reel</button>
-          <button onclick="switchDailyTab('frame')" id="tab-frame" class="daily-tab px-3 py-1.5 border border-neutral-700">One Frame</button>
           <button onclick="switchDailyTab('player')" id="tab-player" class="daily-tab px-3 py-1.5 border border-neutral-700">The Player</button>
         </div>
 
@@ -507,29 +506,9 @@
             </button>
         </div>
         <div id="reel-next-nudge" class="hidden mt-3 text-center">
-          <button onclick="switchDailyTab('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → One Frame</button>
+          <button onclick="switchDailyTab('player')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → The Player</button>
         </div>
         </div><!-- /daily-tab-reel -->
-
-        <div id="daily-tab-frame" class="daily-tab-panel hidden flex-col flex-1">
-          <div class="scene-heading text-xs text-center border-none mb-2">INT. ONE FRAME - DAILY</div>
-          <div class="action text-[10px] text-center mb-5 px-4">A second film, glimpsed sidelong. A tagline, then a whisper, then a single frame. Name it.</div>
-          <div class="flex justify-center space-x-2 mb-5" id="frame-guess-boxes"></div>
-          <div id="frame-clues" class="space-y-3 mb-4 flex-1 px-2"></div>
-          <div id="frame-search-section" class="relative mt-auto">
-            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Name the Film:</div>
-            <input type="text" id="frame-search-input" oninput="debounceGameSearch('frame')" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for a title...">
-            <div id="frame-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
-          </div>
-          <div id="frame-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
-            <div id="frame-end-message" class="font-bold text-xs uppercase tracking-widest mb-2"></div>
-            <div id="frame-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
-            <div id="frame-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
-            <button onclick="shareGameResult('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">[ COPY RESULT TO CLIPBOARD ]</button>
-            <div class="mb-3"><button onclick="switchDailyTab('player')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → The Player</button></div>
-            <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">Back to Main Terminal</button>
-          </div>
-        </div><!-- /daily-tab-frame -->
 
         <div id="daily-tab-player" class="daily-tab-panel hidden flex-col flex-1">
           <div class="scene-heading text-xs text-center border-none mb-2">INT. CASTING OFFICE - DAILY</div>
@@ -976,7 +955,7 @@
       sceneCount: 0,
       
 	      daily: {
-	          version: 9,
+	          version: 10,
 	          dateIndex: null,
 	          guesses: [],
 	          guessIds: [],
@@ -988,12 +967,8 @@
           analysisError: '',
           analysisLoading: false
       },
-	      frame: {
-	          version: 9, dateIndex: null, guesses: [], won: false, lost: false,
-	          movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null
-	      },
 	      player: {
-	          version: 9, dateIndex: null, guesses: [], guessIds: [], won: false, lost: false,
+	          version: 10, dateIndex: null, guesses: [], guessIds: [], won: false, lost: false,
 	          person: null, clues: []
 	      },
 	      activeDailyTab: 'reel',
@@ -1194,11 +1169,10 @@
 	      sceneCount: 'cinema_arcana_scene_count',
 	      taste: 'cinema_arcana_taste',
 	      daily: 'cinema_arcana_daily',
-	      frame: 'cinema_arcana_frame',
 	      player: 'cinema_arcana_player',
 	      streak: 'cinema_arcana_streak'
 	    };
-    const DAILY_CACHE_VERSION = 9;
+    const DAILY_CACHE_VERSION = 10;
 
     function createDailyState(dayIndex) {
       return {
@@ -1243,13 +1217,6 @@
 	            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
 	        }
 
-	        const savedFrame = JSON.parse(localStorage.getItem(STORAGE_KEYS.frame) || 'null');
-	        if (savedFrame && savedFrame.dateIndex === currentDayIndex && savedFrame.version === DAILY_CACHE_VERSION) {
-	            AppState.frame = savedFrame;
-	        } else {
-	            AppState.frame = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null };
-	        }
-
 	        const savedPlayer = JSON.parse(localStorage.getItem(STORAGE_KEYS.player) || 'null');
 	        if (savedPlayer && savedPlayer.dateIndex === currentDayIndex && savedPlayer.version === DAILY_CACHE_VERSION) {
 	            AppState.player = savedPlayer;
@@ -1273,10 +1240,6 @@
     
     function persistDailyState() {
         try { localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily)); } catch (e) {}
-    }
-
-    function persistFrameState() {
-        try { localStorage.setItem(STORAGE_KEYS.frame, JSON.stringify(AppState.frame)); } catch (e) {}
     }
 
     function persistPlayerState() {
@@ -1650,7 +1613,7 @@
         playTypewriterDing();
         showScreen('screen-loading');
         
-        if (!AppState.daily.movie || !AppState.frame.movie || !AppState.player.person) {
+        if (!AppState.daily.movie || !AppState.player.person) {
             try {
                 const res = await fetch(WORKER_BASE_URL, {
                     method: 'POST',
@@ -1671,17 +1634,6 @@
                     throw new Error("No media returned from archive.");
                 }
 
-                if (data.frame && data.frame.movie) {
-                    AppState.frame.movie = data.frame.movie;
-                    AppState.frame.dateIndex = data.frame.dayIndex;
-                    AppState.frame.tagline = data.frame.tagline || '';
-                    AppState.frame.dialogue = data.frame.dialogue || '';
-                    AppState.frame.backdropUrl = data.frame.backdropUrl || '';
-                    AppState.frame.scoreSpec = data.frame.scoreSpec;
-                    AppState.frame.version = DAILY_CACHE_VERSION;
-                    persistFrameState();
-                }
-
                 if (data.player && data.player.person && data.player.clues) {
                     AppState.player.person = data.player.person;
                     AppState.player.clues = data.player.clues || [];
@@ -1698,7 +1650,7 @@
             }
         }
         
-        switchDailyTab(['frame', 'player'].includes(AppState.activeDailyTab) ? AppState.activeDailyTab : 'reel');
+        switchDailyTab(AppState.activeDailyTab === 'player' ? 'player' : 'reel');
         showScreen('screen-daily-game');
     }
 
@@ -2215,21 +2167,20 @@
 
     // ---- Daily game tab switching ----
     function switchDailyTab(tab) {
-        if (!['reel', 'frame', 'player'].includes(tab)) tab = 'reel';
+        if (!['reel', 'player'].includes(tab)) tab = 'reel';
         AppState.activeDailyTab = tab;
-        ['reel', 'frame', 'player'].forEach(function (t) {
+        ['reel', 'player'].forEach(function (t) {
             const panel = document.getElementById('daily-tab-' + t);
             const btn = document.getElementById('tab-' + t);
             if (panel) panel.classList.toggle('hidden', t !== tab);
             if (btn) btn.classList.toggle('active', t === tab);
         });
         if (tab === 'reel') renderDailyGameUI();
-        else if (tab === 'frame') renderFrameUI();
         else if (tab === 'player') renderPlayerUI();
     }
 
     // ---- Generalized guess search for daily side games ----
-    let gameSearchTimers = { frame: null, player: null };
+    let gameSearchTimers = { player: null };
     function debounceGameSearch(gameKey) {
         if (gameSearchTimers[gameKey]) clearTimeout(gameSearchTimers[gameKey]);
         gameSearchTimers[gameKey] = setTimeout(function () { executeGameSearch(gameKey); }, 400);
@@ -2242,26 +2193,23 @@
         try {
             const res = await fetch(WORKER_BASE_URL, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: gameKey === 'player' ? 'personSearch' : 'search', query: input })
+                body: JSON.stringify({ type: 'personSearch', query: input })
             });
             if (!res.ok) throw new Error('Search failed');
             const data = await res.json();
             resultsContainer.innerHTML = '';
             if (data.results && data.results.length > 0) {
                 data.results.slice(0, 6).forEach(function (item) {
-                    const isPlayer = gameKey === 'player';
                     const title = item.title || item.name || 'Unknown';
-                    const yr = (item.release_date || item.first_air_date || '').split('-')[0] || '';
                     const knownFor = item.knownFor ? 'Known for ' + item.knownFor : '';
-                    const display = isPlayer ? title : (yr ? title + ' (' + yr + ')' : title);
                     const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                     const div = document.createElement('div');
                     div.className = 'p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate';
                     div.setAttribute('onclick', "submitGameGuess('" + gameKey + "', " + item.id + ", '" + safeTitle + "')");
-                    if (isPlayer && knownFor) {
-                        div.innerHTML = '<div class="truncate">' + escapeHtml(display) + '</div><div class="text-[9px] text-neutral-500 normal-case truncate">' + escapeHtml(knownFor) + '</div>';
+                    if (knownFor) {
+                        div.innerHTML = '<div class="truncate">' + escapeHtml(title) + '</div><div class="text-[9px] text-neutral-500 normal-case truncate">' + escapeHtml(knownFor) + '</div>';
                     } else {
-                        div.innerText = display;
+                        div.innerText = title;
                     }
                     resultsContainer.appendChild(div);
                 });
@@ -2273,13 +2221,13 @@
         } catch (e) { console.error(e); }
     }
 
-    function gameStateFor(gameKey) { return gameKey === 'player' ? AppState.player : AppState.frame; }
-    function persistGameState(gameKey) { if (gameKey === 'player') persistPlayerState(); else persistFrameState(); }
+    function gameStateFor(gameKey) { return AppState.player; }
+    function persistGameState(gameKey) { persistPlayerState(); }
     function gameAnswerId(gameKey) {
         const st = gameStateFor(gameKey);
-        return gameKey === 'player' ? (st.person && st.person.id) : (st.movie && st.movie.id);
+        return st.person && st.person.id;
     }
-    const GAME_MAX_GUESSES = { frame: 4, player: 5 };
+    const GAME_MAX_GUESSES = { player: 5 };
 
     function submitGameGuess(gameKey, guessedId, guessedTitle) {
         const st = gameStateFor(gameKey);
@@ -2306,7 +2254,7 @@
             playSynthBeep(200, 0.1, 'square');
         }
         persistGameState(gameKey);
-        if (gameKey === 'player') renderPlayerUI(); else renderFrameUI();
+        renderPlayerUI();
     }
 
     function renderGuessBoxes(containerId, guesses, maxGuesses, won, guessIds, answerId) {
@@ -2322,62 +2270,6 @@
             const box = document.createElement('div');
             box.className = cls;
             c.appendChild(box);
-        }
-    }
-
-    function renderFrameUI() {
-        const st = AppState.frame;
-        if (!st.movie) return;
-        const isOver = st.won || st.lost;
-        const guessCount = st.guesses.length;
-        renderGuessBoxes('frame-guess-boxes', st.guesses, GAME_MAX_GUESSES.frame, st.won, st.guessIds, st.movie.id);
-
-        // Progressive reveal: tagline (always) -> dialogue + facts (after 1st miss)
-        // -> screencap + director (after 2nd miss) -> a face (after 3rd miss).
-        const cluesEl = document.getElementById('frame-clues');
-        const mv = st.movie;
-        let html = '';
-        const showDialogue = (guessCount >= 1 || isOver);
-        const showFrame = (guessCount >= 2 || isOver) && st.backdropUrl;
-        const showFace = (guessCount >= 3 || isOver);
-
-        html += '<div class="clue-item active"><div class="clue-label">Tagline</div><div class="italic">"' + (st.tagline ? escapeHtml(st.tagline) : 'No tagline on record — trust the whisper.') + '"</div></div>';
-
-        const yrGen = (mv.year || '????') + (mv.genres && mv.genres.length ? ' • ' + mv.genres.slice(0, 2).join(', ') : '');
-        html += '<div class="clue-item ' + (showDialogue ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">Era & Genre</div><div class="font-mono text-[11px]">' + (showDialogue ? escapeHtml(yrGen) : 'Locked') + '</div></div>';
-
-        if (st.dialogue) {
-            html += '<div class="clue-item ' + (showDialogue ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Whispered Line</div><div class="italic">' + (showDialogue ? '"' + escapeHtml(st.dialogue) + '"' : 'Locked') + '</div></div>';
-        }
-
-        html += '<div class="clue-item ' + (showFrame ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">The Auteur & A Single Frame</div>';
-        if (showFrame) {
-            html += '<div class="font-mono text-[11px] mb-2">Directed by ' + escapeHtml(mv.director || 'Unknown') + '</div>';
-            html += '<div class="w-full max-w-[280px] mx-auto border border-neutral-800 overflow-hidden"><img src="' + st.backdropUrl + '" class="w-full ' + (isOver ? '' : 'blur-[6px] contrast-125') + '"></div>';
-        } else if (mv.director) {
-            html += '<div class="font-mono text-[11px]">Directed by ' + (showDialogue ? escapeHtml(mv.director) : 'Locked') + '</div>';
-        } else {
-            html += '<div>Locked</div>';
-        }
-        html += '</div>';
-
-        html += '<div class="clue-item ' + (showFace ? 'active' : 'opacity-20 blur-[2px]') + '"><div class="clue-label">A Face</div><div class="font-mono text-[11px]">' + (showFace ? escapeHtml(mv.cast && mv.cast.length ? mv.cast[0] : 'Unknown') : 'Locked') + '</div></div>';
-
-        cluesEl.innerHTML = html;
-
-        const searchSection = document.getElementById('frame-search-section');
-        const endSection = document.getElementById('frame-end-section');
-        if (isOver) {
-            searchSection.classList.add('hidden');
-            endSection.classList.remove('hidden');
-            const msg = document.getElementById('frame-end-message');
-            if (st.won) { msg.innerText = '[ FRAME IDENTIFIED ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-green-500'; }
-            else { msg.innerText = '[ PROJECTION LOST ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-neonRed'; }
-            document.getElementById('frame-answer-reveal').innerText = st.movie.title || 'UNKNOWN';
-            renderStreakReadout('frame-streak-readout', 'frame');
-        } else {
-            searchSection.classList.remove('hidden');
-            endSection.classList.add('hidden');
         }
     }
 
@@ -2446,7 +2338,7 @@
         const st = gameStateFor(gameKey);
         const d = new Date();
         const dateStr = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + String(d.getUTCFullYear()).slice(2);
-        const label = gameKey === 'player' ? 'The Player' : 'One Frame';
+        const label = 'The Player';
         const max = GAME_MAX_GUESSES[gameKey];
         const answerId = gameAnswerId(gameKey);
         let grid = '';
