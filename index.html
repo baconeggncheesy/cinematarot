@@ -465,8 +465,8 @@
       <section id="screen-daily-game" class="hidden animate-fade-in flex flex-col min-h-[60vh] py-2">
         <div class="flex justify-center gap-1 mb-4 text-[9px] font-bold uppercase tracking-widest">
           <button onclick="switchDailyTab('reel')" id="tab-reel" class="daily-tab px-3 py-1.5 border border-neutral-700">The Reel</button>
-          <button onclick="switchDailyTab('oracle')" id="tab-oracle" class="daily-tab px-3 py-1.5 border border-neutral-700">The Oracle</button>
           <button onclick="switchDailyTab('frame')" id="tab-frame" class="daily-tab px-3 py-1.5 border border-neutral-700">One Frame</button>
+          <button onclick="switchDailyTab('player')" id="tab-player" class="daily-tab px-3 py-1.5 border border-neutral-700">The Player</button>
         </div>
 
         <div id="daily-tab-reel" class="daily-tab-panel flex flex-col flex-1">
@@ -495,6 +495,10 @@
             <div id="daily-end-message" class="text-neonRed font-bold text-xs uppercase tracking-widest mb-2"></div>
             <div id="daily-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
             <div id="daily-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
+            <div id="daily-ai-analysis" class="hidden border-t border-neutral-800 pt-3 mt-3 mb-4 text-left">
+              <div class="text-neonRed font-bold uppercase tracking-widest text-[9px] mb-2">Archive Bot Analysis</div>
+              <div id="daily-ai-analysis-text" class="font-mono text-[10px] leading-relaxed text-neutral-300"></div>
+            </div>
             <button onclick="shareDailyResult()" id="share-daily-btn" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">
               [ COPY RESULT TO CLIPBOARD ]
             </button>
@@ -503,34 +507,13 @@
             </button>
         </div>
         <div id="reel-next-nudge" class="hidden mt-3 text-center">
-          <button onclick="switchDailyTab('oracle')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → Consult The Oracle</button>
+          <button onclick="switchDailyTab('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → One Frame</button>
         </div>
         </div><!-- /daily-tab-reel -->
 
-        <div id="daily-tab-oracle" class="daily-tab-panel hidden flex-col flex-1">
-          <div class="scene-heading text-xs text-center border-none mb-2">INT. THE ORACLE - DAILY</div>
-          <div class="action text-[10px] text-center mb-5 px-4">A different film hides behind the veil. The cards speak only in riddle. Name it.</div>
-          <div class="flex justify-center space-x-2 mb-5" id="oracle-guess-boxes"></div>
-          <div id="oracle-riddle" class="font-serif italic text-neutral-200 text-sm leading-relaxed text-center px-5 mb-4 flex-1"></div>
-          <div id="oracle-poster-reveal" class="hidden flex justify-center mb-4"></div>
-          <div id="oracle-search-section" class="relative mt-auto">
-            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Name the Film:</div>
-            <input type="text" id="oracle-search-input" oninput="debounceGameSearch('oracle')" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for a title...">
-            <div id="oracle-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[200px] overflow-y-auto z-50 hidden shadow-xl mb-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
-          </div>
-          <div id="oracle-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
-            <div id="oracle-end-message" class="font-bold text-xs uppercase tracking-widest mb-2"></div>
-            <div id="oracle-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
-            <div id="oracle-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
-            <button onclick="shareGameResult('oracle')" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">[ COPY RESULT TO CLIPBOARD ]</button>
-            <div id="oracle-next-nudge" class="mb-3"><button onclick="switchDailyTab('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → One Frame</button></div>
-            <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">Back to Main Terminal</button>
-          </div>
-        </div><!-- /daily-tab-oracle -->
-
         <div id="daily-tab-frame" class="daily-tab-panel hidden flex-col flex-1">
           <div class="scene-heading text-xs text-center border-none mb-2">INT. ONE FRAME - DAILY</div>
-          <div class="action text-[10px] text-center mb-5 px-4">A third film, glimpsed sidelong. A tagline, then a whisper, then a single frame. Name it.</div>
+          <div class="action text-[10px] text-center mb-5 px-4">A second film, glimpsed sidelong. A tagline, then a whisper, then a single frame. Name it.</div>
           <div class="flex justify-center space-x-2 mb-5" id="frame-guess-boxes"></div>
           <div id="frame-clues" class="space-y-3 mb-4 flex-1 px-2"></div>
           <div id="frame-search-section" class="relative mt-auto">
@@ -543,9 +526,30 @@
             <div id="frame-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
             <div id="frame-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
             <button onclick="shareGameResult('frame')" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">[ COPY RESULT TO CLIPBOARD ]</button>
+            <div class="mb-3"><button onclick="switchDailyTab('player')" class="script-btn-primary uppercase text-[10px] tracking-widest">Next → The Player</button></div>
             <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">Back to Main Terminal</button>
           </div>
         </div><!-- /daily-tab-frame -->
+
+        <div id="daily-tab-player" class="daily-tab-panel hidden flex-col flex-1">
+          <div class="scene-heading text-xs text-center border-none mb-2">INT. CASTING OFFICE - DAILY</div>
+          <div class="action text-[10px] text-center mb-5 px-4">Five credits. One performer. The early reels are deliberately difficult.</div>
+          <div class="flex justify-center space-x-2 mb-5" id="player-guess-boxes"></div>
+          <div id="player-clues" class="space-y-2 mb-4 flex-1 px-2"></div>
+          <div id="player-search-section" class="relative mt-auto">
+            <div class="font-bold mb-2 uppercase text-[10px] text-neutral-500">Name the Performer:</div>
+            <input type="text" id="player-search-input" oninput="debounceGameSearch('player')" class="w-full bg-black border border-neutral-700 text-white font-mono text-[16px] md:text-xs p-2 focus:outline-none focus:border-neonRed transition-colors placeholder-neutral-700" placeholder="Search for an actor...">
+            <div id="player-search-results" class="absolute bottom-full left-0 w-full bg-darkGrey border border-neutral-800 max-h-[220px] overflow-y-auto z-50 hidden shadow-xl mb-1" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;"></div>
+          </div>
+          <div id="player-end-section" class="hidden mt-auto border border-neutral-800 bg-darkGrey/90 p-4 text-center">
+            <div id="player-end-message" class="font-bold text-xs uppercase tracking-widest mb-2"></div>
+            <div id="player-answer-reveal" class="font-cinzel text-lg text-white uppercase mb-2"></div>
+            <div id="player-photo-reveal" class="hidden flex justify-center mb-3"></div>
+            <div id="player-streak-readout" class="font-mono text-[10px] tracking-widest text-neonRed uppercase mb-4"></div>
+            <button onclick="shareGameResult('player')" class="script-btn-primary uppercase text-[10px] tracking-widest mb-3">[ COPY RESULT TO CLIPBOARD ]</button>
+            <button onclick="recalibrate()" class="script-btn uppercase text-[10px] w-full text-center tracking-widest border border-neutral-600 hover:border-white">Back to Main Terminal</button>
+          </div>
+        </div><!-- /daily-tab-player -->
       </section>
 
       <section id="screen-parameters" class="hidden animate-fade-in flex flex-col justify-center min-h-[60vh]">
@@ -972,21 +976,25 @@
       sceneCount: 0,
       
 	      daily: {
-	          version: 6,
+	          version: 9,
 	          dateIndex: null,
 	          guesses: [],
+	          guessIds: [],
           won: false,
           lost: false,
           movie: null,
-          scoreSpec: null
+          scoreSpec: null,
+          analysis: '',
+          analysisError: '',
+          analysisLoading: false
       },
-	      oracle: {
-	          version: 6, dateIndex: null, guesses: [], won: false, lost: false,
-	          movie: null, riddle: '', scoreSpec: null
-	      },
 	      frame: {
-	          version: 6, dateIndex: null, guesses: [], won: false, lost: false,
+	          version: 9, dateIndex: null, guesses: [], won: false, lost: false,
 	          movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null
+	      },
+	      player: {
+	          version: 9, dateIndex: null, guesses: [], guessIds: [], won: false, lost: false,
+	          person: null, clues: []
 	      },
 	      activeDailyTab: 'reel',
       
@@ -1186,11 +1194,27 @@
 	      sceneCount: 'cinema_arcana_scene_count',
 	      taste: 'cinema_arcana_taste',
 	      daily: 'cinema_arcana_daily',
-	      oracle: 'cinema_arcana_oracle',
 	      frame: 'cinema_arcana_frame',
+	      player: 'cinema_arcana_player',
 	      streak: 'cinema_arcana_streak'
 	    };
-    const DAILY_CACHE_VERSION = 7;
+    const DAILY_CACHE_VERSION = 9;
+
+    function createDailyState(dayIndex) {
+      return {
+        version: DAILY_CACHE_VERSION,
+        dateIndex: dayIndex,
+        guesses: [],
+        guessIds: [],
+        won: false,
+        lost: false,
+        movie: null,
+        scoreSpec: null,
+        analysis: '',
+        analysisError: '',
+        analysisLoading: false
+      };
+    }
 
     function loadPersistedState() {
       try {
@@ -1211,17 +1235,12 @@
         const currentDayIndex = Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000);
         
 	        if (savedDaily && savedDaily.dateIndex === currentDayIndex && savedDaily.version === DAILY_CACHE_VERSION) {
-	            AppState.daily = savedDaily;
+	            AppState.daily = Object.assign(createDailyState(currentDayIndex), savedDaily, { analysisLoading: false });
+	            if (!Array.isArray(AppState.daily.guesses)) AppState.daily.guesses = [];
+	            if (!Array.isArray(AppState.daily.guessIds)) AppState.daily.guessIds = [];
 	        } else {
-	            AppState.daily = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, scoreSpec: null };
+	            AppState.daily = createDailyState(currentDayIndex);
 	            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily));
-	        }
-
-	        const savedOracle = JSON.parse(localStorage.getItem(STORAGE_KEYS.oracle) || 'null');
-	        if (savedOracle && savedOracle.dateIndex === currentDayIndex && savedOracle.version === DAILY_CACHE_VERSION) {
-	            AppState.oracle = savedOracle;
-	        } else {
-	            AppState.oracle = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, riddle: '', scoreSpec: null };
 	        }
 
 	        const savedFrame = JSON.parse(localStorage.getItem(STORAGE_KEYS.frame) || 'null');
@@ -1229,6 +1248,16 @@
 	            AppState.frame = savedFrame;
 	        } else {
 	            AppState.frame = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], won: false, lost: false, movie: null, tagline: '', dialogue: '', backdropUrl: '', scoreSpec: null };
+	        }
+
+	        const savedPlayer = JSON.parse(localStorage.getItem(STORAGE_KEYS.player) || 'null');
+	        if (savedPlayer && savedPlayer.dateIndex === currentDayIndex && savedPlayer.version === DAILY_CACHE_VERSION) {
+	            AppState.player = savedPlayer;
+	            if (!Array.isArray(AppState.player.guesses)) AppState.player.guesses = [];
+	            if (!Array.isArray(AppState.player.guessIds)) AppState.player.guessIds = [];
+	            if (!Array.isArray(AppState.player.clues)) AppState.player.clues = [];
+	        } else {
+	            AppState.player = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], guessIds: [], won: false, lost: false, person: null, clues: [] };
 	        }
 
       } catch (e) { }
@@ -1246,12 +1275,12 @@
         try { localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(AppState.daily)); } catch (e) {}
     }
 
-    function persistOracleState() {
-        try { localStorage.setItem(STORAGE_KEYS.oracle, JSON.stringify(AppState.oracle)); } catch (e) {}
-    }
-
     function persistFrameState() {
         try { localStorage.setItem(STORAGE_KEYS.frame, JSON.stringify(AppState.frame)); } catch (e) {}
+    }
+
+    function persistPlayerState() {
+        try { localStorage.setItem(STORAGE_KEYS.player, JSON.stringify(AppState.player)); } catch (e) {}
     }
 
     function recordRejectionTaste(movie) {
@@ -1578,11 +1607,50 @@
       return names.length ? names.join(', ') : 'UNKNOWN';
     }
 
+    function getGameCastNames(movie) {
+      if (!movie) return [];
+      if (Array.isArray(movie.cast) && movie.cast.length) {
+        return movie.cast.map(function (person) {
+          return typeof person === 'string' ? person : (person && person.name ? person.name : '');
+        }).filter(Boolean);
+      }
+      if (movie.credits && Array.isArray(movie.credits.cast)) {
+        return movie.credits.cast.map(function (person) {
+          return person && person.name ? person.name : '';
+        }).filter(Boolean);
+      }
+      return [];
+    }
+
+    function getPrimaryActor(movie) {
+      const cast = getGameCastNames(movie);
+      return cast.length ? cast[0] : 'UNKNOWN';
+    }
+
+    function getSupportingActor(movie) {
+      const cast = getGameCastNames(movie);
+      if (cast.length > 1) return cast[1];
+      return 'UNKNOWN';
+    }
+
+    function getGameDirectorName(movie) {
+      if (!movie) return 'UNKNOWN';
+      if (movie.director) return movie.director;
+      if (movie.credits && Array.isArray(movie.credits.crew)) {
+        for (let i = 0; i < movie.credits.crew.length; i++) {
+          if (movie.credits.crew[i].job === 'Director' && movie.credits.crew[i].name) {
+            return movie.credits.crew[i].name;
+          }
+        }
+      }
+      return 'UNKNOWN';
+    }
+
     async function openDailyGame() {
         playTypewriterDing();
         showScreen('screen-loading');
         
-        if (!AppState.daily.movie || !AppState.oracle.movie || !AppState.frame.movie) {
+        if (!AppState.daily.movie || !AppState.frame.movie || !AppState.player.person) {
             try {
                 const res = await fetch(WORKER_BASE_URL, {
                     method: 'POST',
@@ -1597,17 +1665,10 @@
                     AppState.daily.movie = data.reel.movie;
                     AppState.daily.dateIndex = data.reel.dayIndex;
                     AppState.daily.scoreSpec = data.reel.scoreSpec;
+                    AppState.daily.version = DAILY_CACHE_VERSION;
                     persistDailyState();
                 } else {
                     throw new Error("No media returned from archive.");
-                }
-
-                if (data.oracle && data.oracle.movie) {
-                    AppState.oracle.movie = data.oracle.movie;
-                    AppState.oracle.dateIndex = data.oracle.dayIndex;
-                    AppState.oracle.riddle = data.oracle.riddle || '';
-                    AppState.oracle.scoreSpec = data.oracle.scoreSpec;
-                    persistOracleState();
                 }
 
                 if (data.frame && data.frame.movie) {
@@ -1617,7 +1678,18 @@
                     AppState.frame.dialogue = data.frame.dialogue || '';
                     AppState.frame.backdropUrl = data.frame.backdropUrl || '';
                     AppState.frame.scoreSpec = data.frame.scoreSpec;
+                    AppState.frame.version = DAILY_CACHE_VERSION;
                     persistFrameState();
+                }
+
+                if (data.player && data.player.person && data.player.clues) {
+                    AppState.player.person = data.player.person;
+                    AppState.player.clues = data.player.clues || [];
+                    AppState.player.dateIndex = data.player.dayIndex;
+                    AppState.player.version = DAILY_CACHE_VERSION;
+                    persistPlayerState();
+                } else {
+                    throw new Error("No performer game returned from archive.");
                 }
             } catch(e) {
                 document.getElementById('error-message').innerText = e.message;
@@ -1626,7 +1698,7 @@
             }
         }
         
-        switchDailyTab(AppState.activeDailyTab || 'reel');
+        switchDailyTab(['frame', 'player'].includes(AppState.activeDailyTab) ? AppState.activeDailyTab : 'reel');
         showScreen('screen-daily-game');
     }
 
@@ -1657,26 +1729,8 @@
         const runtime = m.runtime ? m.runtime : '--';
         const rating = m.vote_average ? m.vote_average.toFixed(1) : '--';
         const premise = getOneSentencePlot(m.overview);
-        
-        let castStr = "UNKNOWN";
-        if (m.credits && m.credits.cast) {
-            const castArr = [];
-            const sliceLimit = Math.min(m.credits.cast.length, 3);
-            for (let i = 0; i < sliceLimit; i++) {
-                castArr.push(m.credits.cast[i].name);
-            }
-            castStr = castArr.join(', ');
-        }
-        
-        let dirStr = "UNKNOWN";
-        if (m.credits && m.credits.crew) {
-            for (let i = 0; i < m.credits.crew.length; i++) {
-                if (m.credits.crew[i].job === 'Director') {
-                    dirStr = m.credits.crew[i].name;
-                    break;
-                }
-            }
-        }
+        const actorStr = getSupportingActor(m);
+        const dirStr = getGameDirectorName(m);
 
         const posterUrl = m.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + m.poster_path) : '';
         const guessesCount = AppState.daily.guesses.length;
@@ -1694,28 +1748,28 @@
         let html = '';
         
         html += '<div class="clue-item active">';
-        html += '<div class="clue-label">Clue 1: Origin & Frequency</div>';
-        html += '<div>Year: ' + year + ' • Genres: ' + genres + '</div>';
+        html += '<div class="clue-label">Clue 1: A Supporting Face</div>';
+        html += '<div>Actor: ' + escapeHtml(actorStr) + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c2Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 2: Metrics</div>';
-        html += '<div>' + (c2Active ? 'Length: ' + runtime + ' MIN • Public Rating: ' + rating : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 2: The Auteur</div>';
+        html += '<div>' + (c2Active ? 'Directed by: ' + escapeHtml(dirStr) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c3Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 3: The Premise (Spoiler-Free)</div>';
-        html += '<div class="italic">"' + (c3Active ? premise : 'Locked') + '"</div>';
+        html += '<div class="clue-label">Clue 3: Genre & Reception</div>';
+        html += '<div>' + (c3Active ? 'Genres: ' + escapeHtml(genres) + ' • Public Rating: ' + escapeHtml(rating) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c4Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 4: Faces</div>';
-        html += '<div>' + (c4Active ? 'Starring: ' + castStr : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 4: Runtime & Year</div>';
+        html += '<div>' + (c4Active ? 'Length: ' + escapeHtml(runtime) + ' MIN • Year: ' + escapeHtml(year) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c5Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 5: The Auteur</div>';
-        html += '<div>' + (c5Active ? 'Directed by: ' + dirStr : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 5: The Premise (Spoiler-Free)</div>';
+        html += '<div class="italic">"' + (c5Active ? escapeHtml(premise) : 'Locked') + '"</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c6Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
@@ -1751,13 +1805,93 @@
             
             ansEl.innerText = m.title || m.name || 'UNKNOWN';
             renderStreakReadout('daily-streak-readout', 'reel');
+            renderDailyAnalysisPanel();
+            requestDailyPerformanceAnalysis();
             const reelNudge = document.getElementById('reel-next-nudge');
             if (reelNudge) reelNudge.classList.remove('hidden');
         } else {
             searchSection.classList.remove('hidden');
             endSection.classList.add('hidden');
+            const analysisPanel = document.getElementById('daily-ai-analysis');
+            if (analysisPanel) analysisPanel.classList.add('hidden');
             const reelNudge = document.getElementById('reel-next-nudge');
             if (reelNudge) reelNudge.classList.add('hidden');
+        }
+    }
+
+    function renderDailyAnalysisPanel() {
+        const panel = document.getElementById('daily-ai-analysis');
+        const textEl = document.getElementById('daily-ai-analysis-text');
+        if (!panel || !textEl) return;
+
+        const st = AppState.daily;
+        if (!st || (!st.won && !st.lost)) {
+            panel.classList.add('hidden');
+            return;
+        }
+
+        panel.classList.remove('hidden');
+        if (st.analysis) {
+            textEl.innerText = st.analysis;
+        } else if (st.analysisError) {
+            textEl.innerText = st.analysisError;
+        } else {
+            textEl.innerText = 'Analyzing your route through the archive...';
+        }
+    }
+
+    function buildDailyAnalysisPayload() {
+        const st = AppState.daily;
+        const m = st.movie || {};
+        const cast = getGameCastNames(m).slice(0, 5);
+        return {
+            type: 'dailyAnalysis',
+            won: !!st.won,
+            lost: !!st.lost,
+            attempts: st.guesses ? st.guesses.length : 0,
+            maxGuesses: 6,
+            answer: {
+                id: m.id,
+                title: m.title || m.name || 'UNKNOWN',
+                year: (m.release_date || m.first_air_date || '').split('-')[0] || m.year || '',
+                genres: formatGameGenres(m),
+                director: getGameDirectorName(m),
+                cast: cast,
+                overview: m.overview || ''
+            },
+            guesses: (st.guesses || []).map(function (guess, index) {
+                return {
+                    title: guess,
+                    id: st.guessIds && st.guessIds[index] ? st.guessIds[index] : null
+                };
+            })
+        };
+    }
+
+    async function requestDailyPerformanceAnalysis() {
+        const st = AppState.daily;
+        if (!st || !st.movie || (!st.won && !st.lost) || st.analysis || st.analysisError || st.analysisLoading) return;
+
+        st.analysisError = '';
+        st.analysisLoading = true;
+        renderDailyAnalysisPanel();
+
+        try {
+            const res = await fetch(WORKER_BASE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(buildDailyAnalysisPayload())
+            });
+            if (!res.ok) throw new Error('Archive Bot is unavailable.');
+            const data = await res.json();
+            if (!data || !data.analysis) throw new Error('Archive Bot returned no analysis.');
+            st.analysis = data.analysis;
+        } catch (e) {
+            st.analysisError = e && e.message ? e.message : 'Archive Bot analysis failed.';
+        } finally {
+            st.analysisLoading = false;
+            persistDailyState();
+            renderDailyAnalysisPanel();
         }
     }
 
@@ -2079,22 +2213,23 @@
         el.innerText = 'STREAK: ' + s.current + '  •  BEST: ' + s.max;
     }
 
-    // ---- Three-game daily: tab switching ----
+    // ---- Daily game tab switching ----
     function switchDailyTab(tab) {
+        if (!['reel', 'frame', 'player'].includes(tab)) tab = 'reel';
         AppState.activeDailyTab = tab;
-        ['reel', 'oracle', 'frame'].forEach(function (t) {
+        ['reel', 'frame', 'player'].forEach(function (t) {
             const panel = document.getElementById('daily-tab-' + t);
             const btn = document.getElementById('tab-' + t);
             if (panel) panel.classList.toggle('hidden', t !== tab);
             if (btn) btn.classList.toggle('active', t === tab);
         });
         if (tab === 'reel') renderDailyGameUI();
-        else if (tab === 'oracle') renderOracleUI();
         else if (tab === 'frame') renderFrameUI();
+        else if (tab === 'player') renderPlayerUI();
     }
 
-    // ---- Generalized guess search for oracle/frame ----
-    let gameSearchTimers = { oracle: null, frame: null };
+    // ---- Generalized guess search for daily side games ----
+    let gameSearchTimers = { frame: null, player: null };
     function debounceGameSearch(gameKey) {
         if (gameSearchTimers[gameKey]) clearTimeout(gameSearchTimers[gameKey]);
         gameSearchTimers[gameKey] = setTimeout(function () { executeGameSearch(gameKey); }, 400);
@@ -2107,21 +2242,27 @@
         try {
             const res = await fetch(WORKER_BASE_URL, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'search', query: input })
+                body: JSON.stringify({ type: gameKey === 'player' ? 'personSearch' : 'search', query: input })
             });
             if (!res.ok) throw new Error('Search failed');
             const data = await res.json();
             resultsContainer.innerHTML = '';
             if (data.results && data.results.length > 0) {
-                data.results.slice(0, 6).forEach(function (movie) {
-                    const title = movie.title || movie.name || 'Unknown';
-                    const yr = (movie.release_date || movie.first_air_date || '').split('-')[0] || '';
-                    const display = yr ? title + ' (' + yr + ')' : title;
+                data.results.slice(0, 6).forEach(function (item) {
+                    const isPlayer = gameKey === 'player';
+                    const title = item.title || item.name || 'Unknown';
+                    const yr = (item.release_date || item.first_air_date || '').split('-')[0] || '';
+                    const knownFor = item.knownFor ? 'Known for ' + item.knownFor : '';
+                    const display = isPlayer ? title : (yr ? title + ' (' + yr + ')' : title);
                     const safeTitle = title.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                     const div = document.createElement('div');
                     div.className = 'p-3 text-[11px] font-bold uppercase text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer border-b border-neutral-800 last:border-0 truncate';
-                    div.setAttribute('onclick', "submitGameGuess('" + gameKey + "', " + movie.id + ", '" + safeTitle + "')");
-                    div.innerText = display;
+                    div.setAttribute('onclick', "submitGameGuess('" + gameKey + "', " + item.id + ", '" + safeTitle + "')");
+                    if (isPlayer && knownFor) {
+                        div.innerHTML = '<div class="truncate">' + escapeHtml(display) + '</div><div class="text-[9px] text-neutral-500 normal-case truncate">' + escapeHtml(knownFor) + '</div>';
+                    } else {
+                        div.innerText = display;
+                    }
                     resultsContainer.appendChild(div);
                 });
                 resultsContainer.classList.remove('hidden');
@@ -2132,21 +2273,25 @@
         } catch (e) { console.error(e); }
     }
 
-    function gameStateFor(gameKey) { return gameKey === 'oracle' ? AppState.oracle : AppState.frame; }
-    function persistGameState(gameKey) { if (gameKey === 'oracle') persistOracleState(); else persistFrameState(); }
-    const GAME_MAX_GUESSES = { oracle: 4, frame: 4 };
+    function gameStateFor(gameKey) { return gameKey === 'player' ? AppState.player : AppState.frame; }
+    function persistGameState(gameKey) { if (gameKey === 'player') persistPlayerState(); else persistFrameState(); }
+    function gameAnswerId(gameKey) {
+        const st = gameStateFor(gameKey);
+        return gameKey === 'player' ? (st.person && st.person.id) : (st.movie && st.movie.id);
+    }
+    const GAME_MAX_GUESSES = { frame: 4, player: 5 };
 
     function submitGameGuess(gameKey, guessedId, guessedTitle) {
         const st = gameStateFor(gameKey);
-        const m = st.movie;
-        if (!m || st.won || st.lost) return;
+        const answerId = gameAnswerId(gameKey);
+        if (!answerId || st.won || st.lost) return;
         document.getElementById(gameKey + '-search-input').value = '';
         document.getElementById(gameKey + '-search-results').classList.add('hidden');
 
         st.guesses.push(guessedTitle);
         if (!st.guessIds) st.guessIds = [];
         st.guessIds.push(guessedId);
-        if (guessedId === m.id) {
+        if (String(guessedId) === String(answerId)) {
             st.won = true;
             playSynthBeep(600, 0.1, 'sine');
             setTimeout(function () { playSynthBeep(800, 0.2, 'sine'); }, 150);
@@ -2161,7 +2306,7 @@
             playSynthBeep(200, 0.1, 'square');
         }
         persistGameState(gameKey);
-        if (gameKey === 'oracle') renderOracleUI(); else renderFrameUI();
+        if (gameKey === 'player') renderPlayerUI(); else renderFrameUI();
     }
 
     function renderGuessBoxes(containerId, guesses, maxGuesses, won, guessIds, answerId) {
@@ -2170,7 +2315,7 @@
         c.innerHTML = '';
         for (let i = 0; i < maxGuesses; i++) {
             const isGuessed = i < guesses.length;
-            const isCorrect = isGuessed && guessIds && answerId != null && guessIds[i] === answerId;
+            const isCorrect = isGuessed && guessIds && answerId != null && String(guessIds[i]) === String(answerId);
             let cls = 'daily-box ';
             if (isCorrect) cls += 'won ';
             else if (isGuessed) cls += 'filled ';
@@ -2178,56 +2323,6 @@
             box.className = cls;
             c.appendChild(box);
         }
-    }
-
-    function renderOracleUI() {
-        const st = AppState.oracle;
-        if (!st.movie) return;
-        const isOver = st.won || st.lost;
-        const g = st.guesses.length;
-        renderGuessBoxes('oracle-guess-boxes', st.guesses, GAME_MAX_GUESSES.oracle, st.won, st.guessIds, st.movie.id);
-
-        const mv = st.movie;
-        let riddleHtml = '<div class="mb-4">' + escapeHtml(st.riddle || 'The cards are silent.') + '</div>';
-        // Progressive factual clues unlock with each wrong guess.
-        riddleHtml += '<div class="space-y-1 text-left mt-4">';
-        const yrGen = (mv.year || '????') + (mv.genres && mv.genres.length ? ' • ' + mv.genres.slice(0, 2).join(', ') : '');
-        riddleHtml += oracleClueRow('Era & Genre', yrGen, (g >= 1 || isOver));
-        riddleHtml += oracleClueRow('The Auteur', mv.director || 'Unknown', (g >= 2 || isOver));
-        riddleHtml += oracleClueRow('A Face', (mv.cast && mv.cast.length ? mv.cast[0] : 'Unknown'), (g >= 3 || isOver));
-        riddleHtml += '</div>';
-        document.getElementById('oracle-riddle').innerHTML = riddleHtml;
-
-        const posterReveal = document.getElementById('oracle-poster-reveal');
-        const searchSection = document.getElementById('oracle-search-section');
-        const endSection = document.getElementById('oracle-end-section');
-        const nextNudge = document.getElementById('oracle-next-nudge');
-
-        if (isOver) {
-            searchSection.classList.add('hidden');
-            endSection.classList.remove('hidden');
-            const msg = document.getElementById('oracle-end-message');
-            if (st.won) { msg.innerText = '[ VISION CLARIFIED ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-green-500'; }
-            else { msg.innerText = '[ THE VEIL HELD ]'; msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-neonRed'; }
-            document.getElementById('oracle-answer-reveal').innerText = st.movie.title || 'UNKNOWN';
-            renderStreakReadout('oracle-streak-readout', 'oracle');
-            if (st.movie.poster_path) {
-                posterReveal.classList.remove('hidden');
-                posterReveal.innerHTML = '<img src="' + WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + st.movie.poster_path) + '" class="w-[100px] border border-neutral-700">';
-            }
-            if (nextNudge) nextNudge.classList.remove('hidden');
-        } else {
-            searchSection.classList.remove('hidden');
-            endSection.classList.add('hidden');
-            posterReveal.classList.add('hidden');
-        }
-    }
-
-    function oracleClueRow(label, value, unlocked) {
-        return '<div class="clue-item ' + (unlocked ? 'active' : 'opacity-20 blur-[2px]') + '">'
-            + '<div class="clue-label">' + label + '</div>'
-            + '<div class="not-italic font-mono text-[11px]">' + (unlocked ? escapeHtml(value) : 'Locked — guess to reveal') + '</div>'
-            + '</div>';
     }
 
     function renderFrameUI() {
@@ -2286,6 +2381,63 @@
         }
     }
 
+    function renderPlayerUI() {
+        const st = AppState.player;
+        if (!st || !st.person) return;
+        const isOver = st.won || st.lost;
+        const guessCount = st.guesses.length;
+        const clues = Array.isArray(st.clues) ? st.clues.slice(0, GAME_MAX_GUESSES.player) : [];
+
+        renderGuessBoxes('player-guess-boxes', st.guesses, GAME_MAX_GUESSES.player, st.won, st.guessIds, st.person.id);
+
+        const cluesEl = document.getElementById('player-clues');
+        let html = '';
+        for (let i = 0; i < GAME_MAX_GUESSES.player; i++) {
+            const clue = clues[i] || null;
+            const unlocked = i <= guessCount || isOver;
+            const title = clue && clue.title ? clue.title : 'Unknown Credit';
+            const year = clue && clue.year ? ' (' + clue.year + ')' : '';
+            const label = i === 0 ? 'Credit 1: Deep Cut' : (i === 4 ? 'Credit 5: Emergency Spotlight' : 'Credit ' + (i + 1));
+            html += '<div class="clue-item ' + (unlocked ? 'active' : 'opacity-20 blur-[2px]') + '">';
+            html += '<div class="clue-label">' + label + '</div>';
+            html += '<div class="font-mono text-[11px]">' + (unlocked ? escapeHtml(title + year) : 'Locked') + '</div>';
+            html += '</div>';
+        }
+        cluesEl.innerHTML = html;
+
+        const searchSection = document.getElementById('player-search-section');
+        const endSection = document.getElementById('player-end-section');
+        const photoReveal = document.getElementById('player-photo-reveal');
+        if (isOver) {
+            searchSection.classList.add('hidden');
+            endSection.classList.remove('hidden');
+            const msg = document.getElementById('player-end-message');
+            if (st.won) {
+                msg.innerText = '[ PERFORMER IDENTIFIED ]';
+                msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-green-500';
+            } else {
+                msg.innerText = '[ CASTING MISSED ]';
+                msg.className = 'font-bold text-xs uppercase tracking-widest mb-2 text-neonRed';
+            }
+            document.getElementById('player-answer-reveal').innerText = st.person.name || 'UNKNOWN';
+            if (photoReveal && st.person.profile_path) {
+                photoReveal.classList.remove('hidden');
+                photoReveal.innerHTML = '<img src="' + WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w185' + st.person.profile_path) + '" class="w-[110px] h-[150px] object-cover border border-neutral-700 grayscale">';
+            } else if (photoReveal) {
+                photoReveal.classList.add('hidden');
+                photoReveal.innerHTML = '';
+            }
+            renderStreakReadout('player-streak-readout', 'player');
+        } else {
+            searchSection.classList.remove('hidden');
+            endSection.classList.add('hidden');
+            if (photoReveal) {
+                photoReveal.classList.add('hidden');
+                photoReveal.innerHTML = '';
+            }
+        }
+    }
+
     function escapeHtml(s) {
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
@@ -2294,12 +2446,13 @@
         const st = gameStateFor(gameKey);
         const d = new Date();
         const dateStr = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + String(d.getUTCFullYear()).slice(2);
-        const label = gameKey === 'oracle' ? 'Oracle' : 'One Frame';
+        const label = gameKey === 'player' ? 'The Player' : 'One Frame';
         const max = GAME_MAX_GUESSES[gameKey];
+        const answerId = gameAnswerId(gameKey);
         let grid = '';
         for (let i = 0; i < max; i++) {
             const isGuessed = i < st.guesses.length;
-            const isCorrect = isGuessed && st.guessIds && st.guessIds[i] === st.movie.id;
+            const isCorrect = isGuessed && st.guessIds && String(st.guessIds[i]) === String(answerId);
             if (isCorrect) grid += '🟩 '; else if (isGuessed) grid += '🟥 '; else grid += '⬛ ';
         }
         const attempts = st.won ? st.guesses.length : 'X';
@@ -2361,7 +2514,10 @@
         }
         
         const attempts = AppState.daily.won ? AppState.daily.guesses.length : "X";
-        const shareText = "CINEMA ARCANA [Daily] - " + dateStr + "\nAttempts: " + attempts + "/6\n" + grid.trim();
+        let shareText = "CINEMA ARCANA [Daily] - " + dateStr + "\nAttempts: " + attempts + "/6\n" + grid.trim();
+        if (AppState.daily.analysis) {
+            shareText += "\n\nArchive Bot: " + AppState.daily.analysis;
+        }
         
         const btn = document.getElementById('share-daily-btn');
         const origText = btn.innerText;
