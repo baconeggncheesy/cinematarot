@@ -471,7 +471,7 @@
 
         <div id="daily-tab-reel" class="daily-tab-panel flex flex-col flex-1">
         <div class="scene-heading text-xs text-center border-none mb-2">INT. THE GLOBAL ARCHIVE - DAILY</div>
-        <div class="action text-[10px] text-center mb-6 px-4">The machine has locked onto a single frequency. Six spoiler-free clues to deduce the title.</div>
+        <div class="action text-[10px] text-center mb-6 px-4">The machine has locked onto a single frequency. Seven spoiler-free clues to deduce the title.</div>
 
         <div class="flex justify-center space-x-2 mb-6" id="daily-guess-boxes">
           <!-- Populated by JS -->
@@ -1173,7 +1173,8 @@
 	      player: 'cinema_arcana_player',
 	      streak: 'cinema_arcana_streak'
 	    };
-    const DAILY_CACHE_VERSION = 22;
+    const DAILY_CACHE_VERSION = 23;
+    const DAILY_REEL_MAX_GUESSES = 7;
 
     function createDailyState(dayIndex) {
       return {
@@ -1726,7 +1727,7 @@
 
         const boxesContainer = document.getElementById('daily-guess-boxes');
         boxesContainer.innerHTML = '';
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < DAILY_REEL_MAX_GUESSES; i++) {
             const isGuessed = i < AppState.daily.guesses.length;
             const isCorrect = isGuessed && AppState.daily.guessIds && AppState.daily.guessIds[i] === m.id;
             const isWonBox = AppState.daily.won && isCorrect;
@@ -1748,6 +1749,7 @@
         const rating = m.vote_average ? m.vote_average.toFixed(1) : '--';
         const premise = getOneSentencePlot(m.overview);
         const actorStr = getReelCastClue(m);
+        const primaryActorStr = getPrimaryActor(m);
         const dirStr = getGameDirectorName(m);
 
         const posterUrl = m.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + m.poster_path) : '';
@@ -1762,38 +1764,44 @@
         const c4Active = guessesCount >= 3 || isGameOver;
         const c5Active = guessesCount >= 4 || isGameOver;
         const c6Active = guessesCount >= 5 || isGameOver;
+        const c7Active = guessesCount >= 6 || isGameOver;
 
         let html = '';
         
         html += '<div class="clue-item active">';
-        html += '<div class="clue-label">Clue 1: The Director</div>';
-        html += '<div>Directed by: ' + escapeHtml(dirStr) + '</div>';
+        html += '<div class="clue-label">Clue 1: A Supporting Face</div>';
+        html += '<div>Actor: ' + escapeHtml(actorStr) + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c2Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 2: A Face in the Frame</div>';
-        html += '<div>' + (c2Active ? 'Starring: ' + escapeHtml(actorStr) : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 2: The Director</div>';
+        html += '<div>' + (c2Active ? 'Directed by: ' + escapeHtml(dirStr) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c3Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 3: Genre & Reception</div>';
-        html += '<div>' + (c3Active ? 'Genres: ' + escapeHtml(genres) + ' • Public Rating: ' + escapeHtml(rating) : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 3: The Lead</div>';
+        html += '<div>' + (c3Active ? 'Starring: ' + escapeHtml(primaryActorStr) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c4Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 4: Runtime & Year</div>';
-        html += '<div>' + (c4Active ? 'Length: ' + escapeHtml(runtime) + ' MIN • Year: ' + escapeHtml(year) : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 4: Genre & Reception</div>';
+        html += '<div>' + (c4Active ? 'Genres: ' + escapeHtml(genres) + ' • Public Rating: ' + escapeHtml(rating) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c5Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 5: The Premise (Spoiler-Free)</div>';
-        html += '<div class="italic">"' + (c5Active ? escapeHtml(premise) : 'Locked') + '"</div>';
+        html += '<div class="clue-label">Clue 5: Runtime & Year</div>';
+        html += '<div>' + (c5Active ? 'Length: ' + escapeHtml(runtime) + ' MIN • Year: ' + escapeHtml(year) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c6Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 6: Visual Evidence</div>';
+        html += '<div class="clue-label">Clue 6: The Premise (Spoiler-Free)</div>';
+        html += '<div class="italic">"' + (c6Active ? escapeHtml(premise) : 'Locked') + '"</div>';
+        html += '</div>';
+        
+        html += '<div class="clue-item ' + (c7Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
+        html += '<div class="clue-label">Clue 7: Visual Evidence</div>';
         html += '<div class="mt-2 relative w-[80px] h-[120px] bg-neutral-900 border border-neutral-800 overflow-hidden">';
-        if (posterUrl && c6Active) {
+        if (posterUrl && c7Active) {
             const dailyLetterboxdUrl = m.id ? 'https://letterboxd.com/tmdb/' + encodeURIComponent(m.id) : '#';
             html += '<a href="' + dailyLetterboxdUrl + '" target="_blank" rel="noopener noreferrer" title="Open on Letterboxd" class="block w-full h-full">';
             html += '<img src="' + posterUrl + '" class="w-full h-full object-cover transition-all duration-1000 ' + (isGameOver ? 'blur-0' : 'blur-[12px] contrast-125 saturate-150') + '">';
@@ -2460,7 +2468,7 @@
             if (AppState.daily.scoreSpec) {
                 AudioEngine.spreadScore.start(null, null, AppState.daily.scoreSpec);
             }
-        } else if (AppState.daily.guesses.length >= 6) {
+        } else if (AppState.daily.guesses.length >= DAILY_REEL_MAX_GUESSES) {
             AppState.daily.lost = true;
             recordStreak('reel', false, AppState.daily.dateIndex);
             triggerGlitchEffect('glitch-shake');
@@ -2478,7 +2486,7 @@
         const dateStr = (d.getUTCMonth()+1) + '/' + d.getUTCDate() + '/' + String(d.getUTCFullYear()).slice(2);
         
         let grid = "";
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < DAILY_REEL_MAX_GUESSES; i++) {
             const isGuessed = i < AppState.daily.guesses.length;
             const isCorrect = isGuessed && AppState.daily.guessIds && AppState.daily.guessIds[i] === AppState.daily.movie.id;
             
@@ -2488,7 +2496,7 @@
         }
         
         const attempts = AppState.daily.won ? AppState.daily.guesses.length : "X";
-        let shareText = "CINEMA ARCANA [Daily] - " + dateStr + "\nAttempts: " + attempts + "/6\n" + grid.trim();
+        let shareText = "CINEMA ARCANA [Daily] - " + dateStr + "\nAttempts: " + attempts + "/" + DAILY_REEL_MAX_GUESSES + "\n" + grid.trim();
         if (AppState.daily.analysis) {
             shareText += "\n\nArchive Bot: " + AppState.daily.analysis;
         }
