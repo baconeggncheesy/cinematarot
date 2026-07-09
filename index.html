@@ -1173,7 +1173,7 @@
 	      player: 'cinema_arcana_player',
 	      streak: 'cinema_arcana_streak'
 	    };
-    const DAILY_CACHE_VERSION = 15;
+    const DAILY_CACHE_VERSION = 17;
 
     function createDailyState(dayIndex) {
       return {
@@ -1592,9 +1592,11 @@
       return cast.length ? cast[0] : 'UNKNOWN';
     }
 
-    function getSupportingActor(movie) {
+    function getReelCastClue(movie) {
       const cast = getGameCastNames(movie);
+      if (cast.length >= 3) return cast[(Number(movie && movie.id) || 0) % 2 ? 1 : 2];
       if (cast.length > 1) return cast[1];
+      if (cast.length > 0) return cast[0];
       return 'UNKNOWN';
     }
 
@@ -1705,7 +1707,7 @@
         const runtime = m.runtime ? m.runtime : '--';
         const rating = m.vote_average ? m.vote_average.toFixed(1) : '--';
         const premise = getOneSentencePlot(m.overview);
-        const actorStr = getSupportingActor(m);
+        const actorStr = getReelCastClue(m);
         const dirStr = getGameDirectorName(m);
 
         const posterUrl = m.poster_path ? WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w200' + m.poster_path) : '';
@@ -1724,13 +1726,13 @@
         let html = '';
         
         html += '<div class="clue-item active">';
-        html += '<div class="clue-label">Clue 1: A Supporting Face</div>';
-        html += '<div>Actor: ' + escapeHtml(actorStr) + '</div>';
+        html += '<div class="clue-label">Clue 1: The Director</div>';
+        html += '<div>Directed by: ' + escapeHtml(dirStr) + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c2Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
-        html += '<div class="clue-label">Clue 2: The Auteur</div>';
-        html += '<div>' + (c2Active ? 'Directed by: ' + escapeHtml(dirStr) : 'Locked') + '</div>';
+        html += '<div class="clue-label">Clue 2: A Face in the Frame</div>';
+        html += '<div>' + (c2Active ? 'Starring: ' + escapeHtml(actorStr) : 'Locked') + '</div>';
         html += '</div>';
         
         html += '<div class="clue-item ' + (c3Active ? 'active' : 'opacity-20 blur-[2px]') + '">';
