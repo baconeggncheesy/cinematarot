@@ -1173,7 +1173,7 @@
 	      player: 'cinema_arcana_player',
 	      streak: 'cinema_arcana_streak'
 	    };
-    const DAILY_CACHE_VERSION = 18;
+    const DAILY_CACHE_VERSION = 19;
 
     function createDailyState(dayIndex) {
       return {
@@ -1794,7 +1794,10 @@
         html += '<div class="clue-label">Clue 6: Visual Evidence</div>';
         html += '<div class="mt-2 relative w-[80px] h-[120px] bg-neutral-900 border border-neutral-800 overflow-hidden">';
         if (posterUrl && c6Active) {
+            const dailyLetterboxdUrl = m.id ? 'https://letterboxd.com/tmdb/' + encodeURIComponent(m.id) : '#';
+            html += '<a href="' + dailyLetterboxdUrl + '" target="_blank" rel="noopener noreferrer" title="Open on Letterboxd" class="block w-full h-full">';
             html += '<img src="' + posterUrl + '" class="w-full h-full object-cover transition-all duration-1000 ' + (isGameOver ? 'blur-0' : 'blur-[12px] contrast-125 saturate-150') + '">';
+            html += '</a>';
         }
         html += '</div>';
         html += '</div>';
@@ -2392,7 +2395,8 @@
             document.getElementById('player-answer-reveal').innerText = st.person.name || 'UNKNOWN';
             if (photoReveal && st.person.profile_path) {
                 photoReveal.classList.remove('hidden');
-                photoReveal.innerHTML = '<img src="' + WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w185' + st.person.profile_path) + '" class="w-[110px] h-[150px] object-cover border border-neutral-700 grayscale">';
+                const personUrl = st.person.id ? 'https://www.themoviedb.org/person/' + encodeURIComponent(st.person.id) : '#';
+                photoReveal.innerHTML = '<a href="' + personUrl + '" target="_blank" rel="noopener noreferrer" title="Open performer on TMDB" class="inline-block hover:border-neonRed transition-colors"><img src="' + WORKER_BASE_URL + '?img=' + encodeURIComponent('/t/p/w185' + st.person.profile_path) + '" class="w-[110px] h-[150px] object-cover border border-neutral-700 grayscale hover:border-neonRed transition-colors"></a>';
             } else if (photoReveal) {
                 photoReveal.classList.add('hidden');
                 photoReveal.innerHTML = '';
