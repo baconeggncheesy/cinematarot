@@ -450,13 +450,14 @@
           </button>
         </div>
 
-        <button onclick="openDailyGame()" id="daily-game-banner" class="mt-4 w-full border border-neutral-800 bg-darkGrey/60 hover:border-neonRed transition-colors p-3 flex items-center justify-between text-left group">
+        <button onclick="openDailyGame()" id="daily-game-banner" class="mt-6 w-full border-2 border-neonRed/80 bg-neonRed/10 hover:bg-neonRed/15 hover:border-neonRed transition-colors p-4 flex items-center justify-between text-left group shadow-neon">
           <div>
-            <div class="text-[9px] font-bold tracking-widest text-neonRed uppercase">The Daily Archive</div>
-            <div class="text-[9px] text-neutral-500 mt-0.5">GLOBAL ENIGMA • GUESS THE REEL</div>
+            <div class="text-[10px] font-bold tracking-widest text-neonRed uppercase">Daily Games</div>
+            <div class="font-cinzel text-base text-white uppercase mt-1">The Reel + The Player</div>
+            <div class="text-[9px] text-neutral-400 mt-1 uppercase tracking-widest">Play today's cinema challenge</div>
           </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-neutral-600 group-hover:text-neonRed transition-colors text-xs">›</span>
+          <div class="flex items-center justify-center border border-neonRed px-3 py-2 text-neonRed font-bold text-[10px] uppercase tracking-widest group-hover:bg-neonRed group-hover:text-white transition-colors">
+            Play
           </div>
         </button>
       </section>
@@ -955,7 +956,7 @@
       sceneCount: 0,
       
 	      daily: {
-	          version: 14,
+	          version: 15,
 	          dateIndex: null,
 	          guesses: [],
 	          guessIds: [],
@@ -968,8 +969,8 @@
           analysisLoading: false
       },
 	      player: {
-	          version: 14, dateIndex: null, guesses: [], guessIds: [], won: false, lost: false,
-	          person: null, clues: []
+	          version: 15, dateIndex: null, guesses: [], guessIds: [], won: false, lost: false,
+	          person: null, clues: [], error: ''
 	      },
 	      activeDailyTab: 'reel',
       
@@ -1172,7 +1173,7 @@
 	      player: 'cinema_arcana_player',
 	      streak: 'cinema_arcana_streak'
 	    };
-    const DAILY_CACHE_VERSION = 14;
+    const DAILY_CACHE_VERSION = 15;
 
     function createDailyState(dayIndex) {
       return {
@@ -1223,8 +1224,9 @@
 	            if (!Array.isArray(AppState.player.guesses)) AppState.player.guesses = [];
 	            if (!Array.isArray(AppState.player.guessIds)) AppState.player.guessIds = [];
 	            if (!Array.isArray(AppState.player.clues)) AppState.player.clues = [];
+	            if (typeof AppState.player.error !== 'string') AppState.player.error = '';
 	        } else {
-	            AppState.player = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], guessIds: [], won: false, lost: false, person: null, clues: [] };
+	            AppState.player = { version: DAILY_CACHE_VERSION, dateIndex: currentDayIndex, guesses: [], guessIds: [], won: false, lost: false, person: null, clues: [], error: '' };
 	        }
 
       } catch (e) { }
@@ -1613,7 +1615,8 @@
         playTypewriterDing();
         showScreen('screen-loading');
         
-        if (!AppState.daily.movie || !AppState.player.person) {
+        const needsDailyFetch = !AppState.daily.movie || (!AppState.player.person && !AppState.player.error);
+        if (needsDailyFetch) {
             try {
                 const res = await fetch(WORKER_BASE_URL, {
                     method: 'POST',
@@ -1621,7 +1624,14 @@
                     body: JSON.stringify({ type: 'daily' })
                 });
                 
-                if (!res.ok) throw new Error("Could not connect to Global Archive.");
+                if (!res.ok) {
+                    let detail = "Could not connect to Global Archive.";
+                    try {
+                        const errorData = await res.json();
+                        if (errorData && errorData.error) detail = errorData.error;
+                    } catch (_) {}
+                    throw new Error(detail);
+                }
                 const data = await res.json();
                 
                 if (data.reel && data.reel.movie) {
@@ -1639,9 +1649,23 @@
                     AppState.player.clues = data.player.clues || [];
                     AppState.player.dateIndex = data.player.dayIndex;
                     AppState.player.version = DAILY_CACHE_VERSION;
+                    AppState.player.error = '';
+                    if (!Array.isArray(AppState.player.guesses)) AppState.player.guesses = [];
+                    if (!Array.isArray(AppState.player.guessIds)) AppState.player.guessIds = [];
                     persistPlayerState();
                 } else {
-                    throw new Error("No performer game returned from archive.");
+                    AppState.player = {
+                        version: DAILY_CACHE_VERSION,
+                        dateIndex: (data.reel && data.reel.dayIndex) || AppState.daily.dateIndex,
+                        guesses: [],
+                        guessIds: [],
+                        won: false,
+                        lost: false,
+                        person: null,
+                        clues: [],
+                        error: data.playerError || "The Player is not working today."
+                    };
+                    persistPlayerState();
                 }
             } catch(e) {
                 document.getElementById('error-message').innerText = e.message;
@@ -2275,14 +2299,29 @@
 
     function renderPlayerUI() {
         const st = AppState.player;
-        if (!st || !st.person) return;
+        const cluesEl = document.getElementById('player-clues');
+        const searchSection = document.getElementById('player-search-section');
+        const endSection = document.getElementById('player-end-section');
+        const photoReveal = document.getElementById('player-photo-reveal');
+        if (!st || !st.person) {
+            renderGuessBoxes('player-guess-boxes', [], GAME_MAX_GUESSES.player, false, [], null);
+            if (cluesEl) {
+                cluesEl.innerHTML = '<div class="clue-item active"><div class="clue-label">The Player</div><div class="font-mono text-[11px] text-neonRed">' + escapeHtml((st && st.error) || 'The Player is not working today.') + '</div></div>';
+            }
+            if (searchSection) searchSection.classList.add('hidden');
+            if (endSection) endSection.classList.add('hidden');
+            if (photoReveal) {
+                photoReveal.classList.add('hidden');
+                photoReveal.innerHTML = '';
+            }
+            return;
+        }
         const isOver = st.won || st.lost;
         const guessCount = st.guesses.length;
         const clues = Array.isArray(st.clues) ? st.clues.slice(0, GAME_MAX_GUESSES.player) : [];
 
         renderGuessBoxes('player-guess-boxes', st.guesses, GAME_MAX_GUESSES.player, st.won, st.guessIds, st.person.id);
 
-        const cluesEl = document.getElementById('player-clues');
         let html = '';
         for (let i = 0; i < GAME_MAX_GUESSES.player; i++) {
             const clue = clues[i] || null;
@@ -2297,9 +2336,6 @@
         }
         cluesEl.innerHTML = html;
 
-        const searchSection = document.getElementById('player-search-section');
-        const endSection = document.getElementById('player-end-section');
-        const photoReveal = document.getElementById('player-photo-reveal');
         if (isOver) {
             searchSection.classList.add('hidden');
             endSection.classList.remove('hidden');
