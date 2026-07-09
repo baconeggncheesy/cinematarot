@@ -1309,6 +1309,46 @@
 	      return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 	    }
 
+	    function collectDigitalProviderBadges(movie) {
+	      const labels = { flatrate: 'STREAM', rent: 'RENT', buy: 'BUY', free: 'FREE', ads: 'ADS' };
+	      const order = ['flatrate', 'rent', 'buy', 'free', 'ads'];
+	      const seen = {};
+	      const badges = [];
+	
+	      function addProvider(type, provider) {
+	        if (!provider || !labels[type]) return;
+	        const name = String(provider.provider_name || '').trim();
+	        if (!name) return;
+	        const key = labels[type] + ':' + name;
+	        if (seen[key]) return;
+	        seen[key] = true;
+	        badges.push({ label: labels[type], name: name });
+	      }
+	
+	      if (movie && Array.isArray(movie.digitalProviders) && movie.digitalProviders.length) {
+	        for (let i = 0; i < movie.digitalProviders.length; i++) {
+	          const provider = movie.digitalProviders[i];
+	          addProvider(provider.type, provider);
+	        }
+	        return badges.slice(0, 5);
+	      }
+	
+	      const us = (movie && movie["watch/providers"] && movie["watch/providers"].results && movie["watch/providers"].results.US)
+	        ? movie["watch/providers"].results.US
+	        : null;
+	      if (!us) return [];
+	
+	      for (let i = 0; i < order.length; i++) {
+	        const type = order[i];
+	        const list = Array.isArray(us[type]) ? us[type] : [];
+	        for (let j = 0; j < list.length; j++) {
+	          addProvider(type, list[j]);
+	        }
+	      }
+	
+	      return badges.slice(0, 5);
+	    }
+
 	    function formatShift(shift) {
 	      const parts = [];
 	      const labels = { w: 'warmth', t: 'tempo', r: 'reality', h: 'humor' };
@@ -3867,17 +3907,16 @@
       const providersContainer = document.getElementById('providers-container');
       if (providersContainer) {
         providersContainer.innerHTML = ""; 
-        const usFlatrate = (movie["watch/providers"] && movie["watch/providers"].results && movie["watch/providers"].results.US) ? movie["watch/providers"].results.US.flatrate : null;
+        const providerBadges = collectDigitalProviderBadges(movie);
         
-        if (usFlatrate && usFlatrate.length > 0) { 
-            const topProviders = usFlatrate.slice(0, 3);
+        if (providerBadges.length > 0) { 
             let phtml = '';
-            for (let i = 0; i < topProviders.length; i++) {
-                phtml += '<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]">' + topProviders[i].provider_name + '</span>';
+            for (let i = 0; i < providerBadges.length; i++) {
+                phtml += '<span class="border border-neutral-700 bg-neutral-900 text-neutral-300 px-1.5 py-0.5 text-[8px]"><span class="text-neonRed">' + htmlEscape(providerBadges[i].label) + '</span> ' + htmlEscape(providerBadges[i].name) + '</span>';
             }
             providersContainer.innerHTML = phtml;
         } else { 
-            providersContainer.innerHTML = '<span class="text-[9px] font-mono text-neutral-600 font-bold uppercase border border-neutral-800 border-dashed px-2 py-1">LOCAL CINEMA / PHYSICAL MEDIA</span>'; 
+            providersContainer.innerHTML = '<span class="text-[9px] font-mono text-neonRed font-bold uppercase border border-neonRed/50 border-dashed px-2 py-1">DIGITAL WATCH LINK MISSING</span>'; 
         }
       }
       renderRunnerUps();
